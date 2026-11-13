@@ -376,7 +376,7 @@
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                 <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Auditoria</h3>
                 <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
-                    Selecione o arquivo Excel base extraído do sistema. Duplicadas com mesmo <b>código e unidade de medida</b> serão excluídas automaticamente.
+                    Selecione o arquivo Excel base extraído do sistema. A 1ª contagem iniciará totalmente em branco. Duplicadas com mesmo <b>código e unidade de medida</b> serão excluídas automaticamente.
                 </p>
             </div>
             <div class="form-group">
@@ -391,6 +391,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                 <div style="font-size: 0.85rem; color: var(--muted);" id="infoBaseStatus">Inventário em andamento na nuvem.</div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
+                    <button class="btn" style="background: #d97706; color: white;" onclick="limparTodasContagens1()">🧹 Limpar 1ª Contagem</button>
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
                     <button class="btn" style="background: var(--danger); color: white;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
                 </div>
@@ -427,6 +429,39 @@
                 </table>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Modal para Adicionar Item Físico Manual no Inventário -->
+<div class="modal-overlay" id="modalAdicionarItemInv">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Adicionar Item Não Listado</h2>
+            <button class="close-btn" onclick="fecharModalAdicionarItemInv()">&times;</button>
+        </div>
+        <form id="formItemInvManual" onsubmit="adicionarItemManualInventario(event)">
+            <div class="form-group">
+                <label>CÓDIGO *</label>
+                <input type="text" id="manualCodigo" required placeholder="Ex: 99999">
+            </div>
+            <div class="form-group">
+                <label>PRODUTO *</label>
+                <input type="text" id="manualProduto" required placeholder="Ex: Material Encontrado no Depósito">
+            </div>
+            <div class="form-group">
+                <label>UNIDADE DE MEDIDA *</label>
+                <input type="text" id="manualUnidade" required value="UN" placeholder="Ex: UN, CX">
+            </div>
+            <div class="form-group">
+                <label>QUANTIDADE CONTADA (1ª Cont.) *</label>
+                <input type="number" id="manualQtd" required min="0" value="1">
+            </div>
+            <div class="form-group">
+                <label>OBSERVAÇÃO / JUSTIFICATIVA</label>
+                <input type="text" id="manualObs" value="Item encontrado no depósito não constante na base" placeholder="Justificativa">
+            </div>
+            <button type="submit" class="btn btn-primary">Adicionar ao Inventário</button>
+        </form>
     </div>
 </div>
 
@@ -703,7 +738,7 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE INVENTÁRIO NA NUVEM (DEDUPLICAÇÃO POR CÓDIGO + UNIDADE) ---
+    // --- FUNÇÕES DE INVENTÁRIO NA NUVEM ---
     async function verificarInventarioNuvem() {
         const btnInv = document.getElementById('btnInventario');
         const { data, error } = await supabaseClient
@@ -770,7 +805,7 @@
                 const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 itensInventarioBase = [];
-                const chavesVistas = new Set(); // Controle para exclusão automática (Código + Unidade)
+                const chavesVistas = new Set(); // Exclusão automática (Código + Unidade)
 
                 for (let i = 3; i < linhas.length; i++) {
                     let r = linhas[i];
@@ -780,7 +815,6 @@
                     const unidade = String(r[3] || 'UN').trim();
                     if (!codigo) continue;
 
-                    // Cria chave composta única combinando Código e Unidade de Medida
                     const chaveUnica = `${codigo}_${unidade.toLowerCase()}`;
                     if (chavesVistas.has(chaveUnica)) continue;
                     chavesVistas.add(chaveUnica);
@@ -794,7 +828,7 @@
                         produto: produto,
                         unidade: unidade,
                         base: qtdBase,
-                        contagem1: '',
+                        contagem1: '', // Inicia em branco
                         contagem2: '',
                         obs: ''
                     });
@@ -817,6 +851,67 @@
             }
         };
         reader.readAsArrayBuffer(arquivo);
+    }
+
+    async function limparTodasContagens1() {
+        if (!confirm('Deseja limpar todos os valores da 1ª Contagem, deixando-os em branco?')) return;
+        itensInventarioBase.forEach(item => {
+            item.contagem1 = '';
+        });
+        await salvarInventarioNuvem();
+        renderizarTabelaInventario();
+        alert('Todas as 1ª contagens foram limpas!');
+    }
+
+    async function marcarNaoEncontrado(index) {
+        itensInventarioBase[index].contagem1 = 0;
+        if (!itensInventarioBase[index].obs) {
+            itensInventarioBase[index].obs = 'Item não encontrado fisicamente';
+        }
+        await salvarInventarioNuvem();
+        renderizarTabelaInventario();
+    }
+
+    function abrirModalAdicionarItemInventario() {
+        document.getElementById('modalAdicionarItemInv').classList.add('active');
+    }
+
+    function fecharModalAdicionarItemInv() {
+        document.getElementById('modalAdicionarItemInv').classList.remove('active');
+        document.getElementById('formItemInvManual').reset();
+        document.getElementById('manualUnidade').value = 'UN';
+        document.getElementById('manualObs').value = 'Item encontrado no depósito não constante na base';
+    }
+
+    async function adicionarItemManualInventario(e) {
+        e.preventDefault();
+        const codigo = document.getElementById('manualCodigo').value.trim();
+        const produto = document.getElementById('manualProduto').value.trim();
+        const unidade = document.getElementById('manualUnidade').value.trim();
+        const qtd = parseInt(document.getElementById('manualQtd').value) || 0;
+        const obs = document.getElementById('manualObs').value.trim();
+
+        if (!codigo || !produto) return alert('Preencha o código e o produto!');
+
+        const existe = itensInventarioBase.find(i => String(i.codigo).trim() === codigo && String(i.unidade).trim().toLowerCase() === unidade.toLowerCase());
+        if (existe) {
+            return alert('Já existe um item com este código e unidade de medida neste inventário!');
+        }
+
+        itensInventarioBase.push({
+            codigo: codigo,
+            produto: produto,
+            unidade: unidade,
+            base: 0,
+            contagem1: qtd,
+            contagem2: '',
+            obs: obs
+        });
+
+        await salvarInventarioNuvem();
+        renderizarTabelaInventario();
+        fecharModalAdicionarItemInv();
+        alert('Item físico adicionado com sucesso ao inventário!');
     }
 
     function renderizarTabelaInventario() {
@@ -856,7 +951,10 @@
 
             html += `
                 <tr>
-                    <td><code>${item.codigo}</code></td>
+                    <td>
+                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px;" onclick="marcarNaoEncontrado(${index})" title="Marcar como Não Encontrado (Zera 1ª Cont.)">❌</button>
+                        <code>${item.codigo}</code>
+                    </td>
                     <td><b>${item.produto}</b></td>
                     <td>${item.unidade}</td>
                     <td style="text-align: center; font-weight:bold;">${item.base}</td>
