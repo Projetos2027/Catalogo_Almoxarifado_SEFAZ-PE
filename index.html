@@ -412,7 +412,7 @@
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
-                    <button class="btn" style="background: #dc2626; color: white;" onclick="exportarRelatorioPDF()">📥 Baixar Relatório (.pdf)</button>
+                    <button class="btn" style="background: #dc2626; color: white;" onclick="exportarRelatorioPDF()">📥 Relatório Executivo (.pdf)</button>
                     <button class="btn" style="background: var(--danger); color: white;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
                 </div>
             </div>
@@ -1150,17 +1150,64 @@
             }
         });
 
+        // --- CÁLCULO DA ANÁLISE DE DADOS ---
+        const totalItens = itensInventarioBase.length;
+        let totalOk = 0;
+        let totalSobra = 0;
+        let totalFalta = 0;
+
+        itensInventarioBase.forEach(item => {
+            const c1 = Number(item.contagem1 || 0);
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
+            const efetiva = c2 !== null ? c2 : c1;
+            const dif = efetiva - item.base;
+            if (dif === 0) totalOk++;
+            else if (dif > 0) totalSobra++;
+            else totalFalta++;
+        });
+
+        const acuracidade = ((totalOk / totalItens) * 100).toFixed(1);
+
         const elemento = document.createElement('div');
-        elemento.style.padding = '15px';
+        elemento.style.padding = '20px';
         elemento.style.fontFamily = 'Segoe UI, sans-serif';
         elemento.style.color = '#0f172a';
 
         let htmlConteudo = `
-            <h2 style="text-align:center; color:#1e40af; margin-bottom:4px;">Relatório de Inventário - Almoxarifado</h2>
-            <p style="text-align:center; font-size:0.8rem; color:#64748b; margin-bottom:15px;">Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
+            <div style="border-bottom: 3px solid #1e40af; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="color:#1e40af; font-size: 18px; margin: 0;">RELATÓRIO EXECUTIVO DE INVENTÁRIO</h2>
+                    <p style="font-size: 11px; color:#64748b; margin-top: 2px;">Sistema de Gestão de Almoxarifado - Auditoria Física</p>
+                </div>
+                <div style="text-align: right; font-size: 11px; color:#64748b;">
+                    <b>Data:</b> ${new Date().toLocaleDateString('pt-BR')}<br>
+                    <b>Hora:</b> ${new Date().toLocaleTimeString('pt-BR')}
+                </div>
+            </div>
+
+            <!-- DASHBOARD DE ANÁLISE DE DADOS -->
+            <div style="display: flex; gap: 10px; margin-bottom: 18px;">
+                <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center;">
+                    <div style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase;">Total Auditado</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #1e40af; margin-top: 4px;">${totalItens}</div>
+                </div>
+                <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px; text-align: center;">
+                    <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Conformes (OK)</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #10b981; margin-top: 4px;">${totalOk}</div>
+                </div>
+                <div style="flex: 1; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 10px; text-align: center;">
+                    <div style="font-size: 10px; color: #92400e; font-weight: bold; text-transform: uppercase;">Sobras / Faltas</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #f59e0b; margin-top: 4px;">${totalSobra} / ${totalFalta}</div>
+                </div>
+                <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px; text-align: center;">
+                    <div style="font-size: 10px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Acuracidade</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #2563eb; margin-top: 4px;">${acuracidade}%</div>
+                </div>
+            </div>
+
             <table style="width:100%; border-collapse:collapse; font-size:10px;">
                 <thead>
-                    <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">
+                    <tr style="background:#1e40af; color: white;">
                         <th style="padding:6px; text-align:left;">Código</th>
                         <th style="padding:6px; text-align:left;">Produto</th>
                         <th style="padding:6px; text-align:center;">U.M</th>
@@ -1174,18 +1221,20 @@
                 <tbody>
         `;
 
-        itensInventarioBase.forEach(item => {
+        itensInventarioBase.forEach((item, idx) => {
             const c1 = Number(item.contagem1 || 0);
             const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
             const efetiva = c2 !== null ? c2 : c1;
             const dif = efetiva - item.base;
             let status = 'OK';
             let corStatus = '#10b981';
-            if (dif > 0) { status = `+${dif} (SOBRA)`; corStatus = '#f59e0b'; }
-            if (dif < 0) { status = `${dif} (FALTA)`; corStatus = '#ef4444'; }
+            if (dif > 0) { status = `+${dif} (SOBRA)`; corStatus = '#d97706'; }
+            if (dif < 0) { status = `${dif} (FALTA)`; corStatus = '#dc2626'; }
+
+            const bgLinha = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
 
             htmlConteudo += `
-                <tr style="border-bottom:1px solid #e2e8f0;">
+                <tr style="background: ${bgLinha}; border-bottom:1px solid #e2e8f0;">
                     <td style="padding:5px;"><b>${item.codigo}</b></td>
                     <td style="padding:5px;">${item.produto}</td>
                     <td style="padding:5px; text-align:center;">${item.unidade}</td>
@@ -1198,12 +1247,27 @@
             `;
         });
 
-        htmlConteudo += `</tbody></table>`;
+        htmlConteudo += `
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 10px; color: #475569;">
+                <div style="text-align: center; width: 45%;">
+                    <div style="border-bottom: 1px solid #94a3b8; margin-bottom: 5px; height: 30px;"></div>
+                    <b>Responsável pelo Almoxarifado</b>
+                </div>
+                <div style="text-align: center; width: 45%;">
+                    <div style="border-bottom: 1px solid #94a3b8; margin-bottom: 5px; height: 30px;"></div>
+                    <b>Auditoria / Controle Interno</b>
+                </div>
+            </div>
+        `;
+
         elemento.innerHTML = htmlConteudo;
 
         const opcoes = {
             margin:       10,
-            filename:     `Relatorio_Inventario_${new Date().toISOString().split('T')[0]}.pdf`,
+            filename:     `Relatorio_Executivo_Inventario_${new Date().toISOString().split('T')[0]}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
