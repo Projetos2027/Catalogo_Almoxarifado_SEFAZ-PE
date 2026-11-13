@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <!-- Biblioteca SheetJS para ler e gerar arquivos Excel (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Biblioteca html2pdf para gerar arquivos PDF formatados -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --primary: #1e40af;
@@ -410,6 +412,7 @@
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
+                    <button class="btn" style="background: #dc2626; color: white;" onclick="exportarRelatorioPDF()">📥 Baixar Relatório (.pdf)</button>
                     <button class="btn" style="background: var(--danger); color: white;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
                 </div>
             </div>
@@ -1136,6 +1139,77 @@
 
         const dataAtual = new Date().toISOString().split('T')[0];
         XLSX.writeFile(workbook, `Relatorio_Inventario_${dataAtual}.xlsx`);
+    }
+
+    function exportarRelatorioPDF() {
+        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo.');
+
+        itensInventarioBase.forEach(item => {
+            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
+                item.contagem1 = 0;
+            }
+        });
+
+        const elemento = document.createElement('div');
+        elemento.style.padding = '15px';
+        elemento.style.fontFamily = 'Segoe UI, sans-serif';
+        elemento.style.color = '#0f172a';
+
+        let htmlConteudo = `
+            <h2 style="text-align:center; color:#1e40af; margin-bottom:4px;">Relatório de Inventário - Almoxarifado</h2>
+            <p style="text-align:center; font-size:0.8rem; color:#64748b; margin-bottom:15px;">Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
+            <table style="width:100%; border-collapse:collapse; font-size:10px;">
+                <thead>
+                    <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">
+                        <th style="padding:6px; text-align:left;">Código</th>
+                        <th style="padding:6px; text-align:left;">Produto</th>
+                        <th style="padding:6px; text-align:center;">U.M</th>
+                        <th style="padding:6px; text-align:center;">Base</th>
+                        <th style="padding:6px; text-align:center;">Contado</th>
+                        <th style="padding:6px; text-align:center;">Dif.</th>
+                        <th style="padding:6px; text-align:left;">Status</th>
+                        <th style="padding:6px; text-align:left;">Observação</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        itensInventarioBase.forEach(item => {
+            const c1 = Number(item.contagem1 || 0);
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
+            const efetiva = c2 !== null ? c2 : c1;
+            const dif = efetiva - item.base;
+            let status = 'OK';
+            let corStatus = '#10b981';
+            if (dif > 0) { status = `+${dif} (SOBRA)`; corStatus = '#f59e0b'; }
+            if (dif < 0) { status = `${dif} (FALTA)`; corStatus = '#ef4444'; }
+
+            htmlConteudo += `
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:5px;"><b>${item.codigo}</b></td>
+                    <td style="padding:5px;">${item.produto}</td>
+                    <td style="padding:5px; text-align:center;">${item.unidade}</td>
+                    <td style="padding:5px; text-align:center;">${item.base}</td>
+                    <td style="padding:5px; text-align:center;">${efetiva}</td>
+                    <td style="padding:5px; text-align:center; font-weight:bold;">${dif}</td>
+                    <td style="padding:5px; color:${corStatus}; font-weight:bold;">${status}</td>
+                    <td style="padding:5px; color:#64748b;">${item.obs || ''}</td>
+                </tr>
+            `;
+        });
+
+        htmlConteudo += `</tbody></table>`;
+        elemento.innerHTML = htmlConteudo;
+
+        const opcoes = {
+            margin:       10,
+            filename:     `Relatorio_Inventario_${new Date().toISOString().split('T')[0]}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+
+        html2pdf().from(elemento).set(opcoes).save();
     }
     // --- FIM DAS FUNÇÕES DE INVENTÁRIO ---
 
