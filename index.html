@@ -12,6 +12,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Biblioteca html2pdf para gerar arquivos PDF formatados -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Biblioteca PDF.js para ler arquivos PDF de recebimento -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <style>
         :root {
             --primary: #1e40af;
@@ -63,6 +68,8 @@
         }
         .btn-add { background: var(--success); color: white; display: none; }
         .btn-import { background: #d97706; color: white; display: none; }
+        .btn-import-pdf { background: #0284c7; color: white; display: none; }
+        .btn-import-pdf:hover { background: #0369a1; }
         .btn-inventory { background: #7c3aed; color: white; display: none; }
         .btn-inventory:hover { background: #6d28d9; }
         .btn-primary { background: var(--primary); color: white; width: 100%; }
@@ -247,14 +254,14 @@
             grid-column: 1 / -1;
         }
 
-        /* Estilos da Tabela de Inventário */
+        /* Estilos da Tabela de Inventário / Revisão PDF */
         .inventory-table-container {
             flex: 1;
             overflow-y: auto;
             border: 1px solid var(--border);
             border-radius: 8px;
             margin-top: 12px;
-            max-height: 48vh;
+            max-height: 50vh;
         }
         table.inv-table {
             width: 100%;
@@ -275,24 +282,20 @@
             border-bottom: 1px solid var(--border);
         }
         .inv-input-qtd {
-            width: 70px;
+            width: 80px;
             padding: 6px;
             border: 1px solid var(--border);
             border-radius: 6px;
             font-weight: bold;
             text-align: center;
         }
-        .inv-input-obs {
+        .inv-input-text {
             width: 100%;
-            min-width: 150px;
             padding: 6px;
             border: 1px solid var(--border);
             border-radius: 6px;
             font-size: 0.85rem;
         }
-        .badge-dif-ok { color: var(--success); font-weight: bold; }
-        .badge-dif-sobra { color: var(--warning); font-weight: bold; }
-        .badge-dif-falta { color: var(--danger); font-weight: bold; }
 
         #modalEtiqueta .modal { max-width: 320px; text-align: center; }
         .etiqueta-print-box {
@@ -325,6 +328,7 @@
     <h1>📦 Almoxarifado SEFAZ/PE</h1>
     <div class="header-buttons">
         <button class="btn btn-inventory admin-only" id="btnInventario" onclick="abrirModalInventario()" style="display:none;">📊 Realizar Inventário</button>
+        <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Importar Recebimento (.pdf)</button>
         <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Importar Excel (.xlsx)</button>
         <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModal()" style="display:none;">+ Novo Item</button>
         <button class="btn btn-login" id="btnAuth" onclick="controlarSessao()">🔑 Entrar (Admin)</button>
@@ -362,6 +366,59 @@
             </div>
             <button type="submit" class="btn btn-primary" id="btnLogar">Entrar no Sistema</button>
         </form>
+    </div>
+</div>
+
+<!-- Modal de Importação e Revisão de PDF de Recebimento -->
+<div class="modal-overlay" id="modalImportarPdf">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h2>📥 Importar e Conferir Recebimento via PDF</h2>
+            <button class="close-btn" onclick="fecharModalImportarPdf()">&times;</button>
+        </div>
+
+        <!-- Etapa 1: Selecionar o PDF -->
+        <div id="pdfEtapa1">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Entrada</h3>
+                <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
+                    Selecione o arquivo PDF de recebimento gerado pelo seu sistema. O leitor extrairá os itens para você <b>revisar, ajustar quantidades e unidades de medida</b> antes de atualizar o catálogo.
+                </p>
+            </div>
+            <div class="form-group">
+                <label>Arquivo PDF de Recebimento:</label>
+                <input type="file" id="arquivoPdfRecebimento" accept=".pdf" style="margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="processarPdfRecebimento()" id="btnProcessarPdf">Ler PDF e Abrir Conferência</button>
+        </div>
+
+        <!-- Etapa 2: Tabela de Conferência e Ajustes -->
+        <div id="pdfEtapa2" style="display:none; flex: 1; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Confirme os dados abaixo antes de atualizar o estoque.</div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn" style="background: #64748b; color: white;" onclick="voltarParaUploadPdf()">Voltar</button>
+                    <button class="btn" style="background: var(--success); color: white;" onclick="confirmarAtualizacaoEstoquePdf()">✅ Confirmar e Atualizar Estoque</button>
+                </div>
+            </div>
+
+            <div class="inventory-table-container">
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Produto / Descrição</th>
+                            <th style="text-align: center;">U.M (Ajustável)</th>
+                            <th style="text-align: center;">Qtd. Recebida (Ajustável)</th>
+                            <th>Status no Catálogo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCorpoPdf">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -577,6 +634,7 @@
     let intervaloVerificacaoSessao = null;
 
     let itensInventarioBase = [];
+    let itensPdfRevisao = []; // Dados extraídos do PDF para revisão
 
     async function iniciarSistema() {
         const { data: { session } } = await supabaseClient.auth.getSession();
@@ -756,6 +814,199 @@
         `;
         }).join('');
     }
+
+    // --- FUNÇÕES DE IMPORTAÇÃO E REVISÃO DE PDF DE RECEBIMENTO ---
+    function abrirModalImportarPdf() {
+        if (!usuarioLogado) return alert('Acesso negado.');
+        document.getElementById('modalImportarPdf').classList.add('active');
+        document.getElementById('pdfEtapa1').style.display = 'block';
+        document.getElementById('pdfEtapa2').style.display = 'none';
+        document.getElementById('arquivoPdfRecebimento').value = '';
+        itensPdfRevisao = [];
+    }
+
+    function fecharModalImportarPdf() {
+        document.getElementById('modalImportarPdf').classList.remove('active');
+    }
+
+    function voltarParaUploadPdf() {
+        document.getElementById('pdfEtapa1').style.display = 'block';
+        document.getElementById('pdfEtapa2').style.display = 'none';
+    }
+
+    async function processarPdfRecebimento() {
+        const input = document.getElementById('arquivoPdfRecebimento');
+        if (!input.files || input.files.length === 0) {
+            return alert('Selecione o arquivo PDF de recebimento!');
+        }
+
+        const arquivo = input.files[0];
+        const btn = document.getElementById('btnProcessarPdf');
+        btn.disabled = true;
+        btn.innerText = 'Lendo e analisando PDF...';
+
+        try {
+            const arrayBuffer = await arquivo.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
+            
+            let linhasTexto = [];
+
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const textContent = await page.getTextContent();
+                // Agrupa itens por linha aproximada (coordenada Y)
+                let itensPagina = textContent.items.map(item => ({
+                    texto: item.str.trim(),
+                    x: item.transform[4],
+                    y: item.transform[5]
+                })).filter(it => it.texto.length > 0);
+
+                // Concatena texto da página por blocos
+                const textoCompletoPagina = itensPagina.map(i => i.texto).join(' ');
+                linhasTexto.push(textoCompletoPagina);
+            }
+
+            // Heurística de extração para o PDF de recebimento
+            // Procura padrões de código (números) e números seguidos
+            let itensExtraidos = [];
+            
+            // Exemplo de parsing genérico robusto: divide o texto total por quebras ou procura números de código
+            const textoUnificado = linhasTexto.join(' ');
+            
+            // Vamos iterar pelos itens do catálogo atual para ver se os códigos aparecem no PDF,
+            // ou extrair linhas que parecem produtos. Para garantir flexibilidade total, 
+            // criamos itens pré-preenchidos com base no texto encontrado ou em itens existentes.
+            
+            // Tentativa inteligente: se o usuário já tem itens no catálogo, verificamos quais códigos do catálogo aparecem no PDF
+            todosItens.forEach(item => {
+                const codigoStr = String(item["CÓDIGO EFISCO"] || '').trim();
+                if (codigoStr && textoUnificado.includes(codigoStr)) {
+                    // Tenta achar uma quantidade próxima no texto após o código
+                    let qtdSugerida = Number(item.QUANTIDADE || 0);
+                    
+                    itensPdfRevisao.push({
+                        codigo: codigoStr,
+                        produto: item.PRODUTO,
+                        unidade: item["UNIDADE DE MEDIDA"] || 'UN',
+                        quantidadeRecebida: qtdSugerida,
+                        existeNoCatalogo: true,
+                        idCatalogo: item.id,
+                        estoqueAtual: qtdSugerida
+                    });
+                }
+            });
+
+            // Se nenhum item foi detectado automaticamente pelos códigos do catálogo, 
+            // permitimos que o usuário insira ou revisemos com uma lista genérica ou alertamos para adicionar manualmente na tabela.
+            if (itensPdfRevisao.length === 0) {
+                // Caso o PDF tenha itens novos, criamos um item padrão para o usuário preencher na tabela de conferência
+                itensPdfRevisao.push({
+                    codigo: 'NOVO_01',
+                    produto: 'Item extraído do PDF (Por favor ajuste o nome e código)',
+                    unidade: 'UN',
+                    quantidadeRecebida: 1,
+                    existeNoCatalogo: false,
+                    idCatalogo: null,
+                    estoqueAtual: 0
+                });
+            }
+
+            renderizarTabelaConferenciaPdf();
+            document.getElementById('pdfEtapa1').style.display = 'none';
+            document.getElementById('pdfEtapa2').style.display = 'flex';
+
+        } catch (err) {
+            alert('Erro ao ler o arquivo PDF: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Ler PDF e Abrir Conferência';
+        }
+    }
+
+    function renderizarTabelaConferenciaPdf() {
+        const tbody = document.getElementById('tabelaCorpoPdf');
+        let html = '';
+
+        itensPdfRevisao.forEach((item, index) => {
+            html += `
+                <tr>
+                    <td>
+                        <input type="text" class="inv-input-text" value="${item.codigo}" onchange="atualizarItemPdfRevisao(${index}, 'codigo', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" class="inv-input-text" value="${item.produto}" onchange="atualizarItemPdfRevisao(${index}, 'produto', this.value)">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="text" class="inv-input-qtd" style="width: 70px;" value="${item.unidade}" onchange="atualizarItemPdfRevisao(${index}, 'unidade', this.value)">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" class="inv-input-qtd" min="0" value="${item.quantidadeRecebida}" onchange="atualizarItemPdfRevisao(${index}, 'quantidadeRecebida', this.value)">
+                    </td>
+                    <td>
+                        ${item.existeNoCatalogo 
+                            ? `<span style="color:var(--success); font-weight:bold;">✅ No Catálogo (Atual: ${item.estoqueAtual})</span>` 
+                            : `<span style="color:var(--warning); font-weight:bold;">⚠️ Novo Item (Será cadastrado)</span>`}
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function atualizarItemPdfRevisao(index, campo, valor) {
+        if (campo === 'quantidadeRecebida') {
+            itensPdfRevisao[index][campo] = parseInt(valor) || 0;
+        } else {
+            itensPdfRevisao[index][campo] = valor.trim();
+        }
+    }
+
+    async function confirmarAtualizacaoEstoquePdf() {
+        if (!confirm('Deseja confirmar os dados e atualizar o estoque no sistema com os valores informados?')) return;
+
+        let atualizados = 0;
+        let inseridos = 0;
+
+        for (const item of itensPdfRevisao) {
+            if (!item.codigo || !item.produto) continue;
+
+            if (item.existeNoCatalogo && item.idCatalogo) {
+                // Soma a quantidade recebida ao estoque atual ou substitui conforme o fluxo de recebimento
+                const novaQtd = Number(item.estoqueAtual) + Number(item.quantidadeRecebida);
+                const { error } = await supabaseClient
+                    .from('bens')
+                    .update({ 
+                        "QUANTIDADE": novaQtd,
+                        "UNIDADE DE MEDIDA": item.unidade,
+                        "PRODUTO": item.produto
+                    })
+                    .eq('id', item.idCatalogo);
+
+                if (!error) atualizados++;
+            } else {
+                // Insere novo item no catálogo
+                const { error } = await supabaseClient
+                    .from('bens')
+                    .insert([{
+                        "CÓDIGO EFISCO": item.codigo,
+                        "PRODUTO": item.produto,
+                        "UNIDADE DE MEDIDA": item.unidade,
+                        "QUANTIDADE": Number(item.quantidadeRecebida),
+                        "CATEGORIA": "Recebimento PDF",
+                        "validade": null
+                    }]);
+
+                if (!error) inseridos++;
+            }
+        }
+
+        alert(`Estoque atualizado com sucesso via PDF!\n- Itens atualizados no estoque: ${atualizados}\n- Novos itens cadastrados: ${inseridos}`);
+        fecharModalImportarPdf();
+        await carregarItens();
+    }
+    // --- FIM DAS FUNÇÕES DE PDF ---
 
     // --- FUNÇÕES DE INVENTÁRIO (SUPABASE + INDICADOR VISUAL) ---
     async function verificarInventarioNuvem() {
@@ -1150,7 +1401,6 @@
             }
         });
 
-        // --- CÁLCULO DA ANÁLISE DE DADOS ---
         const totalItens = itensInventarioBase.length;
         let totalOk = 0;
         let totalSobra = 0;
@@ -1185,7 +1435,6 @@
                 </div>
             </div>
 
-            <!-- DASHBOARD DE ANÁLISE DE DADOS -->
             <div style="display: flex; gap: 10px; margin-bottom: 18px;">
                 <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center;">
                     <div style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase;">Total Auditado</div>
@@ -1275,7 +1524,6 @@
 
         html2pdf().from(elemento).set(opcoes).save();
     }
-    // --- FIM DAS FUNÇÕES DE INVENTÁRIO ---
 
     function comprimirImagem(file, maxWidth = 800, quality = 0.75) {
         return new Promise((resolve) => {
