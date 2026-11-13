@@ -406,7 +406,7 @@
         <!-- Etapa 2: Tabela de Contagem com Filtros -->
         <div id="invEtapa2" style="display:none; flex: 1; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.85rem; color: var(--muted);" id="infoBaseStatus">Inventário em andamento salvo no Supabase e na nuvem.</div>
+                <div style="font-size: 0.85rem; font-weight: 600; color: var(--success);" id="statusSalvamentoNuvem">💾 Pronto para iniciar contagem.</div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
@@ -754,15 +754,14 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE INVENTÁRIO (SUPABASE + LOCALSTORAGE) ---
+    // --- FUNÇÕES DE INVENTÁRIO (SUPABASE + INDICADOR VISUAL) ---
     async function verificarInventarioNuvem() {
         const btnInv = document.getElementById('btnInventario');
         
-        // Tenta carregar do Supabase (tabela inventario_andamento)
         try {
             const { data, error } = await supabaseClient
                 .from('inventario_andamento')
-                .select('itens_json')
+                .select('itens_json, atualizado_em')
                 .eq('id', 1)
                 .maybeSingle();
 
@@ -778,19 +777,6 @@
             console.error('Erro ao ler do Supabase:', e);
         }
 
-        // Fallback para localStorage caso Supabase esteja vazio ou com RLS restrito
-        const salvoLocal = localStorage.getItem('inventario_andamento_local');
-        if (salvoLocal) {
-            try {
-                const parsed = JSON.parse(salvoLocal);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    itensInventarioBase = parsed;
-                    if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
-                    return;
-                }
-            } catch(e) { console.error(e); }
-        }
-
         itensInventarioBase = [];
         if (btnInv) btnInv.innerText = '📊 Realizar Inventário';
     }
@@ -798,21 +784,25 @@
     async function salvarInventarioNuvem() {
         if (!itensInventarioBase || itensInventarioBase.length === 0) return;
         const jsonStr = JSON.stringify(itensInventarioBase);
+        const agora = new Date();
+        const dataHoraFormatada = agora.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
 
-        // Salva sempre no backup local primeiro
-        localStorage.setItem('inventario_andamento_local', jsonStr);
-
-        // Salva também no Supabase
         try {
             const { error } = await supabaseClient
                 .from('inventario_andamento')
-                .upsert({ id: 1, itens_json: jsonStr, atualizado_em: new Date() });
+                .upsert({ id: 1, itens_json: jsonStr, atualizado_em: agora });
             
+            const statusEl = document.getElementById('statusSalvamentoNuvem');
             if (error) {
                 console.error('Erro ao salvar no Supabase:', error.message);
+                if (statusEl) statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ Erro ao salvar na Base: ${error.message}</span>`;
+            } else {
+                if (statusEl) statusEl.innerHTML = `💾 Salvo na Base de Dados em ${dataHoraFormatada}`;
             }
         } catch (e) {
             console.error('Exceção ao salvar no Supabase:', e);
+            const statusEl = document.getElementById('statusSalvamentoNuvem');
+            if (statusEl) statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ Falha de conexão com a Base</span>`;
         }
     }
 
@@ -1100,7 +1090,6 @@
             }
         });
 
-        localStorage.removeItem('inventario_andamento_local');
         await supabaseClient.from('inventario_andamento').delete().eq('id', 1);
         itensInventarioBase = [];
         await verificarInventarioNuvem();
