@@ -751,7 +751,9 @@
             try {
                 const parsed = JSON.parse(data.itens_json);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    itensInventarioBase = parsed;
+                    if (itensInventarioBase.length === 0) {
+                        itensInventarioBase = parsed;
+                    }
                 }
                 if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
             } catch(e) {
@@ -867,6 +869,11 @@
         });
         
         await salvarInventarioNuvem();
+
+        // Reseta os filtros de busca e status para garantir que todos os itens fiquem visíveis
+        document.getElementById('buscaInventario').value = '';
+        document.getElementById('filtroStatusInventario').value = 'todos';
+
         renderizarTabelaInventario();
         alert('Todas as 1ª contagens foram limpas com sucesso!');
     }
