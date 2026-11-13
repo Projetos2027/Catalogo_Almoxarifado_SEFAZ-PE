@@ -862,8 +862,7 @@
             // Normaliza espaços múltiplos
             textoCompleto = textoCompleto.replace(/\s+/g, ' ');
 
-            // Regex especializada no formato de tabelas do Peintegrado:
-            // Ex: 259004 (259004) PISO DE BORRACHA ... UN 30,00 30,00 R$ 17,30
+            // Regex especializada no formato de tabelas do Peintegrado
             const regexItens = /(\d{5,8})\s+\(\1\)\s*[-]?\s*(.+?)\s+(UN|CX|PC|KG|MT|L|M2|PCT)\s+([\d\.,]+)\s+([\d\.,]+)/gi;
             
             let match;
@@ -875,9 +874,8 @@
                 if (produto.startsWith('-')) produto = produto.substring(1).trim();
                 const unidade = match[3].trim().toUpperCase();
                 
-                // Qtd recebida está no grupo 6 (ou 5 dependendo da ordem: Qtd prevista e Qtd recebida)
-                // No formato Peintegrado: Qtd prevista e Qtd recebida vêm em sequência (ex: 30,00 30,00)
-                const qtdRecebidaStr = match[6].replace(/\./g, '').replace(',', '.');
+                // Grupo 5 = Qtd recebida (com fallback para Grupo 4)
+                const qtdRecebidaStr = (match[5] || match[4] || '1').replace(/\./g, '').replace(',', '.');
                 const quantidadeRecebida = parseFloat(qtdRecebidaStr) || 1;
 
                 // Verifica se o item já existe no catálogo do sistema
