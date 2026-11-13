@@ -749,18 +749,23 @@
 
         if (data && data.itens_json) {
             try {
-                itensInventarioBase = JSON.parse(data.itens_json);
+                const parsed = JSON.parse(data.itens_json);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    itensInventarioBase = parsed;
+                }
                 if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
             } catch(e) {
-                itensInventarioBase = [];
+                console.error(e);
             }
         } else {
-            itensInventarioBase = [];
-            if (btnInv) btnInv.innerText = '📊 Realizar Inventário';
+            if (itensInventarioBase.length === 0 && btnInv) {
+                btnInv.innerText = '📊 Realizar Inventário';
+            }
         }
     }
 
     async function salvarInventarioNuvem() {
+        if (!itensInventarioBase || itensInventarioBase.length === 0) return;
         const jsonStr = JSON.stringify(itensInventarioBase);
         await supabaseClient
             .from('inventario_andamento')
@@ -804,7 +809,7 @@
                 const worksheet = workbook.Sheets[primeiraAba];
                 const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                itensInventarioBase = [];
+                let novosItens = [];
                 const chavesVistas = new Set(); // Exclusão automática (Código + Unidade)
 
                 for (let i = 3; i < linhas.length; i++) {
@@ -823,7 +828,7 @@
                     let qtdBase = parseFloat(r[5]);
                     qtdBase = !isNaN(qtdBase) ? Math.round(qtdBase) : 0;
 
-                    itensInventarioBase.push({
+                    novosItens.push({
                         codigo: codigo,
                         produto: produto,
                         unidade: unidade,
@@ -834,10 +839,11 @@
                     });
                 }
 
-                if (itensInventarioBase.length === 0) {
+                if (novosItens.length === 0) {
                     return alert('Nenhum item válido encontrado no arquivo base.');
                 }
 
+                itensInventarioBase = novosItens;
                 await salvarInventarioNuvem();
                 document.getElementById('buscaInventario').value = '';
                 document.getElementById('filtroStatusInventario').value = 'todos';
@@ -855,12 +861,14 @@
 
     async function limparTodasContagens1() {
         if (!confirm('Deseja limpar todos os valores da 1ª Contagem, deixando-os em branco?')) return;
+        
         itensInventarioBase.forEach(item => {
             item.contagem1 = '';
         });
+        
         await salvarInventarioNuvem();
         renderizarTabelaInventario();
-        alert('Todas as 1ª contagens foram limpas!');
+        alert('Todas as 1ª contagens foram limpas com sucesso!');
     }
 
     async function marcarNaoEncontrado(index) {
