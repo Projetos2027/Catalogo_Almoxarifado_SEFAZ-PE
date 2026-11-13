@@ -382,11 +382,11 @@
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                 <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Entrada</h3>
                 <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
-                    Selecione o arquivo PDF de recebimento gerado pelo seu sistema. O leitor extrairá os itens para você <b>revisar, ajustar quantidades e unidades de medida</b> antes de atualizar o catálogo.
+                    Selecione o arquivo PDF do <b>Termo de Recebimento (Peintegrado)</b>. O leitor extrairá automaticamente todos os itens para você <b>revisar, ajustar quantidades e unidades de medida</b> antes de atualizar o catálogo.
                 </p>
             </div>
             <div class="form-group">
-                <label>Arquivo PDF de Recebimento:</label>
+                <label>Arquivo PDF de Recebimento (.pdf):</label>
                 <input type="file" id="arquivoPdfRecebimento" accept=".pdf" style="margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
             </div>
             <button type="button" class="btn btn-primary" onclick="processarPdfRecebimento()" id="btnProcessarPdf">Ler PDF e Abrir Conferência</button>
@@ -815,7 +815,7 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE IMPORTAÇÃO E REVISÃO DE PDF DE RECEBIMENTO ---
+    // --- FUNÇÕES DE IMPORTAÇÃO E REVISÃO DE PDF DE RECEBIMENTO (PEINTEGRADO) ---
     function abrirModalImportarPdf() {
         if (!usuarioLogado) return alert('Acesso negado.');
         document.getElementById('modalImportarPdf').classList.add('active');
@@ -850,66 +850,55 @@
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
             const pdfDoc = await loadingTask.promise;
             
-            let linhasTexto = [];
+            let textoCompleto = '';
 
             for (let i = 1; i <= pdfDoc.numPages; i++) {
                 const page = await pdfDoc.getPage(i);
                 const textContent = await page.getTextContent();
-                // Agrupa itens por linha aproximada (coordenada Y)
-                let itensPagina = textContent.items.map(item => ({
-                    texto: item.str.trim(),
-                    x: item.transform[4],
-                    y: item.transform[5]
-                })).filter(it => it.texto.length > 0);
-
-                // Concatena texto da página por blocos
-                const textoCompletoPagina = itensPagina.map(i => i.texto).join(' ');
-                linhasTexto.push(textoCompletoPagina);
+                const textoPagina = textContent.items.map(item => item.str).join(' ');
+                textoCompleto += ' ' + textoPagina;
             }
 
-            // Heurística de extração para o PDF de recebimento
-            // Procura padrões de código (números) e números seguidos
-            let itensExtraidos = [];
-            
-            // Exemplo de parsing genérico robusto: divide o texto total por quebras ou procura números de código
-            const textoUnificado = linhasTexto.join(' ');
-            
-            // Vamos iterar pelos itens do catálogo atual para ver se os códigos aparecem no PDF,
-            // ou extrair linhas que parecem produtos. Para garantir flexibilidade total, 
-            // criamos itens pré-preenchidos com base no texto encontrado ou em itens existentes.
-            
-            // Tentativa inteligente: se o usuário já tem itens no catálogo, verificamos quais códigos do catálogo aparecem no PDF
-            todosItens.forEach(item => {
-                const codigoStr = String(item["CÓDIGO EFISCO"] || '').trim();
-                if (codigoStr && textoUnificado.includes(codigoStr)) {
-                    // Tenta achar uma quantidade próxima no texto após o código
-                    let qtdSugerida = Number(item.QUANTIDADE || 0);
-                    
-                    itensPdfRevisao.push({
-                        codigo: codigoStr,
-                        produto: item.PRODUTO,
-                        unidade: item["UNIDADE DE MEDIDA"] || 'UN',
-                        quantidadeRecebida: qtdSugerida,
-                        existeNoCatalogo: true,
-                        idCatalogo: item.id,
-                        estoqueAtual: qtdSugerida
-                    });
-                }
-            });
+            // Normaliza espaços múltiplos
+            textoCompleto = textoCompleto.replace(/\s+/g, ' ');
 
-            // Se nenhum item foi detectado automaticamente pelos códigos do catálogo, 
-            // permitimos que o usuário insira ou revisemos com uma lista genérica ou alertamos para adicionar manualmente na tabela.
-            if (itensPdfRevisao.length === 0) {
-                // Caso o PDF tenha itens novos, criamos um item padrão para o usuário preencher na tabela de conferência
+            // Regex especializada no formato de tabelas do Peintegrado:
+            // Ex: 259004 (259004) PISO DE BORRACHA ... UN 30,00 30,00 R$ 17,30
+            const regexItens = /(\d{5,8})\s+\(\1\)\s*[-]?\s*(.+?)\s+(UN|CX|PC|KG|MT|L|M2|PCT)\s+([\d\.,]+)\s+([\d\.,]+)/gi;
+            
+            let match;
+            itensPdfRevisao = [];
+
+            while ((match = regexItens.exec(textoCompleto)) !== null) {
+                const codigo = match[1].trim();
+                let produto = match[2].trim();
+                if (produto.startsWith('-')) produto = produto.substring(1).trim();
+                const unidade = match[3].trim().toUpperCase();
+                
+                // Qtd recebida está no grupo 6 (ou 5 dependendo da ordem: Qtd prevista e Qtd recebida)
+                // No formato Peintegrado: Qtd prevista e Qtd recebida vêm em sequência (ex: 30,00 30,00)
+                const qtdRecebidaStr = match[6].replace(/\./g, '').replace(',', '.');
+                const quantidadeRecebida = parseFloat(qtdRecebidaStr) || 1;
+
+                // Verifica se o item já existe no catálogo do sistema
+                const itemExistente = todosItens.find(i => 
+                    String(i["CÓDIGO EFISCO"] || '').trim() === codigo && 
+                    String(i["UNIDADE DE MEDIDA"] || '').trim().toUpperCase() === unidade
+                ) || todosItens.find(i => String(i["CÓDIGO EFISCO"] || '').trim() === codigo);
+
                 itensPdfRevisao.push({
-                    codigo: 'NOVO_01',
-                    produto: 'Item extraído do PDF (Por favor ajuste o nome e código)',
-                    unidade: 'UN',
-                    quantidadeRecebida: 1,
-                    existeNoCatalogo: false,
-                    idCatalogo: null,
-                    estoqueAtual: 0
+                    codigo: codigo,
+                    produto: produto,
+                    unidade: unidade,
+                    quantidadeRecebida: quantidadeRecebida,
+                    existeNoCatalogo: !!itemExistente,
+                    idCatalogo: itemExistente ? itemExistente.id : null,
+                    estoqueAtual: itemExistente ? Number(itemExistente.QUANTIDADE || 0) : 0
                 });
+            }
+
+            if (itensPdfRevisao.length === 0) {
+                return alert('Não foi possível extrair os itens automaticamente deste PDF. Verifique se é o Termo de Recebimento correto do Peintegrado.');
             }
 
             renderizarTabelaConferenciaPdf();
@@ -973,7 +962,7 @@
             if (!item.codigo || !item.produto) continue;
 
             if (item.existeNoCatalogo && item.idCatalogo) {
-                // Soma a quantidade recebida ao estoque atual ou substitui conforme o fluxo de recebimento
+                // Soma a quantidade recebida ao estoque atual
                 const novaQtd = Number(item.estoqueAtual) + Number(item.quantidadeRecebida);
                 const { error } = await supabaseClient
                     .from('bens')
