@@ -392,7 +392,6 @@
                 <div style="font-size: 0.85rem; color: var(--muted);" id="infoBaseStatus">Inventário em andamento na nuvem.</div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
-                    <button class="btn" style="background: #d97706; color: white;" onclick="limparTodasContagens1()">🧹 Limpar 1ª Contagem</button>
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
                     <button class="btn" style="background: var(--danger); color: white;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
                 </div>
@@ -861,23 +860,6 @@
         reader.readAsArrayBuffer(arquivo);
     }
 
-    async function limparTodasContagens1() {
-        if (!confirm('Deseja limpar todos os valores da 1ª Contagem, deixando-os em branco?')) return;
-        
-        itensInventarioBase.forEach(item => {
-            item.contagem1 = '';
-        });
-        
-        await salvarInventarioNuvem();
-
-        // Reseta os filtros de busca e status para garantir que todos os itens fiquem visíveis
-        document.getElementById('buscaInventario').value = '';
-        document.getElementById('filtroStatusInventario').value = 'todos';
-
-        renderizarTabelaInventario();
-        alert('Todas as 1ª contagens foram limpas com sucesso!');
-    }
-
     async function marcarNaoEncontrado(index) {
         itensInventarioBase[index].contagem1 = 0;
         if (!itensInventarioBase[index].obs) {
@@ -1030,8 +1012,15 @@
     }
 
     async function finalizarInventarioAtivo() {
-        if (!confirm('Deseja realmente finalizar este inventário? Os dados salvos na nuvem serão limpos.')) return;
+        if (!confirm('Deseja realmente finalizar este inventário? Os itens sem contagem serão preenchidos com 0 e os dados salvos na nuvem serão limpos.')) return;
         
+        // Preenche com 0 qualquer item que tenha ficado em branco na 1ª contagem
+        itensInventarioBase.forEach(item => {
+            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
+                item.contagem1 = 0;
+            }
+        });
+
         await supabaseClient.from('inventario_andamento').delete().eq('id', 1);
         itensInventarioBase = [];
         await verificarInventarioNuvem();
@@ -1042,8 +1031,16 @@
     function exportarRelatorioDivergencias() {
         if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo.');
 
+        // Preenche com 0 itens deixados em branco ao exportar
+        itensInventarioBase.forEach(item => {
+            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
+                item.contagem1 = 0;
+            }
+        });
+        salvarInventarioNuvem();
+
         const dadosExportar = itensInventarioBase.map(item => {
-            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined && item.contagem1 !== null && !isNaN(item.contagem1)) ? Number(item.contagem1) : 0;
+            const c1 = Number(item.contagem1);
             const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
             const contagemEfetiva = (c2 !== null) ? c2 : c1;
             const dif = contagemEfetiva - item.base;
@@ -1057,8 +1054,8 @@
                 "PRODUTO": item.produto,
                 "U.M": item.unidade,
                 "ESTOQUE BASE": item.base,
-                "1ª CONTAGEM": item.contagem1 !== '' && item.contagem1 !== undefined ? item.contagem1 : 0,
-                "2ª CONTAGEM": item.contagem2 !== null && item.contagem2 !== '' ? item.contagem2 : '',
+                "1ª CONTAGEM": c1,
+                "2ª CONTAGEM": c2 !== null ? c2 : '',
                 "DIFERENÇA FINAL": dif,
                 "STATUS": status,
                 "OBSERVAÇÕES / JUSTIFICATIVA": item.obs || ''
