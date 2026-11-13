@@ -252,7 +252,7 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             margin-top: 12px;
-            max-height: 52vh;
+            max-height: 48vh;
         }
         table.inv-table {
             width: 100%;
@@ -376,7 +376,7 @@
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                 <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Auditoria</h3>
                 <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
-                    Selecione o arquivo Excel base extraído do sistema. O andamento fica salvo automaticamente na nuvem (Supabase) para você continuar de qualquer computador quando quiser, até clicar em <b>Finalizar Inventário</b>.
+                    Selecione o arquivo Excel base extraído do sistema. O andamento fica salvo automaticamente na nuvem (Supabase) para você continuar quando quiser, até clicar em <b>Finalizar Inventário</b>.
                 </p>
             </div>
             <div class="form-group">
@@ -386,7 +386,7 @@
             <button type="button" class="btn btn-primary" onclick="iniciarContagemInventario()" id="btnIniciarInv" style="margin-top: 10px;">Iniciar Nova Contagem</button>
         </div>
 
-        <!-- Etapa 2: Tabela de Contagem com Nuvem -->
+        <!-- Etapa 2: Tabela de Contagem com Filtros -->
         <div id="invEtapa2" style="display:none; flex: 1; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                 <div style="font-size: 0.85rem; color: var(--muted);" id="infoBaseStatus">Inventário em andamento na nuvem.</div>
@@ -394,6 +394,16 @@
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
                     <button class="btn" style="background: var(--danger); color: white;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
                 </div>
+            </div>
+
+            <!-- Controles de Busca e Filtro de Status -->
+            <div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="buscaInventario" placeholder="🔍 Filtrar por código (ex: 1, 12, 123...) ou produto..." oninput="renderizarTabelaInventario()" style="flex: 1; min-width: 240px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
+                <select id="filtroStatusInventario" onchange="renderizarTabelaInventario()" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
+                    <option value="todos">📋 Todos os Itens</option>
+                    <option value="divergencias">⚠️ Apenas Divergências (Falta/Sobra)</option>
+                    <option value="ok">✅ Apenas OK</option>
+                </select>
             </div>
             
             <div class="inventory-table-container">
@@ -693,7 +703,7 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE INVENTÁRIO NA NUVEM (SUPABASE) ---
+    // --- FUNÇÕES DE INVENTÁRIO NA NUVEM (COM BUSCA E FILTRO DE STATUS) ---
     async function verificarInventarioNuvem() {
         const btnInv = document.getElementById('btnInventario');
         const { data, error } = await supabaseClient
@@ -729,6 +739,8 @@
         if (itensInventarioBase.length > 0) {
             document.getElementById('invEtapa1').style.display = 'none';
             document.getElementById('invEtapa2').style.display = 'flex';
+            document.getElementById('buscaInventario').value = '';
+            document.getElementById('filtroStatusInventario').value = 'todos';
             renderizarTabelaInventario();
         } else {
             document.getElementById('invEtapa1').style.display = 'block';
@@ -787,6 +799,8 @@
                 }
 
                 await salvarInventarioNuvem();
+                document.getElementById('buscaInventario').value = '';
+                document.getElementById('filtroStatusInventario').value = 'todos';
                 renderizarTabelaInventario();
                 document.getElementById('invEtapa1').style.display = 'none';
                 document.getElementById('invEtapa2').style.display = 'flex';
@@ -801,13 +815,29 @@
 
     function renderizarTabelaInventario() {
         const tbody = document.getElementById('tabelaCorpoInventario');
-        
-        tbody.innerHTML = itensInventarioBase.map((item, index) => {
+        const termo = document.getElementById('buscaInventario') ? document.getElementById('buscaInventario').value.toLowerCase().trim() : '';
+        const filtroStatus = document.getElementById('filtroStatusInventario') ? document.getElementById('filtroStatusInventario').value : 'todos';
+
+        let html = '';
+
+        itensInventarioBase.forEach((item, index) => {
+            const cod = String(item.codigo || '').toLowerCase();
+            const prod = String(item.produto || '').toLowerCase();
+
+            // Filtro por texto
+            if (termo && !cod.startsWith(termo) && !cod.includes(termo) && !prod.includes(termo)) {
+                return;
+            }
+
             const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined) ? Number(item.contagem1) : 0;
             const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined) ? Number(item.contagem2) : null;
             
             const contagemEfetiva = (c2 !== null) ? c2 : c1;
             const dif = contagemEfetiva - item.base;
+
+            // Filtro por status (todos, divergencias, ok)
+            if (filtroStatus === 'divergencias' && dif === 0) return;
+            if (filtroStatus === 'ok' && dif !== 0) return;
 
             let statusBadge = '<span class="badge-dif-ok">OK</span>';
             if (dif > 0) {
@@ -818,7 +848,7 @@
 
             const obsValor = item.obs !== undefined && item.obs !== null ? item.obs : '';
 
-            return `
+            html += `
                 <tr>
                     <td><code>${item.codigo}</code></td>
                     <td><b>${item.produto}</b></td>
@@ -837,7 +867,13 @@
                     </td>
                 </tr>
             `;
-        }).join('');
+        });
+
+        if (!html) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item encontrado com os filtros selecionados.</td></tr>`;
+        } else {
+            tbody.innerHTML = html;
+        }
     }
 
     async function atualizarContagem(index, tipo, valor) {
@@ -861,13 +897,15 @@
             const tdDif = document.getElementById(`dif_${index}`);
             const tdStatus = document.getElementById(`status_${index}`);
             
-            tdDif.innerText = dif;
-            if (dif > 0) {
-                tdStatus.innerHTML = `<span class="badge-dif-sobra">+${dif} (Sobra)</span>`;
-            } else if (dif < 0) {
-                tdStatus.innerHTML = `<span class="badge-dif-falta">${dif} (Falta)</span>`;
-            } else {
-                tdStatus.innerHTML = '<span class="badge-dif-ok">OK</span>';
+            if (tdDif) tdDif.innerText = dif;
+            if (tdStatus) {
+                if (dif > 0) {
+                    tdStatus.innerHTML = `<span class="badge-dif-sobra">+${dif} (Sobra)</span>`;
+                } else if (dif < 0) {
+                    tdStatus.innerHTML = `<span class="badge-dif-falta">${dif} (Falta)</span>`;
+                } else {
+                    tdStatus.innerHTML = '<span class="badge-dif-ok">OK</span>';
+                }
             }
         }
     }
@@ -1192,7 +1230,7 @@
     function fecharModal() { document.getElementById('modalCadastro').classList.remove('active'); }
     function abrirModalImportar() { document.getElementById('modalImportar').classList.add('active'); }
     function fecharModalImportar() { document.getElementById('modalImportar').classList.remove('active'); }
-    function fecharModalLogin() { document.getElementById('modalLogin'].classList.remove('active'); }
+    function fecharModalLogin() { document.getElementById('modalLogin').classList.remove('active'); }
     function fecharModalEtiqueta() { document.getElementById('modalEtiqueta').classList.remove('active'); }
     
     function previewImagem(event) {
