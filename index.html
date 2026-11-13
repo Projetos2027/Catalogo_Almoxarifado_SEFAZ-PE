@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo do Almoxarifado</title>
+    <title>Almoxarifado SEFAZ/PE</title>
     <!-- SDK Oficial do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Biblioteca para gerar Códigos de Barras -->
@@ -322,7 +322,7 @@
 <body>
 
 <header>
-    <h1>📦 Catálogo do Almoxarifado</h1>
+    <h1>📦 Almoxarifado SEFAZ/PE</h1>
     <div class="header-buttons">
         <button class="btn btn-inventory admin-only" id="btnInventario" onclick="abrirModalInventario()" style="display:none;">📊 Realizar Inventário</button>
         <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Importar Excel (.xlsx)</button>
@@ -554,7 +554,7 @@
         </div>
         <div id="conteudoEtiquetaPrint">
             <div class="etiqueta-print-box">
-                <div style="font-size:0.75rem; font-weight:bold; text-transform:uppercase; color:#475569;">Almoxarifado Central</div>
+                <div style="font-size:0.75rem; font-weight:bold; text-transform:uppercase; color:#475569;">Almoxarifado SEFAZ/PE</div>
                 <div class="etiqueta-print-desc" id="etqDescricao">Nome do Produto</div>
                 <div><svg id="etqBarcodeSvg"></svg></div>
             </div>
@@ -1177,7 +1177,7 @@
             <div style="border-bottom: 3px solid #1e40af; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h2 style="color:#1e40af; font-size: 18px; margin: 0;">RELATÓRIO EXECUTIVO DE INVENTÁRIO</h2>
-                    <p style="font-size: 11px; color:#64748b; margin-top: 2px;">Sistema de Gestão de Almoxarifado - Auditoria Física</p>
+                    <p style="font-size: 11px; color:#64748b; margin-top: 2px;">Almoxarifado SEFAZ/PE - Auditoria Física</p>
                 </div>
                 <div style="text-align: right; font-size: 11px; color:#64748b;">
                     <b>Data:</b> ${new Date().toLocaleDateString('pt-BR')}<br>
