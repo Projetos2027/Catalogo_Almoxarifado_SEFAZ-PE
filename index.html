@@ -63,7 +63,7 @@
         .btn-primary { background: var(--primary); color: white; width: 100%; }
         .btn-primary:hover { background: var(--primary-light); }
         .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.8rem; display: none; }
-        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.8rem; }
+        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.8rem; display: none; }
         .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.8rem; display: none; }
         .btn-photo:hover { background: #fde047; }
         .btn-login { background: #334155; color: white; }
@@ -395,16 +395,63 @@
     let todosItens = [];
     let usuarioLogado = null;
     let itemIdSelecionadoFoto = null;
+    let tokenSessaoLocal = 'token_' + Math.random().toString(36).substring(2) + Date.now();
+    let intervaloVerificacaoSessao = null;
 
     async function iniciarSistema() {
         const { data: { session } } = await supabaseClient.auth.getSession();
+        
+        if (session) {
+            await registrarSessaoAtiva(session.user.email);
+            iniciarVigilanciaSessao(session.user.email);
+        }
+
         atualizarEstadoAuth(session ? session.user : null);
         
-        supabaseClient.auth.onAuthStateChange((event, session) => {
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                await registrarSessaoAtiva(session.user.email);
+                iniciarVigilanciaSessao(session.user.email);
+            } else {
+                pararVigilanciaSessao();
+            }
             atualizarEstadoAuth(session ? session.user : null);
         });
 
         await carregarItens();
+    }
+
+    async function registrarSessaoAtiva(email) {
+        await supabaseClient
+            .from('controle_sessao')
+            .upsert({ id: 1, token_sessao: tokenSessaoLocal, email_admin: email, atualizado_em: new Date() });
+    }
+
+    function iniciarVigilanciaSessao(email) {
+        if (intervaloVerificacaoSessao) clearInterval(intervaloVerificacaoSessao);
+        
+        intervaloVerificacaoSessao = setInterval(async () => {
+            if (!usuarioLogado) return;
+            const { data, error } = await supabaseClient
+                .from('controle_sessao')
+                .select('token_sessao')
+                .eq('id', 1)
+                .single();
+
+            if (data && data.token_sessao !== tokenSessaoLocal) {
+                pararVigilanciaSessao();
+                await supabaseClient.auth.signOut();
+                alert('Sua sessão foi encerrada porque foi feito um login em outro dispositivo ou aba.');
+                window.location.reload();
+            }
+        }, 5000);
+    }
+
+    function pararVigilanciaSessao() {
+        if (intervaloVerificacaoSessao) {
+            clearInterval(intervaloVerificacaoSessao);
+            intervaloVerificacaoSessao = null;
+        }
     }
 
     function atualizarEstadoAuth(user) {
@@ -479,7 +526,6 @@
 
     function formatarDataBR(dataIso) {
         if (!dataIso) return 'Indeterminada';
-        // Se vem no formato YYYY-MM-DD, converte para DD/MM/YYYY
         const partes = dataIso.split('T')[0].split('-');
         if (partes.length === 3) {
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
@@ -519,7 +565,7 @@
                     <div class="item-meta">
                         <span>Qtd: <b>${qtdExibida}</b> (${item["UNIDADE DE MEDIDA"] || 'UN'}) ${esgotado ? '<span style="color:var(--danger); font-weight:bold; margin-left:4px;">(Esgotado)</span>' : ''}</span>
                         <div class="item-actions">
-                            <button class="btn btn-label" onclick='abrirEtiqueta(${JSON.stringify(item)})' title="Gerar Etiqueta">🏷️</button>
+                            <button class="btn btn-label" style="${usuarioLogado ? 'display:inline-flex;' : 'display:none;'}" onclick='abrirEtiqueta(${JSON.stringify(item)})' title="Gerar Etiqueta">🏷️</button>
                             <button class="btn btn-photo" style="${usuarioLogado ? 'display:inline-flex;' : 'display:none;'}" onclick="gatilhoAdicionarFoto(${item.id})" title="Anexar ou Alterar Foto">📷 Foto</button>
                             <button class="btn btn-danger" style="${usuarioLogado ? 'display:inline-flex;' : 'display:none;'}" onclick="excluirItem(${item.id})" title="Excluir">🗑️</button>
                         </div>
@@ -620,7 +666,7 @@
             const quantidade = (inputQtd !== '') ? parseInt(inputQtd) : 0;
             
             const inputValidade = document.getElementById('validade').value;
-            const validade = inputValidade ? inputValidade : null; // Se vazio, envia null (fica Indeterminada)
+            const validade = inputValidade ? inputValidade : null;
             
             const fotoFile = document.getElementById('fotoInput').files[0];
 
@@ -668,7 +714,6 @@
         }
     }
 
-    // Leitura automática do arquivo Excel (.xlsx) gerado pelo sistema
     async function processarArquivoExcel() {
         if (!usuarioLogado) return alert('Acesso negado.');
         const inputArquivo = document.getElementById('arquivoExcel');
@@ -733,7 +778,7 @@
                                 "CATEGORIA": categoria, 
                                 "UNIDADE DE MEDIDA": unidade,
                                 "QUANTIDADE": quantidade,
-                                "validade": null // Como o Excel padrão não manda validade, entra como nula (Indeterminada)
+                                "validade": null
                             }]);
 
                         if (!error) inseridos++;
@@ -763,6 +808,7 @@
     }
 
     function abrirEtiqueta(item) {
+        if (!usuarioLogado) return alert('Acesso negado.');
         const cod = item["CÓDIGO EFISCO"] || '';
         const desc = item.PRODUTO || '';
         document.getElementById('etqDescricao').innerText = `${cod} - ${desc}`;
