@@ -376,7 +376,7 @@
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                 <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Auditoria</h3>
                 <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
-                    Selecione o arquivo Excel base extraído do sistema. O andamento fica salvo automaticamente na nuvem (Supabase) para você continuar quando quiser, até clicar em <b>Finalizar Inventário</b>.
+                    Selecione o arquivo Excel base extraído do sistema. Duplicadas com mesmo <b>código e unidade de medida</b> serão excluídas automaticamente.
                 </p>
             </div>
             <div class="form-group">
@@ -703,7 +703,7 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE INVENTÁRIO NA NUVEM (COM BUSCA E FILTRO DE STATUS) ---
+    // --- FUNÇÕES DE INVENTÁRIO NA NUVEM (DEDUPLICAÇÃO POR CÓDIGO + UNIDADE) ---
     async function verificarInventarioNuvem() {
         const btnInv = document.getElementById('btnInventario');
         const { data, error } = await supabaseClient
@@ -770,25 +770,31 @@
                 const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 itensInventarioBase = [];
+                const chavesVistas = new Set(); // Controle para exclusão automática (Código + Unidade)
 
                 for (let i = 3; i < linhas.length; i++) {
                     let r = linhas[i];
                     if (!r || !r[0]) continue;
 
                     const codigo = String(r[0]).trim();
-                    const produto = String(r[1] || 'Sem descrição').trim();
                     const unidade = String(r[3] || 'UN').trim();
+                    if (!codigo) continue;
+
+                    // Cria chave composta única combinando Código e Unidade de Medida
+                    const chaveUnica = `${codigo}_${unidade.toLowerCase()}`;
+                    if (chavesVistas.has(chaveUnica)) continue;
+                    chavesVistas.add(chaveUnica);
+
+                    const produto = String(r[1] || 'Sem descrição').trim();
                     let qtdBase = parseFloat(r[5]);
                     qtdBase = !isNaN(qtdBase) ? Math.round(qtdBase) : 0;
-
-                    if (!codigo) continue;
 
                     itensInventarioBase.push({
                         codigo: codigo,
                         produto: produto,
                         unidade: unidade,
                         base: qtdBase,
-                        contagem1: qtdBase,
+                        contagem1: '',
                         contagem2: '',
                         obs: ''
                     });
@@ -824,18 +830,16 @@
             const cod = String(item.codigo || '').toLowerCase();
             const prod = String(item.produto || '').toLowerCase();
 
-            // Filtro por texto
             if (termo && !cod.startsWith(termo) && !cod.includes(termo) && !prod.includes(termo)) {
                 return;
             }
 
-            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined) ? Number(item.contagem1) : 0;
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined) ? Number(item.contagem2) : null;
+            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined && item.contagem1 !== null && !isNaN(item.contagem1)) ? Number(item.contagem1) : 0;
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
             
             const contagemEfetiva = (c2 !== null) ? c2 : c1;
             const dif = contagemEfetiva - item.base;
 
-            // Filtro por status (todos, divergencias, ok)
             if (filtroStatus === 'divergencias' && dif === 0) return;
             if (filtroStatus === 'ok' && dif !== 0) return;
 
@@ -847,6 +851,8 @@
             }
 
             const obsValor = item.obs !== undefined && item.obs !== null ? item.obs : '';
+            const valC1 = (item.contagem1 !== undefined && item.contagem1 !== null) ? item.contagem1 : '';
+            const valC2 = (item.contagem2 !== undefined && item.contagem2 !== null) ? item.contagem2 : '';
 
             html += `
                 <tr>
@@ -855,10 +861,10 @@
                     <td>${item.unidade}</td>
                     <td style="text-align: center; font-weight:bold;">${item.base}</td>
                     <td style="text-align: center;">
-                        <input type="number" class="inv-input-qtd" value="${item.contagem1}" min="0" onchange="atualizarContagem(${index}, 'c1', this.value)" placeholder="1ª">
+                        <input type="number" class="inv-input-qtd" value="${valC1}" min="0" onchange="atualizarContagem(${index}, 'c1', this.value)" placeholder="0">
                     </td>
                     <td style="text-align: center;">
-                        <input type="number" class="inv-input-qtd" value="${item.contagem2 !== null ? item.contagem2 : ''}" min="0" onchange="atualizarContagem(${index}, 'c2', this.value)" placeholder="2ª">
+                        <input type="number" class="inv-input-qtd" value="${valC2}" min="0" onchange="atualizarContagem(${index}, 'c2', this.value)" placeholder="-">
                     </td>
                     <td style="text-align: center;" id="dif_${index}">${dif}</td>
                     <td id="status_${index}">${statusBadge}</td>
@@ -889,8 +895,8 @@
 
         if (tipo !== 'obs') {
             const item = itensInventarioBase[index];
-            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined) ? Number(item.contagem1) : 0;
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined) ? Number(item.contagem2) : null;
+            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined && item.contagem1 !== null && !isNaN(item.contagem1)) ? Number(item.contagem1) : 0;
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
             const contagemEfetiva = (c2 !== null) ? c2 : c1;
             const dif = contagemEfetiva - item.base;
 
@@ -924,8 +930,8 @@
         if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo.');
 
         const dadosExportar = itensInventarioBase.map(item => {
-            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined) ? Number(item.contagem1) : 0;
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined) ? Number(item.contagem2) : null;
+            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined && item.contagem1 !== null && !isNaN(item.contagem1)) ? Number(item.contagem1) : 0;
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
             const contagemEfetiva = (c2 !== null) ? c2 : c1;
             const dif = contagemEfetiva - item.base;
 
@@ -938,8 +944,8 @@
                 "PRODUTO": item.produto,
                 "U.M": item.unidade,
                 "ESTOQUE BASE": item.base,
-                "1ª CONTAGEM": item.contagem1,
-                "2ª CONTAGEM": item.contagem2 !== null ? item.contagem2 : '',
+                "1ª CONTAGEM": item.contagem1 !== '' && item.contagem1 !== undefined ? item.contagem1 : 0,
+                "2ª CONTAGEM": item.contagem2 !== null && item.contagem2 !== '' ? item.contagem2 : '',
                 "DIFERENÇA FINAL": dif,
                 "STATUS": status,
                 "OBSERVAÇÕES / JUSTIFICATIVA": item.obs || ''
@@ -1230,8 +1236,8 @@
     function fecharModal() { document.getElementById('modalCadastro').classList.remove('active'); }
     function abrirModalImportar() { document.getElementById('modalImportar').classList.add('active'); }
     function fecharModalImportar() { document.getElementById('modalImportar').classList.remove('active'); }
-    function fecharModalLogin() { document.getElementById('modalLogin').classList.remove('active'); }
-    function fecharModalEtiqueta() { document.getElementById('modalEtiqueta').classList.remove('active'); }
+    function fecharModalLogin() { document.getElementById('modalLogin').classList.add('active'); }
+    function fecharModalEtiqueta() { document.getElementById('modalEtiqueta').classList.add('active'); }
     
     function previewImagem(event) {
         const img = document.getElementById('imgPreview');
