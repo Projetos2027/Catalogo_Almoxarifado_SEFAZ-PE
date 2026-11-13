@@ -371,8 +371,22 @@
             <button class="close-btn" onclick="fecharModalInventario()">&times;</button>
         </div>
 
+        <!-- Etapa 0: Tela de Escolha (Caso haja inventário salvo na nuvem) -->
+        <div id="invEtapaSelecao" style="display:none; text-align: center; padding: 20px;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário Salvo na Nuvem</h3>
+                <p style="font-size: 0.95rem; color: #334155;">
+                    Existe um inventário em andamento salvo no sistema. O que você deseja fazer?
+                </p>
+            </div>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn" style="background: #7c3aed; color: white; padding: 14px 24px; font-size: 1rem;" onclick="continuarContagemExistente()">▶️ Continuar Contagem</button>
+                <button class="btn" style="background: #2563eb; color: white; padding: 14px 24px; font-size: 1rem;" onclick="irParaIniciarNovaContagem()">🔄 Iniciar Nova Contagem</button>
+            </div>
+        </div>
+
         <!-- Etapa 1: Carregar Arquivo Base -->
-        <div id="invEtapa1">
+        <div id="invEtapa1" style="display:none;">
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                 <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Auditoria</h3>
                 <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
@@ -383,7 +397,10 @@
                 <label>Arquivo Excel Base (.xlsx) do Sistema:</label>
                 <input type="file" id="arquivoBaseInventario" accept=".xlsx, .xls" style="margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
             </div>
-            <button type="button" class="btn btn-primary" onclick="iniciarContagemInventario()" id="btnIniciarInv" style="margin-top: 10px;">Iniciar Nova Contagem</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" class="btn btn-primary" onclick="iniciarContagemInventario()" id="btnIniciarInv" style="flex: 1;">Carregar e Iniciar Contagem</button>
+                <button type="button" class="btn" style="background: #64748b; color: white; display: none;" onclick="voltarParaSelecaoInventario()" id="btnVoltarSel">Voltar</button>
+            </div>
         </div>
 
         <!-- Etapa 2: Tabela de Contagem com Filtros -->
@@ -750,18 +767,18 @@
             try {
                 const parsed = JSON.parse(data.itens_json);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    if (itensInventarioBase.length === 0) {
-                        itensInventarioBase = parsed;
-                    }
+                    itensInventarioBase = parsed;
+                } else {
+                    itensInventarioBase = [];
                 }
                 if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
             } catch(e) {
                 console.error(e);
+                itensInventarioBase = [];
             }
         } else {
-            if (itensInventarioBase.length === 0 && btnInv) {
-                btnInv.innerText = '📊 Realizar Inventário';
-            }
+            itensInventarioBase = [];
+            if (btnInv) btnInv.innerText = '📊 Realizar Inventário';
         }
     }
 
@@ -777,16 +794,54 @@
         document.getElementById('modalInventario').classList.add('active');
         await verificarInventarioNuvem();
         
+        const etapaSel = document.getElementById('invEtapaSelecao');
+        const etapa1 = document.getElementById('invEtapa1');
+        const etapa2 = document.getElementById('invEtapa2');
+        const btnVoltarSel = document.getElementById('btnVoltarSel');
+
         if (itensInventarioBase.length > 0) {
-            document.getElementById('invEtapa1').style.display = 'none';
-            document.getElementById('invEtapa2').style.display = 'flex';
-            document.getElementById('buscaInventario').value = '';
-            document.getElementById('filtroStatusInventario').value = 'todos';
-            renderizarTabelaInventario();
+            // Existe inventário salvo na nuvem -> Exibe opções
+            etapaSel.style.display = 'block';
+            etapa1.style.display = 'none';
+            etapa2.style.display = 'none';
+            if (btnVoltarSel) btnVoltarSel.style.display = 'inline-flex';
         } else {
-            document.getElementById('invEtapa1').style.display = 'block';
-            document.getElementById('invEtapa2').style.display = 'none';
+            // Não existe -> Vai direto para carregar o arquivo
+            etapaSel.style.display = 'none';
+            etapa1.style.display = 'block';
+            etapa2.style.display = 'none';
+            if (btnVoltarSel) btnVoltarSel.style.display = 'none';
         }
+    }
+
+    function continuarContagemExistente() {
+        document.getElementById('invEtapaSelecao').style.display = 'none';
+        document.getElementById('invEtapa1').style.display = 'none';
+        document.getElementById('invEtapa2').style.display = 'flex';
+        document.getElementById('buscaInventario').value = '';
+        document.getElementById('filtroStatusInventario').value = 'todos';
+        renderizarTabelaInventario();
+    }
+
+    function irParaIniciarNovaContagem() {
+        if (itensInventarioBase.length > 0) {
+            if (!confirm('Atenção: Iniciar um novo inventário irá substituir o inventário atual salvo na nuvem. Deseja continuar?')) {
+                return;
+            }
+        }
+        document.getElementById('invEtapaSelecao').style.display = 'none';
+        document.getElementById('invEtapa1').style.display = 'block';
+        document.getElementById('invEtapa2').style.display = 'none';
+        const btnVoltarSel = document.getElementById('btnVoltarSel');
+        if (btnVoltarSel && itensInventarioBase.length > 0) {
+            btnVoltarSel.style.display = 'inline-flex';
+        }
+    }
+
+    function voltarParaSelecaoInventario() {
+        document.getElementById('invEtapaSelecao').style.display = 'block';
+        document.getElementById('invEtapa1').style.display = 'none';
+        document.getElementById('invEtapa2').style.display = 'none';
     }
 
     function fecharModalInventario() {
@@ -849,6 +904,7 @@
                 document.getElementById('buscaInventario').value = '';
                 document.getElementById('filtroStatusInventario').value = 'todos';
                 renderizarTabelaInventario();
+                document.getElementById('invEtapaSelecao').style.display = 'none';
                 document.getElementById('invEtapa1').style.display = 'none';
                 document.getElementById('invEtapa2').style.display = 'flex';
                 await verificarInventarioNuvem();
