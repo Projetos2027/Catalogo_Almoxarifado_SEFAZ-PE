@@ -371,12 +371,12 @@
             <button class="close-btn" onclick="fecharModalInventario()">&times;</button>
         </div>
 
-        <!-- Etapa 0: Tela de Escolha (Caso haja inventário salvo na nuvem) -->
+        <!-- Etapa 0: Tela de Escolha (Caso haja inventário salvo) -->
         <div id="invEtapaSelecao" style="display:none; text-align: center; padding: 20px;">
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário em Andamento na Nuvem</h3>
+                <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário em Andamento Encontrado</h3>
                 <p style="font-size: 0.95rem; color: #334155;">
-                    Existe um inventário salvo no Supabase. O que você deseja fazer?
+                    Existe um inventário salvo no sistema. O que você deseja fazer?
                 </p>
             </div>
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
@@ -406,7 +406,7 @@
         <!-- Etapa 2: Tabela de Contagem com Filtros -->
         <div id="invEtapa2" style="display:none; flex: 1; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.85rem; color: var(--muted);" id="infoBaseStatus">Inventário em andamento na nuvem (Supabase).</div>
+                <div style="font-size: 0.85rem; color: var(--muted);" id="infoBaseStatus">Inventário em andamento salvo no Supabase e na nuvem.</div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
@@ -754,9 +754,11 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE INVENTÁRIO NA NUVEM (SUPABASE) ---
+    // --- FUNÇÕES DE INVENTÁRIO (SUPABASE + LOCALSTORAGE) ---
     async function verificarInventarioNuvem() {
         const btnInv = document.getElementById('btnInventario');
+        
+        // Tenta carregar do Supabase (tabela inventario_andamento)
         try {
             const { data, error } = await supabaseClient
                 .from('inventario_andamento')
@@ -764,43 +766,53 @@
                 .eq('id', 1)
                 .maybeSingle();
 
-            if (error) {
-                console.error('Erro ao verificar inventário na nuvem:', error);
-                itensInventarioBase = [];
-            } else if (data && data.itens_json) {
+            if (data && data.itens_json) {
                 const parsed = JSON.parse(data.itens_json);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     itensInventarioBase = parsed;
-                } else {
-                    itensInventarioBase = [];
+                    if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
+                    return;
                 }
-            } else {
-                itensInventarioBase = [];
             }
         } catch (e) {
-            console.error('Exceção ao verificar inventario_andamento:', e);
-            itensInventarioBase = [];
+            console.error('Erro ao ler do Supabase:', e);
         }
 
-        if (itensInventarioBase.length > 0) {
-            if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
-        } else {
-            if (btnInv) btnInv.innerText = '📊 Realizar Inventário';
+        // Fallback para localStorage caso Supabase esteja vazio ou com RLS restrito
+        const salvoLocal = localStorage.getItem('inventario_andamento_local');
+        if (salvoLocal) {
+            try {
+                const parsed = JSON.parse(salvoLocal);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    itensInventarioBase = parsed;
+                    if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
+                    return;
+                }
+            } catch(e) { console.error(e); }
         }
+
+        itensInventarioBase = [];
+        if (btnInv) btnInv.innerText = '📊 Realizar Inventário';
     }
 
     async function salvarInventarioNuvem() {
         if (!itensInventarioBase || itensInventarioBase.length === 0) return;
+        const jsonStr = JSON.stringify(itensInventarioBase);
+
+        // Salva sempre no backup local primeiro
+        localStorage.setItem('inventario_andamento_local', jsonStr);
+
+        // Salva também no Supabase
         try {
-            const jsonStr = JSON.stringify(itensInventarioBase);
             const { error } = await supabaseClient
                 .from('inventario_andamento')
                 .upsert({ id: 1, itens_json: jsonStr, atualizado_em: new Date() });
+            
             if (error) {
-                console.error('Erro ao salvar no Supabase (verifique políticas RLS):', error.message);
+                console.error('Erro ao salvar no Supabase:', error.message);
             }
         } catch (e) {
-            console.error('Exceção ao salvar inventario_andamento:', e);
+            console.error('Exceção ao salvar no Supabase:', e);
         }
     }
 
@@ -837,7 +849,7 @@
 
     function irParaIniciarNovaContagem() {
         if (itensInventarioBase.length > 0) {
-            if (!confirm('Atenção: Iniciar um novo inventário irá substituir o inventário atual salvo na nuvem. Deseja continuar?')) {
+            if (!confirm('Atenção: Iniciar um novo inventário irá substituir o inventário atual salvo. Deseja continuar?')) {
                 return;
             }
         }
@@ -1080,7 +1092,7 @@
     }
 
     async function finalizarInventarioAtivo() {
-        if (!confirm('Deseja realmente finalizar este inventário? Os itens sem contagem serão preenchidos com 0 e os dados salvos na nuvem serão limpos.')) return;
+        if (!confirm('Deseja realmente finalizar este inventário? Os itens sem contagem serão preenchidos com 0 e os dados salvos serão limpos.')) return;
         
         itensInventarioBase.forEach(item => {
             if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
@@ -1088,6 +1100,7 @@
             }
         });
 
+        localStorage.removeItem('inventario_andamento_local');
         await supabaseClient.from('inventario_andamento').delete().eq('id', 1);
         itensInventarioBase = [];
         await verificarInventarioNuvem();
