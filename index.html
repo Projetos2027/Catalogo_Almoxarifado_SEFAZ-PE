@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo do Almoxarifado</title>
+    <!-- SDK Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca para gerar Códigos de Barras -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- Biblioteca SheetJS para ler arquivos Excel (.xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-light: #3b82f6;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 40px; }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        header h1 { font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-add { background: var(--success); color: white; display: none; }
+        .btn-import { background: #d97706; color: white; display: none; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.8rem; display: none; }
+        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.8rem; }
+        .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.8rem; display: none; }
+        .btn-photo:hover { background: #fde047; }
+        .btn-login { background: #334155; color: white; }
+        .btn-login:hover { background: #475569; }
+
+        .controls {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 16px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .controls input, .controls select {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: white;
+        }
+        .controls input { flex: 1; min-width: 240px; }
+
+        .catalog-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .item-card {
+            background: var(--card);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.15s;
+        }
+        .item-card:hover { transform: translateY(-3px); }
+
+        .item-card.esgotado {
+            background: #fff5f5;
+            border-color: #f87171;
+        }
+        .item-card.esgotado .item-body {
+            background: #fff5f5;
+        }
+
+        .item-img-box {
+            width: 100%;
+            height: 190px;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .item-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .badge-cod {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(15, 23, 42, 0.85);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .item-body {
+            padding: 14px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .item-cat {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--primary-light);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .item-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .item-validade {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+        .item-meta {
+            font-size: 0.85rem;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            align-items: center;
+        }
+        .item-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .form-group small { color: var(--muted); font-size: 0.75rem; display: block; margin-top: 4px; }
+
+        .preview-upload {
+            width: 100%;
+            max-height: 160px;
+            object-fit: contain;
+            margin-top: 8px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .status-msg {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+            grid-column: 1 / -1;
+        }
+
+        #modalEtiqueta .modal { max-width: 320px; text-align: center; }
+        .etiqueta-print-box {
+            border: 1px dashed #94a3b8;
+            padding: 12px;
+            border-radius: 6px;
+            background: white;
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .etiqueta-print-desc { font-size: 0.95rem; font-weight: bold; }
+        .etiqueta-print-box svg { max-width: 100%; height: 45px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #conteudoEtiquetaPrint, #conteudoEtiquetaPrint * { visibility: visible; }
+            #conteudoEtiquetaPrint { position: absolute; left: 0; top: 0; width: 100%; }
+            .modal-overlay { background: none; position: static; }
+            .modal { box-shadow: none; max-width: 100%; padding: 0; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📦 Catálogo do Almoxarifado</h1>
+    <div class="header-buttons">
+        <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Importar Excel (.xlsx)</button>
+        <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModal()" style="display:none;">+ Novo Item</button>
+        <button class="btn btn-login" id="btnAuth" onclick="controlarSessao()">🔑 Entrar (Admin)</button>
+    </div>
+</header>
+
+<div class="controls">
+    <input type="text" id="busca" placeholder="🔍 Buscar por código, produto ou categoria..." oninput="filtrarItens()">
+    <select id="filtroCategoria" onchange="filtrarItens()">
+        <option value="">Todas as Categorias</option>
+    </select>
+</div>
+
+<div class="catalog-grid" id="gridCatalogo">
+    <div class="status-msg">Carregando itens do catálogo...</div>
+</div>
+
+<input type="file" id="inputFotoOculto" accept="image/*" capture="environment" style="display:none" onchange="salvarFotoDireta(event)">
+
+<!-- Modal de Login -->
+<div class="modal-overlay" id="modalLogin">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Acesso Restrito (Admin)</h2>
+            <button class="close-btn" onclick="fecharModalLogin()">&times;</button>
+        </div>
+        <form onsubmit="fazerLogin(event)">
+            <div class="form-group">
+                <label>E-mail de Administrador</label>
+                <input type="email" id="loginEmail" required placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="loginSenha" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary" id="btnLogar">Entrar no Sistema</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Adicionar Novo Bem -->
+<div class="modal-overlay" id="modalCadastro">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Cadastrar Material</h2>
+            <button class="close-btn" onclick="fecharModal()">&times;</button>
+        </div>
+        <form id="formBem" onsubmit="salvarItem(event)">
+            <div class="form-group">
+                <label>CÓDIGO EFISCO *</label>
+                <input type="text" id="codigo" required placeholder="Ex: 00145">
+            </div>
+            <div class="form-group">
+                <label>PRODUTO *</label>
+                <input type="text" id="produto" required placeholder="Ex: Cabo de Rede">
+            </div>
+            <div class="form-group">
+                <label>CATEGORIA</label>
+                <input type="text" id="categoria" placeholder="Ex: Informatica">
+            </div>
+            <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                <div>
+                    <label>UNIDADE DE MEDIDA</label>
+                    <input type="text" id="unidade" placeholder="Ex: UN, CX">
+                </div>
+                <div>
+                    <label>QUANTIDADE</label>
+                    <input type="number" id="quantidade" value="0" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Data de Validade (Opcional)</label>
+                <input type="date" id="validade">
+                <small>Se deixar em branco, ficará como "Indeterminada".</small>
+            </div>
+            <div class="form-group">
+                <label>Foto do Item</label>
+                <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="previewImagem(event)">
+                <img id="imgPreview" class="preview-upload">
+            </div>
+            <button type="submit" class="btn btn-primary" id="btnSalvar">Salvar no Catálogo</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Importar Arquivo Excel Original -->
+<div class="modal-overlay" id="modalImportar">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Importar Relatório Excel</h2>
+            <button class="close-btn" onclick="fecharModalImportar()">&times;</button>
+        </div>
+        <div class="form-group">
+            <label>Selecione o arquivo gerado pelo sistema (.xlsx):</label>
+            <small>O sistema lerá automaticamente as colunas: <b>Código, Produto, Categoria, U.M e Disponível</b></small>
+            <input type="file" id="arquivoExcel" accept=".xlsx, .xls" style="margin-top: 10px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
+        </div>
+        <button class="btn btn-primary" onclick="processarArquivoExcel()" id="btnProcessarImport">Ler e Sincronizar Estoque</button>
+    </div>
+</div>
+
+<!-- Modal para Imprimir Etiqueta -->
+<div class="modal-overlay" id="modalEtiqueta">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Etiqueta do Item</h2>
+            <button class="close-btn" onclick="fecharModalEtiqueta()">&times;</button>
+        </div>
+        <div id="conteudoEtiquetaPrint">
+            <div class="etiqueta-print-box">
+                <div style="font-size:0.75rem; font-weight:bold; text-transform:uppercase; color:#475569;">Almoxarifado Central</div>
+                <div class="etiqueta-print-desc" id="etqDescricao">Nome do Produto</div>
+                <div><svg id="etqBarcodeSvg"></svg></div>
+            </div>
+        </div>
+        <button class="btn btn-primary no-print" onclick="window.print()" style="margin-top: 10px;">🖨️ Imprimir Etiqueta</button>
+    </div>
+</div>
+
+<script>
+    // =================================================================
+    const SUPABASE_URL = 'https://sylzwplcbjzexryoehax.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_--VzdV5ee4_3kehOf80uQg_YQbAWY3G';
+    // =================================================================
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let todosItens = [];
+    let usuarioLogado = null;
+    let itemIdSelecionadoFoto = null;
+
+    async function iniciarSistema() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        atualizarEstadoAuth(session ? session.user : null);
+        
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            atualizarEstadoAuth(session ? session.user : null);
+        });
+
+        await carregarItens();
+    }
+
+    function atualizarEstadoAuth(user) {
+        usuarioLogado = user;
+        const botoesAdmin = document.querySelectorAll('.admin-only');
+        const btnAuth = document.getElementById('btnAuth');
+
+        if (user) {
+            botoesAdmin.forEach(el => el.style.display = 'inline-flex');
+            btnAuth.innerText = `🔓 Sair (${user.email.split('@')[0]})`;
+            btnAuth.style.background = '#b91c1c';
+        } else {
+            botoesAdmin.forEach(el => el.style.display = 'none');
+            btnAuth.innerText = '🔑 Entrar (Admin)';
+            btnAuth.style.background = '#334155';
+        }
+        renderizarGrid(todosItens);
+    }
+
+    function controlarSessao() {
+        if (usuarioLogado) {
+            supabaseClient.auth.signOut();
+            alert('Você saiu do modo administrador.');
+        } else {
+            document.getElementById('modalLogin').classList.add('active');
+        }
+    }
+
+    async function fazerLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const senha = document.getElementById('loginSenha').value;
+        const btn = document.getElementById('btnLogar');
+        
+        btn.disabled = true;
+        btn.innerText = 'Entrando...';
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: senha
+        });
+
+        btn.disabled = false;
+        btn.innerText = 'Entrar no Sistema';
+
+        if (error) {
+            alert('Erro ao entrar: E-mail ou senha incorretos.');
+        } else {
+            fecharModalLogin();
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginSenha').value = '';
+            alert('Login efetuado com sucesso!');
+        }
+    }
+
+    async function carregarItens() {
+        const grid = document.getElementById('gridCatalogo');
+        const { data, error } = await supabaseClient
+            .from('bens')
+            .select('*')
+            .order('criado_em', { ascending: false });
+
+        if (error) {
+            grid.innerHTML = `<div class="status-msg">Erro ao carregar: ${error.message}</div>`;
+            return;
+        }
+
+        todosItens = data || [];
+        atualizarFiltroCategorias();
+        filtrarItens();
+    }
+
+    function formatarDataBR(dataIso) {
+        if (!dataIso) return 'Indeterminada';
+        // Se vem no formato YYYY-MM-DD, converte para DD/MM/YYYY
+        const partes = dataIso.split('T')[0].split('-');
+        if (partes.length === 3) {
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        return dataIso;
+    }
+
+    function renderizarGrid(lista) {
+        const grid = document.getElementById('gridCatalogo');
+        if (lista.length === 0) {
+            grid.innerHTML = '<div class="status-msg">Nenhum item encontrado no catálogo.</div>';
+            return;
+        }
+
+        grid.innerHTML = lista.map(item => {
+            const qtdExibida = (item.QUANTIDADE !== undefined && item.QUANTIDADE !== null && item.QUANTIDADE !== '') 
+                ? Number(item.QUANTIDADE) 
+                : 0;
+
+            const esgotado = qtdExibida === 0;
+            const validadeTexto = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
+
+            return `
+            <div class="item-card ${esgotado ? 'esgotado' : ''}">
+                <div class="item-img-box">
+                    <span class="badge-cod">${item["CÓDIGO EFISCO"] || 'SEM CÓDIGO'}</span>
+                    ${item.foto_url 
+                        ? `<img src="${item.foto_url}" alt="${item.PRODUTO}" loading="lazy">` 
+                        : `<span style="color:#94a3b8; font-size:0.9rem;">📷 Sem foto</span>`}
+                </div>
+                <div class="item-body">
+                    <div>
+                        <div class="item-cat">${item.CATEGORIA || 'Geral'}</div>
+                        <div class="item-title">${item.PRODUTO || 'Sem descrição'}</div>
+                        <div class="item-validade">⏳ Validade: <b>${validadeTexto}</b></div>
+                    </div>
+                    <div class="item-meta">
+                        <span>Qtd: <b>${qtdExibida}</b> (${item["UNIDADE DE MEDIDA"] || 'UN'}) ${esgotado ? '<span style="color:var(--danger); font-weight:bold; margin-left:4px;">(Esgotado)</span>' : ''}</span>
+                        <div class="item-actions">
+                            <button class="btn btn-label" onclick='abrirEtiqueta(${JSON.stringify(item)})' title="Gerar Etiqueta">🏷️</button>
+                            <button class="btn btn-photo" style="${usuarioLogado ? 'display:inline-flex;' : 'display:none;'}" onclick="gatilhoAdicionarFoto(${item.id})" title="Anexar ou Alterar Foto">📷 Foto</button>
+                            <button class="btn btn-danger" style="${usuarioLogado ? 'display:inline-flex;' : 'display:none;'}" onclick="excluirItem(${item.id})" title="Excluir">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        }).join('');
+    }
+
+    function comprimirImagem(file, maxWidth = 800, quality = 0.75) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
+                };
+            };
+        });
+    }
+
+    function gatilhoAdicionarFoto(id) {
+        itemIdSelecionadoFoto = id;
+        document.getElementById('inputFotoOculto').click();
+    }
+
+    async function salvarFotoDireta(event) {
+        const file = event.target.files[0];
+        if (!file || !itemIdSelecionadoFoto) return;
+
+        const itemAlvo = todosItens.find(i => i.id === itemIdSelecionadoFoto);
+        if (!itemAlvo) return;
+
+        const codigo = String(itemAlvo["CÓDIGO EFISCO"] || 'item').replace(/[^a-zA-Z0-9]/g, '');
+
+        try {
+            const fotoComprimida = await comprimirImagem(file);
+            const nomeArquivo = `${Date.now()}_${codigo}.jpg`;
+
+            const { error: uploadError } = await supabaseClient.storage
+                .from('fotos-bens')
+                .upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
+
+            if (uploadError) throw uploadError;
+
+            const { data: urlData } = supabaseClient.storage
+                .from('fotos-bens')
+                .getPublicUrl(nomeArquivo);
+
+            const fotoUrl = urlData.publicUrl;
+
+            const { error: updateError } = await supabaseClient
+                .from('bens')
+                .update({ "foto_url": fotoUrl })
+                .eq('id', itemIdSelecionadoFoto);
+
+            if (updateError) throw updateError;
+
+            alert('Foto anexada com sucesso!');
+            await carregarItens();
+        } catch (err) {
+            alert('Erro ao enviar foto: ' + err.message);
+        } finally {
+            event.target.value = '';
+            itemIdSelecionadoFoto = null;
+        }
+    }
+
+    async function salvarItem(e) {
+        e.preventDefault();
+        if (!usuarioLogado) return alert('Acesso negado. Faça login como admin.');
+
+        const btn = document.getElementById('btnSalvar');
+        btn.disabled = true;
+        btn.innerText = 'Enviando dados e foto...';
+
+        try {
+            const codigo = document.getElementById('codigo').value.trim();
+            const produto = document.getElementById('produto').value.trim();
+            const categoria = document.getElementById('categoria').value.trim();
+            const unidade = document.getElementById('unidade').value.trim();
+            
+            const inputQtd = document.getElementById('quantidade').value;
+            const quantidade = (inputQtd !== '') ? parseInt(inputQtd) : 0;
+            
+            const inputValidade = document.getElementById('validade').value;
+            const validade = inputValidade ? inputValidade : null; // Se vazio, envia null (fica Indeterminada)
+            
+            const fotoFile = document.getElementById('fotoInput').files[0];
+
+            let fotoUrl = null;
+            if (fotoFile) {
+                const fotoComprimida = await comprimirImagem(fotoFile);
+                const nomeArquivo = `${Date.now()}_${codigo.replace(/[^a-zA-Z0-9]/g, '')}.jpg`;
+
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('fotos-bens')
+                    .upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
+
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabaseClient.storage
+                    .from('fotos-bens')
+                    .getPublicUrl(nomeArquivo);
+
+                fotoUrl = urlData.publicUrl;
+            }
+
+            const { error: insertError } = await supabaseClient
+                .from('bens')
+                .insert([{ 
+                    "CÓDIGO EFISCO": codigo, 
+                    "PRODUTO": produto, 
+                    "CATEGORIA": categoria, 
+                    "UNIDADE DE MEDIDA": unidade, 
+                    "QUANTIDADE": quantidade,
+                    "validade": validade,
+                    "foto_url": fotoUrl 
+                }]);
+
+            if (insertError) throw insertError;
+
+            fecharModal();
+            document.getElementById('formBem').reset();
+            document.getElementById('imgPreview').style.display = 'none';
+            await carregarItens();
+        } catch (err) {
+            alert('Erro ao salvar: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Salvar no Catálogo';
+        }
+    }
+
+    // Leitura automática do arquivo Excel (.xlsx) gerado pelo sistema
+    async function processarArquivoExcel() {
+        if (!usuarioLogado) return alert('Acesso negado.');
+        const inputArquivo = document.getElementById('arquivoExcel');
+        if (!inputArquivo.files || inputArquivo.files.length === 0) {
+            return alert('Selecione o arquivo Excel (.xlsx) do sistema!');
+        }
+
+        const arquivo = inputArquivo.files[0];
+        const btn = document.getElementById('btnProcessarImport');
+        btn.disabled = true;
+        btn.innerText = 'Lendo Excel e sincronizando...';
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const primeiraAba = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[primeiraAba];
+                
+                const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                let atualizados = 0;
+                let inseridos = 0;
+
+                for (let i = 3; i < linhas.length; i++) {
+                    let r = linhas[i];
+                    if (!r || !r[0]) continue;
+
+                    const codigo = String(r[0]).trim();
+                    const produto = String(r[1] || 'Sem descrição').trim();
+                    const categoria = String(r[2] || '').trim();
+                    const unidade = String(r[3] || 'UN').trim();
+                    
+                    let qtdLida = parseFloat(r[5]);
+                    const quantidade = !isNaN(qtdLida) ? Math.round(qtdLida) : 0;
+
+                    if (!codigo) continue;
+
+                    const itemExistente = todosItens.find(item => 
+                        String(item["CÓDIGO EFISCO"]).trim() === codigo && 
+                        String(item["UNIDADE DE MEDIDA"] || '').trim().toLowerCase() === unidade.toLowerCase()
+                    );
+
+                    if (itemExistente) {
+                        const { error } = await supabaseClient
+                            .from('bens')
+                            .update({ 
+                                "PRODUTO": produto, 
+                                "CATEGORIA": categoria, 
+                                "QUANTIDADE": quantidade 
+                            })
+                            .eq('id', itemExistente.id);
+
+                        if (!error) atualizados++;
+                    } else {
+                        const { error } = await supabaseClient
+                            .from('bens')
+                            .insert([{ 
+                                "CÓDIGO EFISCO": codigo, 
+                                "PRODUTO": produto, 
+                                "CATEGORIA": categoria, 
+                                "UNIDADE DE MEDIDA": unidade,
+                                "QUANTIDADE": quantidade,
+                                "validade": null // Como o Excel padrão não manda validade, entra como nula (Indeterminada)
+                            }]);
+
+                        if (!error) inseridos++;
+                    }
+                }
+
+                alert(`Importação do Excel concluída!\n- Itens atualizados: ${atualizados}\n- Novos itens criados: ${inseridos}`);
+                fecharModalImportar();
+                inputArquivo.value = '';
+                await carregarItens();
+            } catch (err) {
+                alert('Erro ao ler o arquivo Excel: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Ler e Sincronizar Estoque';
+            }
+        };
+        reader.readAsArrayBuffer(arquivo);
+    }
+
+    async function excluirItem(id) {
+        if (!usuarioLogado) return alert('Acesso negado.');
+        if (!confirm('Deseja realmente remover este item?')) return;
+        const { error } = await supabaseClient.from('bens').delete().eq('id', id);
+        if (error) alert('Erro: ' + error.message);
+        else carregarItens();
+    }
+
+    function abrirEtiqueta(item) {
+        const cod = item["CÓDIGO EFISCO"] || '';
+        const desc = item.PRODUTO || '';
+        document.getElementById('etqDescricao').innerText = `${cod} - ${desc}`;
+        document.getElementById('modalEtiqueta').classList.add('active');
+        try {
+            JsBarcode("#etqBarcodeSvg", cod, {
+                format: "CODE128", width: 1.8, height: 40, displayValue: true, fontSize: 12, margin: 2
+            });
+        } catch(e) { console.error(e); }
+    }
+
+    function filtrarItens() {
+        const termo = document.getElementById('busca').value.toLowerCase();
+        const cat = document.getElementById('filtroCategoria').value;
+
+        const filtrados = todosItens.filter(item => {
+            const cod = String(item["CÓDIGO EFISCO"] || '').toLowerCase();
+            const prod = String(item.PRODUTO || '').toLowerCase();
+            const categ = String(item.CATEGORIA || '').toLowerCase();
+            
+            const bateTexto = cod.includes(termo) || prod.includes(termo) || categ.includes(termo);
+            const bateCat = !cat || String(item.CATEGORIA || '') === cat;
+            return bateTexto && bateCat;
+        });
+        renderizarGrid(filtrados);
+    }
+
+    function atualizarFiltroCategorias() {
+        const select = document.getElementById('filtroCategoria');
+        const valorAtual = select.value;
+        const categorias = [...new Set(todosItens.map(i => i.CATEGORIA).filter(Boolean))].sort();
+        
+        select.innerHTML = '<option value="">Todas as Categorias</option>' + 
+            categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+            
+        select.value = valorAtual;
+    }
+
+    function abrirModal() { document.getElementById('modalCadastro').classList.add('active'); }
+    function fecharModal() { document.getElementById('modalCadastro').classList.remove('active'); }
+    function abrirModalImportar() { document.getElementById('modalImportar').classList.add('active'); }
+    function fecharModalImportar() { document.getElementById('modalImportar').classList.remove('active'); }
+    function fecharModalLogin() { document.getElementById('modalLogin').classList.remove('active'); }
+    function fecharModalEtiqueta() { document.getElementById('modalEtiqueta').classList.remove('active'); }
+    
+    function previewImagem(event) {
+        const img = document.getElementById('imgPreview');
+        if (event.target.files[0]) {
+            img.src = URL.createObjectURL(event.target.files[0]);
+            img.style.display = 'block';
+        }
+    }
+
+    window.onload = iniciarSistema;
+</script>
+</body>
+</html>
