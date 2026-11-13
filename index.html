@@ -371,12 +371,12 @@
             <button class="close-btn" onclick="fecharModalInventario()">&times;</button>
         </div>
 
-        <!-- Etapa 0: Tela de Escolha (Caso haja inventário salvo na nuvem) -->
+        <!-- Etapa 0: Tela de Escolha (Caso haja inventário salvo) -->
         <div id="invEtapaSelecao" style="display:none; text-align: center; padding: 20px;">
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário Salvo na Nuvem</h3>
+                <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário em Andamento Encontrado</h3>
                 <p style="font-size: 0.95rem; color: #334155;">
-                    Existe um inventário em andamento salvo no sistema. O que você deseja fazer?
+                    Existe um inventário salvo no seu navegador. O que você deseja fazer?
                 </p>
             </div>
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
@@ -406,7 +406,7 @@
         <!-- Etapa 2: Tabela de Contagem com Filtros -->
         <div id="invEtapa2" style="display:none; flex: 1; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.85rem; color: var(--muted);" id="infoBaseStatus">Inventário em andamento na nuvem.</div>
+                <div style="font-size: 0.85rem; color: var(--muted);" id="infoBaseStatus">Inventário em andamento salvo localmente.</div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
@@ -595,7 +595,7 @@
             atualizarEstadoAuth(session ? session.user : null);
         });
 
-        await verificarInventarioNuvem();
+        verificarInventarioLocal();
         await carregarItens();
     }
 
@@ -754,45 +754,32 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE INVENTÁRIO NA NUVEM ---
-    async function verificarInventarioNuvem() {
+    // --- FUNÇÕES DE INVENTÁRIO COM LOCALSTORAGE ---
+    function verificarInventarioLocal() {
         const btnInv = document.getElementById('btnInventario');
-        const { data, error } = await supabaseClient
-            .from('inventario_andamento')
-            .select('itens_json')
-            .eq('id', 1)
-            .single();
-
-        if (data && data.itens_json) {
+        const salvo = localStorage.getItem('inventario_andamento_local');
+        if (salvo) {
             try {
-                const parsed = JSON.parse(data.itens_json);
+                const parsed = JSON.parse(salvo);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     itensInventarioBase = parsed;
-                } else {
-                    itensInventarioBase = [];
+                    if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
+                    return;
                 }
-                if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
-            } catch(e) {
-                console.error(e);
-                itensInventarioBase = [];
-            }
-        } else {
-            itensInventarioBase = [];
-            if (btnInv) btnInv.innerText = '📊 Realizar Inventário';
+            } catch(e) { console.error(e); }
         }
+        itensInventarioBase = [];
+        if (btnInv) btnInv.innerText = '📊 Realizar Inventário';
     }
 
-    async function salvarInventarioNuvem() {
+    function salvarInventarioLocal() {
         if (!itensInventarioBase || itensInventarioBase.length === 0) return;
-        const jsonStr = JSON.stringify(itensInventarioBase);
-        await supabaseClient
-            .from('inventario_andamento')
-            .upsert({ id: 1, itens_json: jsonStr, atualizado_em: new Date() });
+        localStorage.setItem('inventario_andamento_local', JSON.stringify(itensInventarioBase));
     }
 
-    async function abrirModalInventario() {
+    function abrirModalInventario() {
         document.getElementById('modalInventario').classList.add('active');
-        await verificarInventarioNuvem();
+        verificarInventarioLocal();
         
         const etapaSel = document.getElementById('invEtapaSelecao');
         const etapa1 = document.getElementById('invEtapa1');
@@ -800,13 +787,11 @@
         const btnVoltarSel = document.getElementById('btnVoltarSel');
 
         if (itensInventarioBase.length > 0) {
-            // Existe inventário salvo na nuvem -> Exibe opções
             etapaSel.style.display = 'block';
             etapa1.style.display = 'none';
             etapa2.style.display = 'none';
             if (btnVoltarSel) btnVoltarSel.style.display = 'inline-flex';
         } else {
-            // Não existe -> Vai direto para carregar o arquivo
             etapaSel.style.display = 'none';
             etapa1.style.display = 'block';
             etapa2.style.display = 'none';
@@ -825,7 +810,7 @@
 
     function irParaIniciarNovaContagem() {
         if (itensInventarioBase.length > 0) {
-            if (!confirm('Atenção: Iniciar um novo inventário irá substituir o inventário atual salvo na nuvem. Deseja continuar?')) {
+            if (!confirm('Atenção: Iniciar um novo inventário irá substituir o inventário atual salvo. Deseja continuar?')) {
                 return;
             }
         }
@@ -857,7 +842,7 @@
         const arquivo = input.files[0];
         const reader = new FileReader();
 
-        reader.onload = async function(e) {
+        reader.onload = function(e) {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
@@ -900,14 +885,14 @@
                 }
 
                 itensInventarioBase = novosItens;
-                await salvarInventarioNuvem();
+                salvarInventarioLocal();
                 document.getElementById('buscaInventario').value = '';
                 document.getElementById('filtroStatusInventario').value = 'todos';
                 renderizarTabelaInventario();
                 document.getElementById('invEtapaSelecao').style.display = 'none';
                 document.getElementById('invEtapa1').style.display = 'none';
                 document.getElementById('invEtapa2').style.display = 'flex';
-                await verificarInventarioNuvem();
+                verificarInventarioLocal();
 
             } catch (err) {
                 alert('Erro ao processar arquivo base: ' + err.message);
@@ -916,12 +901,12 @@
         reader.readAsArrayBuffer(arquivo);
     }
 
-    async function marcarNaoEncontrado(index) {
+    function marcarNaoEncontrado(index) {
         itensInventarioBase[index].contagem1 = 0;
         if (!itensInventarioBase[index].obs) {
             itensInventarioBase[index].obs = 'Item não encontrado fisicamente';
         }
-        await salvarInventarioNuvem();
+        salvarInventarioLocal();
         renderizarTabelaInventario();
     }
 
@@ -936,7 +921,7 @@
         document.getElementById('manualObs').value = 'Item encontrado no depósito não constante na base';
     }
 
-    async function adicionarItemManualInventario(e) {
+    function adicionarItemManualInventario(e) {
         e.preventDefault();
         const codigo = document.getElementById('manualCodigo').value.trim();
         const produto = document.getElementById('manualProduto').value.trim();
@@ -961,7 +946,7 @@
             obs: obs
         });
 
-        await salvarInventarioNuvem();
+        salvarInventarioLocal();
         renderizarTabelaInventario();
         fecharModalAdicionarItemInv();
         alert('Item físico adicionado com sucesso ao inventário!');
@@ -1033,7 +1018,7 @@
         }
     }
 
-    async function atualizarContagem(index, tipo, valor) {
+    function atualizarContagem(index, tipo, valor) {
         if (tipo === 'c1') {
             itensInventarioBase[index].contagem1 = (valor !== '') ? parseInt(valor) : '';
         } else if (tipo === 'c2') {
@@ -1042,7 +1027,7 @@
             itensInventarioBase[index].obs = valor;
         }
 
-        await salvarInventarioNuvem();
+        salvarInventarioLocal();
 
         if (tipo !== 'obs') {
             const item = itensInventarioBase[index];
@@ -1067,19 +1052,18 @@
         }
     }
 
-    async function finalizarInventarioAtivo() {
-        if (!confirm('Deseja realmente finalizar este inventário? Os itens sem contagem serão preenchidos com 0 e os dados salvos na nuvem serão limpos.')) return;
+    function finalizarInventarioAtivo() {
+        if (!confirm('Deseja realmente finalizar este inventário? Os itens sem contagem serão preenchidos com 0 e os dados salvos serão limpos.')) return;
         
-        // Preenche com 0 qualquer item que tenha ficado em branco na 1ª contagem
         itensInventarioBase.forEach(item => {
             if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
                 item.contagem1 = 0;
             }
         });
 
-        await supabaseClient.from('inventario_andamento').delete().eq('id', 1);
+        localStorage.removeItem('inventario_andamento_local');
         itensInventarioBase = [];
-        await verificarInventarioNuvem();
+        verificarInventarioLocal();
         fecharModalInventario();
         alert('Inventário finalizado e limpo com sucesso.');
     }
@@ -1087,13 +1071,12 @@
     function exportarRelatorioDivergencias() {
         if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo.');
 
-        // Preenche com 0 itens deixados em branco ao exportar
         itensInventarioBase.forEach(item => {
             if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
                 item.contagem1 = 0;
             }
         });
-        salvarInventarioNuvem();
+        salvarInventarioLocal();
 
         const dadosExportar = itensInventarioBase.map(item => {
             const c1 = Number(item.contagem1);
