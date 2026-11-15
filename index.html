@@ -297,30 +297,6 @@
             border-radius: 6px;
             font-size: 0.85rem;
         }
-
-        #modalEtiqueta .modal { max-width: 320px; text-align: center; }
-        .etiqueta-print-box {
-            border: 1px dashed #94a3b8;
-            padding: 12px;
-            border-radius: 6px;
-            background: white;
-            margin: 15px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        .etiqueta-print-desc { font-size: 0.95rem; font-weight: bold; }
-        .etiqueta-print-box svg { max-width: 100%; height: 45px; }
-
-        @media print {
-            body * { visibility: hidden; }
-            #conteudoEtiquetaPrint, #conteudoEtiquetaPrint * { visibility: visible; }
-            #conteudoEtiquetaPrint { position: absolute; left: 0; top: 0; width: 100%; }
-            .modal-overlay { background: none; position: static; }
-            .modal { box-shadow: none; max-width: 100%; padding: 0; }
-            .no-print { display: none !important; }
-        }
     </style>
 </head>
 <body>
@@ -370,6 +346,59 @@
     </div>
 </div>
 
+<!-- Modal de Seleção de Tipo de Etiqueta -->
+<div class="modal-overlay" id="modalEscolhaEtiqueta">
+    <div class="modal" style="max-width: 380px; text-align: center;">
+        <div class="modal-header">
+            <h2>🏷️ Gerar Etiqueta</h2>
+            <button class="close-btn" onclick="fecharModalEscolhaEtiqueta()">&times;</button>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 20px;">
+            Escolha o formato de impressão para o item selecionado:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn" style="background: var(--primary); color: white; padding: 14px; justify-content: center; font-size: 1rem;" onclick="gerarEtiquetaPdf('pallet')">
+                📦 Etiqueta de Pallet (Tamanho A4)
+            </button>
+            <button class="btn" style="background: #0284c7; color: white; padding: 14px; justify-content: center; font-size: 1rem;" onclick="gerarEtiquetaPdf('prateleira')">
+                📑 Etiqueta de Prateleira (Metade A4)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Ajuste de Divergência de Empenho / Embalagem no PDF -->
+<div class="modal-overlay" id="modalAjusteEmpenho">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>⚠️ Divergência de Empenho</h2>
+            <button class="close-btn" onclick="fecharModalAjusteEmpenho()">&times;</button>
+        </div>
+        <form onsubmit="salvarAjusteEmpenho(event)">
+            <input type="hidden" id="ajusteIndexItem">
+            <div class="form-group">
+                <label>Produto</label>
+                <input type="text" id="ajusteNomeProduto" disabled style="background: #f1f5f9; font-weight: bold;">
+            </div>
+            <div class="form-group">
+                <label>Quantidade de Volumes Recebidos (Ex: 10 latas, 5 caixas) *</label>
+                <input type="number" id="ajusteVolumes" required min="1" placeholder="Ex: 10">
+            </div>
+            <div class="form-group">
+                <label>Nova Unidade de Medida Correta *</label>
+                <select id="ajusteNovaUnidade" required>
+                    <!-- Preenchido via JS -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Justificativa / Observação do Empenho</label>
+                <input type="text" id="ajusteObsEmpenho" placeholder="Ex: Entregue em latas de 3,6L conforme acordo">
+            </div>
+            <button type="submit" class="btn btn-primary">Aplicar Ajuste de Embalagem</button>
+        </form>
+    </div>
+</div>
+
 <!-- Modal de Importação e Revisão de PDF de Recebimento -->
 <div class="modal-overlay" id="modalImportarPdf">
     <div class="modal modal-large">
@@ -394,7 +423,7 @@
 
         <div id="pdfEtapa2" style="display:none; flex: 1; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Confirme os dados abaixo antes de atualizar o estoque.</div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Confirme os dados abaixo antes de atualizar o estoque. Utilize o botão "⚠️ Dif. Empenho" se a embalagem entregue divergir do pedido.</div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn" style="background: #64748b; color: white;" onclick="voltarParaUploadPdf()">Voltar</button>
                     <button class="btn" style="background: var(--success); color: white;" onclick="confirmarAtualizacaoEstoquePdf()">✅ Confirmar e Atualizar Estoque</button>
@@ -408,7 +437,8 @@
                             <th>Código</th>
                             <th>Produto / Descrição</th>
                             <th style="text-align: center;">U.M (Ajustável)</th>
-                            <th style="text-align: center;">Qtd. Recebida (Ajustável)</th>
+                            <th style="text-align: center;">Qtd. Recebida</th>
+                            <th style="text-align: center;">Ação Empenho</th>
                             <th>Status no Catálogo</th>
                         </tr>
                     </thead>
@@ -459,7 +489,10 @@
 
         <div id="invEtapa2" style="display:none; flex: 1; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.85rem; font-weight: 600; color: var(--success);" id="statusSalvamentoNuvem">💾 Pronto para iniciar contagem.</div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--success);" id="statusSalvamentoNuvem">💾 Pronto para iniciar contagem.</div>
+                    <span id="badgeTotalInventario" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 Itens carregados: 0</span>
+                </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
                     <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
@@ -561,13 +594,19 @@
             </div>
             <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
                 <div>
-                    <label>UNIDADE DE MEDIDA</label>
-                    <input type="text" id="unidade" placeholder="Ex: UN, CX">
+                    <label>UNIDADE DE MEDIDA *</label>
+                    <select id="unidade" required onchange="verificarSelecaoUnidade(this)">
+                        <!-- Preenchido via JS -->
+                    </select>
                 </div>
                 <div>
                     <label>QUANTIDADE</label>
                     <input type="number" id="quantidade" value="0" min="0">
                 </div>
+            </div>
+            <div class="form-group" id="grupoNovaUnidade" style="display:none;">
+                <label>DIGITE A NOVA UNIDADE *</label>
+                <input type="text" id="novaUnidadeInput" placeholder="Ex: M2, LATA">
             </div>
             <div class="form-group">
                 <label>Data de Validade (Opcional)</label>
@@ -600,24 +639,6 @@
     </div>
 </div>
 
-<!-- Modal para Imprimir Etiqueta -->
-<div class="modal-overlay" id="modalEtiqueta">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>Etiqueta do Item</h2>
-            <button class="close-btn" onclick="fecharModalEtiqueta()">&times;</button>
-        </div>
-        <div id="conteudoEtiquetaPrint">
-            <div class="etiqueta-print-box">
-                <div style="font-size:0.75rem; font-weight:bold; text-transform:uppercase; color:#475569;">Almoxarifado SEFAZ/PE</div>
-                <div class="etiqueta-print-desc" id="etqDescricao">Nome do Produto</div>
-                <div><svg id="etqBarcodeSvg"></svg></div>
-            </div>
-        </div>
-        <button class="btn btn-primary no-print" onclick="window.print()" style="margin-top: 10px;">🖨️ Imprimir Etiqueta</button>
-    </div>
-</div>
-
 <script>
     // =================================================================
     const SUPABASE_URL = 'https://sylzwplcbjzexryoehax.supabase.co';
@@ -637,10 +658,24 @@
         "Outros"
     ];
 
+    const UNIDADES_FIXAS = [
+        "UN",
+        "CX",
+        "PC",
+        "KG",
+        "MT",
+        "L",
+        "PCT",
+        "RL",
+        "PAR",
+        "FR"
+    ];
+
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let todosItens = [];
     let usuarioLogado = null;
     let itemIdSelecionadoFoto = null;
+    let itemSelecionadoParaEtiqueta = null;
     let tokenSessaoLocal = 'token_' + Math.random().toString(36).substring(2) + Date.now();
     let intervaloVerificacaoSessao = null;
 
@@ -770,7 +805,7 @@
         }
 
         todosItens = data || [];
-        atualizarSelectsCategorias();
+        atualizarSelectsCategoriasEUnidades();
         filtrarItens();
     }
 
@@ -789,7 +824,13 @@
         return combinadas.sort();
     }
 
-    function atualizarSelectsCategorias() {
+    function obterTodasUnidadesUnicas() {
+        const unidadesRegistradas = todosItens.map(i => i["UNIDADE DE MEDIDA"]).filter(Boolean);
+        const combinadas = [...new Set([...UNIDADES_FIXAS, ...unidadesRegistradas])];
+        return combinadas.sort();
+    }
+
+    function atualizarSelectsCategoriasEUnidades() {
         const selectFiltro = document.getElementById('filtroCategoria');
         const valorFiltroAtual = selectFiltro.value;
         const listaCats = obterTodasCategoriasUnicas();
@@ -798,17 +839,46 @@
             listaCats.map(c => `<option value="${c}">${c}</option>`).join('');
         selectFiltro.value = valorFiltroAtual;
 
-        const selectModal = document.getElementById('categoria');
-        const valorModalAtual = selectModal.value;
-        selectModal.innerHTML = '<option value="">Selecione a Categoria</option>' + 
+        const selectModalCat = document.getElementById('categoria');
+        const valorModalCatAtual = selectModalCat.value;
+        selectModalCat.innerHTML = '<option value="">Selecione a Categoria</option>' + 
             listaCats.map(c => `<option value="${c}">${c}</option>`).join('') +
             '<option value="__NOVA__" style="font-weight:bold; color:var(--primary);">➕ Adicionar Nova Categoria...</option>';
-        selectModal.value = valorModalAtual;
+        selectModalCat.value = valorModalCatAtual;
+
+        const selectModalUn = document.getElementById('unidade');
+        const valorModalUnAtual = selectModalUn.value;
+        const listaUnidades = obterTodasUnidadesUnicas();
+        selectModalUn.innerHTML = '<option value="">Selecione a Unidade</option>' + 
+            listaUnidades.map(u => `<option value="${u}">${u}</option>`).join('') +
+            '<option value="__NOVA__" style="font-weight:bold; color:var(--primary);">➕ Adicionar Nova Unidade...</option>';
+        selectModalUn.value = valorModalUnAtual;
+
+        // Select do modal de ajuste de empenho
+        const selectAjusteUn = document.getElementById('ajusteNovaUnidade');
+        if (selectAjusteUn) {
+            selectAjusteUn.innerHTML = '<option value="">Selecione a Unidade Correta</option>' + 
+                listaUnidades.map(u => `<option value="${u}">${u}</option>`).join('');
+        }
     }
 
     function verificarSelecaoCategoria(select) {
         const grupoNova = document.getElementById('grupoNovaCategoria');
         const inputNova = document.getElementById('novaCategoriaInput');
+        if (select.value === '__NOVA__') {
+            grupoNova.style.display = 'block';
+            inputNova.required = true;
+            inputNova.value = '';
+            inputNova.focus();
+        } else {
+            grupoNova.style.display = 'none';
+            inputNova.required = false;
+        }
+    }
+
+    function verificarSelecaoUnidade(select) {
+        const grupoNova = document.getElementById('grupoNovaUnidade');
+        const inputNova = document.getElementById('novaUnidadeInput');
         if (select.value === '__NOVA__') {
             grupoNova.style.display = 'block';
             inputNova.required = true;
@@ -853,7 +923,7 @@
                     <div class="item-meta">
                         <span>Qtd: <b>${qtdExibida}</b> (${item["UNIDADE DE MEDIDA"] || 'UN'}) ${esgotado ? '<span style="color:var(--danger); font-weight:bold; margin-left:4px;">(Esgotado)</span>' : ''}</span>
                         <div class="item-actions" onclick="event.stopPropagation()">
-                            <button class="btn btn-label" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick='abrirEtiqueta(${JSON.stringify(item)})' title="Gerar Etiqueta">🏷️</button>
+                            <button class="btn btn-label" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick='abrirModalEscolhaEtiqueta(${JSON.stringify(item)})' title="Gerar Etiqueta">🏷️</button>
                             <button class="btn btn-photo" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick="gatilhoAdicionarFoto(${item.id})" title="Anexar ou Alterar Foto">📷 Foto</button>
                             <button class="btn btn-danger" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick="excluirItem(${item.id})" title="Excluir">🗑️</button>
                         </div>
@@ -864,143 +934,106 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE CADASTRO E EDIÇÃO DE ITENS ---
-    function abrirModalCadastro() {
-        if (!usuarioLogado) return;
-        document.getElementById('tituloModalMaterial').innerText = 'Cadastrar Material';
-        document.getElementById('editandoItemId').value = '';
-        document.getElementById('formBem').reset();
-        document.getElementById('imgPreview').style.display = 'none';
-        document.getElementById('grupoNovaCategoria').style.display = 'none';
-        atualizarSelectsCategorias();
-        document.getElementById('modalCadastro').classList.add('active');
-    }
-
-    function abrirModalEdicaoItem(id) {
-        if (!usuarioLogado) return;
-        const item = todosItens.find(i => i.id === id);
-        if (!item) return;
-
-        document.getElementById('tituloModalMaterial').innerText = 'Editar Material';
-        document.getElementById('editandoItemId').value = item.id;
-        document.getElementById('codigo').value = item["CÓDIGO EFISCO"] || '';
-        document.getElementById('produto').value = item.PRODUTO || '';
-        document.getElementById('unidade').value = item["UNIDADE DE MEDIDA"] || '';
-        document.getElementById('quantidade').value = item.QUANTIDADE !== undefined ? item.QUANTIDADE : 0;
-        document.getElementById('validade').value = item.validade ? item.validade.split('T')[0] : '';
-        
-        atualizarSelectsCategorias();
-        const selectCat = document.getElementById('categoria');
-        selectCat.value = item.CATEGORIA || 'Outros';
-
-        const imgPrev = document.getElementById('imgPreview');
-        if (item.foto_url) {
-            imgPrev.src = item.foto_url;
-            imgPrev.style.display = 'block';
-        } else {
-            imgPrev.style.display = 'none';
-        }
-
-        document.getElementById('grupoNovaCategoria').style.display = 'none';
-        document.getElementById('modalCadastro').classList.add('active');
-    }
-
-    function fecharModalCadastro() {
-        document.getElementById('modalCadastro').classList.remove('active');
-    }
-
-    async function salvarItemMaterial(e) {
-        e.preventDefault();
+    // --- FUNÇÕES DE ETIQUETA ---
+    function abrirModalEscolhaEtiqueta(item) {
         if (!usuarioLogado) return alert('Acesso negado.');
+        itemSelecionadoParaEtiqueta = item;
+        document.getElementById('modalEscolhaEtiqueta').classList.add('active');
+    }
 
-        const btn = document.getElementById('btnSalvarMaterial');
-        btn.disabled = true;
-        btn.innerText = 'Salvando...';
+    function fecharModalEscolhaEtiqueta() {
+        document.getElementById('modalEscolhaEtiqueta').classList.remove('active');
+        itemSelecionadoParaEtiqueta = null;
+    }
 
-        try {
-            const idEditando = document.getElementById('editandoItemId').value;
-            const codigo = document.getElementById('codigo').value.trim();
-            const produto = document.getElementById('produto').value.trim();
-            
-            let categoria = document.getElementById('categoria').value;
-            if (categoria === '__NOVA__') {
-                categoria = document.getElementById('novaCategoriaInput').value.trim();
-                if (!categoria) return alert('Informe o nome da nova categoria!');
-            }
+    function gerarEtiquetaPdf(tipo) {
+        if (!itemSelecionadoParaEtiqueta) return;
+        const item = itemSelecionadoParaEtiqueta;
+        fecharModalEscolhaEtiqueta();
 
-            const unidade = document.getElementById('unidade').value.trim();
-            const inputQtd = document.getElementById('quantidade').value;
-            const quantidade = (inputQtd !== '') ? parseInt(inputQtd) : 0;
-            const inputValidade = document.getElementById('validade').value;
-            const validade = inputValidade ? inputValidade : null;
-            const fotoFile = document.getElementById('fotoInput').files[0];
+        const cod = item["CÓDIGO EFISCO"] || '00000';
+        const produto = item.PRODUTO || 'Produto';
+        const categoria = item.CATEGORIA || 'Geral';
+        const unidade = item["UNIDADE DE MEDIDA"] || 'UN';
 
-            let fotoUrl = null;
-            if (idEditando) {
-                const itemAntigo = todosItens.find(i => i.id == idEditando);
-                if (itemAntigo) fotoUrl = itemAntigo.foto_url;
-            }
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
 
-            if (fotoFile) {
-                const fotoComprimida = await comprimirImagem(fotoFile);
-                const nomeArquivo = `${Date.now()}_${codigo.replace(/[^a-zA-Z0-9]/g, '')}.jpg`;
+        if (tipo === 'pallet') {
+            container.innerHTML = `
+                <div style="width: 700px; padding: 40px; border: 4px solid #1e40af; border-radius: 12px; font-family: 'Segoe UI', sans-serif; background: white; text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; color: #1e40af; text-transform: uppercase; margin-bottom: 10px;">Almoxarifado SEFAZ/PE</div>
+                    <div style="font-size: 16px; font-weight: bold; background: #e2e8f0; padding: 6px; border-radius: 6px; margin-bottom: 25px;">ETIQUETA DE PALLET</div>
+                    
+                    <div style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: bold;">Código EFISCO</div>
+                    <div style="font-size: 36px; font-weight: bold; font-family: monospace; margin-bottom: 20px; color: #0f172a;">${cod}</div>
+                    
+                    <div style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: bold;">Descrição do Material</div>
+                    <div style="font-size: 24px; font-weight: bold; margin-bottom: 25px; line-height: 1.3; color: #0f172a;">${produto}</div>
+                    
+                    <div style="display: flex; justify-content: space-around; margin-bottom: 30px; font-size: 18px;">
+                        <div><b>Categoria:</b> ${categoria}</div>
+                        <div><b>Unidade:</b> ${unidade}</div>
+                    </div>
 
-                const { error: uploadError } = await supabaseClient.storage
-                    .from('fotos-bens')
-                    .upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
+                    <div style="margin-top: 20px;">
+                        <svg id="barcodePalletPdf"></svg>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(container);
+            JsBarcode("#barcodePalletPdf", cod, { format: "CODE128", width: 3, height: 80, displayValue: true, fontSize: 22, margin: 5 });
 
-                if (uploadError) throw uploadError;
+            const opt = {
+                margin: 10,
+                filename: `Etiqueta_Pallet_${cod}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
 
-                const { data: urlData } = supabaseClient.storage
-                    .from('fotos-bens')
-                    .getPublicUrl(nomeArquivo);
+            html2pdf().from(container).set(opt).save().then(() => container.remove());
 
-                fotoUrl = urlData.publicUrl;
-            }
+        } else {
+            container.innerHTML = `
+                <div style="width: 700px; padding: 25px; border: 2px dashed #0284c7; border-radius: 8px; font-family: 'Segoe UI', sans-serif; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284c7; padding-bottom: 8px; margin-bottom: 15px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #0284c7; text-transform: uppercase;">SEFAZ/PE - Prateleira</div>
+                        <div style="font-size: 14px; font-weight: bold; background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px;">${categoria}</div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <div style="flex: 1;">
+                            <div style="font-size: 11px; color: #64748b; font-weight: bold;">CÓDIGO EFISCO</div>
+                            <div style="font-size: 26px; font-weight: bold; font-family: monospace; color: #0f172a; margin-bottom: 10px;">${cod}</div>
+                            
+                            <div style="font-size: 11px; color: #64748b; font-weight: bold;">PRODUTO</div>
+                            <div style="font-size: 16px; font-weight: bold; color: #0f172a; line-height: 1.2; margin-bottom: 10px;">${produto}</div>
+                            
+                            <div style="font-size: 13px;"><b>Unidade:</b> ${unidade}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <svg id="barcodePratPdf"></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(container);
+            JsBarcode("#barcodePratPdf", cod, { format: "CODE128", width: 2, height: 60, displayValue: true, fontSize: 16, margin: 2 });
 
-            if (idEditando) {
-                const { error: updateError } = await supabaseClient
-                    .from('bens')
-                    .update({ 
-                        "CÓDIGO EFISCO": codigo, 
-                        "PRODUTO": produto, 
-                        "CATEGORIA": categoria, 
-                        "UNIDADE DE MEDIDA": unidade, 
-                        "QUANTIDADE": quantidade,
-                        "validade": validade,
-                        "foto_url": fotoUrl 
-                    })
-                    .eq('id', idEditando);
+            const opt = {
+                margin: 10,
+                filename: `Etiqueta_Prateleira_${cod}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a5', orientation: 'landscape' }
+            };
 
-                if (updateError) throw updateError;
-                alert('Item atualizado com sucesso!');
-            } else {
-                const { error: insertError } = await supabaseClient
-                    .from('bens')
-                    .insert([{ 
-                        "CÓDIGO EFISCO": codigo, 
-                        "PRODUTO": produto, 
-                        "CATEGORIA": categoria, 
-                        "UNIDADE DE MEDIDA": unidade, 
-                        "QUANTIDADE": quantidade,
-                        "validade": validade,
-                        "foto_url": fotoUrl 
-                    }]);
-
-                if (insertError) throw insertError;
-                alert('Item cadastrado com sucesso!');
-            }
-
-            fecharModalCadastro();
-            await carregarItens();
-        } catch (err) {
-            alert('Erro ao salvar: ' + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = 'Salvar no Catálogo';
+            html2pdf().from(container).set(opt).save().then(() => container.remove());
         }
     }
-    // --- FIM DO CADASTRO E EDIÇÃO ---
+    // --- FIM DAS ETIQUETAS ---
 
     // --- FUNÇÕES DE IMPORTAÇÃO E REVISÃO DE PDF DE RECEBIMENTO (PEINTEGRADO) ---
     function abrirModalImportarPdf() {
@@ -1048,7 +1081,7 @@
 
             textoCompleto = textoCompleto.replace(/\s+/g, ' ');
 
-            const regexItens = /(\d{5,8})\s+\(\1\)\s*[-]?\s*(.+?)\s+(UN|CX|PC|KG|MT|L|M2|PCT)\s+([\d\.,]+)\s+([\d\.,]+)/gi;
+            const regexItens = /(\d{5,8})\s+\(\1\)\s*[-]?\s*(.+?)\s+(UN|CX|PC|KG|MT|L|M2|PCT|RL|PAR|FR)\s+([\d\.,]+)\s+([\d\.,]+)/gi;
             
             let match;
             itensPdfRevisao = [];
@@ -1074,7 +1107,9 @@
                     quantidadeRecebida: quantidadeRecebida,
                     existeNoCatalogo: !!itemExistente,
                     idCatalogo: itemExistente ? itemExistente.id : null,
-                    estoqueAtual: itemExistente ? Number(itemExistente.QUANTIDADE || 0) : 0
+                    estoqueAtual: itemExistente ? Number(itemExistente.QUANTIDADE || 0) : 0,
+                    empenhoDiferente: false,
+                    obsEmpenho: ''
                 });
             }
 
@@ -1113,10 +1148,16 @@
                     <td style="text-align: center;">
                         <input type="number" class="inv-input-qtd" min="0" value="${item.quantidadeRecebida}" onchange="atualizarItemPdfRevisao(${index}, 'quantidadeRecebida', this.value)">
                     </td>
+                    <td style="text-align: center;">
+                        <button class="btn" style="background: ${item.empenhoDiferente ? '#10b981' : '#f59e0b'}; color: white; padding: 6px 10px; font-size: 0.8rem;" onclick="abrirModalAjusteEmpenho(${index})" title="Informar divergência de embalagem/empenho">
+                            ${item.empenhoDiferente ? '✅ Ajustado' : '⚠️ Dif. Empenho'}
+                        </button>
+                    </td>
                     <td>
                         ${item.existeNoCatalogo 
                             ? `<span style="color:var(--success); font-weight:bold;">✅ No Catálogo (Atual: ${item.estoqueAtual})</span>` 
                             : `<span style="color:var(--warning); font-weight:bold;">⚠️ Novo Item (Será cadastrado)</span>`}
+                        ${item.obsEmpenho ? `<br><small style="color:var(--danger)">Obs: ${item.obsEmpenho}</small>` : ''}
                     </td>
                 </tr>
             `;
@@ -1131,6 +1172,42 @@
         } else {
             itensPdfRevisao[index][campo] = valor.trim();
         }
+    }
+
+    function abrirModalAjusteEmpenho(index) {
+        const item = itensPdfRevisao[index];
+        document.getElementById('ajusteIndexItem').value = index;
+        document.getElementById('ajusteNomeProduto').value = item.produto;
+        document.getElementById('ajusteVolumes').value = item.quantidadeRecebida;
+        
+        atualizarSelectsCategoriasEUnidades();
+        document.getElementById('ajusteNovaUnidade').value = item.unidade;
+        document.getElementById('ajusteObsEmpenho').value = item.obsEmpenho || '';
+
+        document.getElementById('modalAjusteEmpenho').classList.add('active');
+    }
+
+    function fecharModalAjusteEmpenho() {
+        document.getElementById('modalAjusteEmpenho').classList.remove('active');
+    }
+
+    function salvarAjusteEmpenho(e) {
+        e.preventDefault();
+        const index = parseInt(document.getElementById('ajusteIndexItem').value);
+        const volumes = parseInt(document.getElementById('ajusteVolumes').value) || 1;
+        const novaUnidade = document.getElementById('ajusteNovaUnidade').value;
+        const obs = document.getElementById('ajusteObsEmpenho').value.trim();
+
+        if (!novaUnidade) return alert('Selecione a nova unidade de medida!');
+
+        itensPdfRevisao[index].quantidadeRecebida = volumes;
+        itensPdfRevisao[index].unidade = novaUnidade;
+        itensPdfRevisao[index].empenhoDiferente = true;
+        itensPdfRevisao[index].obsEmpenho = obs || `Entregue em ${volumes} ${novaUnidade} (divergente do empenho original)`;
+
+        fecharModalAjusteEmpenho();
+        renderizarTabelaConferenciaPdf();
+        alert('Ajuste de empenho aplicado com sucesso para este item!');
     }
 
     async function confirmarAtualizacaoEstoquePdf() {
@@ -1218,7 +1295,7 @@
             if (error) {
                 if (statusEl) statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ Erro ao salvar na Base: ${error.message}</span>`;
             } else {
-                if (statusEl) statusEl.innerHTML = `💾 Salvo na Base de Dados em ${dataHoraFormatada}`;
+                if (statusEl) statusEl.innerHTML = `💾 Salvo na Base em ${dataHoraFormatada}`;
             }
         } catch (e) {
             const statusEl = document.getElementById('statusSalvamentoNuvem');
@@ -1318,7 +1395,6 @@
                     let qtdBase = parseFloat(r[5]);
                     qtdBase = !isNaN(qtdBase) ? Math.round(qtdBase) : 0;
 
-                    // Ignora itens com estoque base zero (0) para manter a lista limpa
                     if (qtdBase <= 0) continue;
 
                     novosItens.push({
@@ -1410,6 +1486,7 @@
         const filtroStatus = document.getElementById('filtroStatusInventario') ? document.getElementById('filtroStatusInventario').value : 'todos';
 
         let html = '';
+        let contadorExibidos = 0;
 
         itensInventarioBase.forEach((item, index) => {
             const cod = String(item.codigo || '').toLowerCase();
@@ -1427,6 +1504,8 @@
 
             if (filtroStatus === 'divergencias' && dif === 0) return;
             if (filtroStatus === 'ok' && dif !== 0) return;
+
+            contadorExibidos++;
 
             let statusBadge = '<span class="badge-dif-ok">OK</span>';
             if (dif > 0) {
@@ -1462,6 +1541,11 @@
                 </tr>
             `;
         });
+
+        const badgeTotal = document.getElementById('badgeTotalInventario');
+        if (badgeTotal) {
+            badgeTotal.innerText = `📦 Total para Contagem: ${itensInventarioBase.length} itens`;
+        }
 
         if (!html) {
             tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item encontrado com os filtros selecionados.</td></tr>`;
@@ -1800,7 +1884,9 @@
                     const categoriaLida = String(r[2] || '').trim();
                     const categoria = categoriaLida ? categoriaLida : "Outros";
 
-                    const unidade = String(r[3] || 'UN').trim();
+                    const unidadeLida = String(r[3] || '').trim().toUpperCase();
+                    const unidade = unidadeLida ? unidadeLida : "UN";
+
                     let qtdLida = parseFloat(r[5]);
                     const quantidade = !isNaN(qtdLida) ? Math.round(qtdLida) : 0;
 
@@ -1817,6 +1903,7 @@
                             .update({ 
                                 "PRODUTO": produto, 
                                 "CATEGORIA": categoria, 
+                                "UNIDADE DE MEDIDA": unidade,
                                 "QUANTIDADE": quantidade 
                             })
                             .eq('id', itemExistente.id);
@@ -1860,19 +1947,6 @@
         else carregarItens();
     }
 
-    function abrirEtiqueta(item) {
-        if (!usuarioLogado) return alert('Acesso negado.');
-        const cod = item["CÓDIGO EFISCO"] || '';
-        const desc = item.PRODUTO || '';
-        document.getElementById('etqDescricao').innerText = `${cod} - ${desc}`;
-        document.getElementById('modalEtiqueta').classList.add('active');
-        try {
-            JsBarcode("#etqBarcodeSvg", cod, {
-                format: "CODE128", width: 1.8, height: 40, displayValue: true, fontSize: 12, margin: 2
-            });
-        } catch(e) { console.error(e); }
-    }
-
     function filtrarItens() {
         const termo = document.getElementById('busca').value.toLowerCase();
         const cat = document.getElementById('filtroCategoria').value;
@@ -1892,7 +1966,6 @@
     function abrirModalImportar() { document.getElementById('modalImportar').classList.add('active'); }
     function fecharModalImportar() { document.getElementById('modalImportar').classList.remove('active'); }
     function fecharModalLogin() { document.getElementById('modalLogin').classList.add('active'); }
-    function fecharModalEtiqueta() { document.getElementById('modalEtiqueta').classList.add('active'); }
     
     function previewImagem(event) {
         const img = document.getElementById('imgPreview');
