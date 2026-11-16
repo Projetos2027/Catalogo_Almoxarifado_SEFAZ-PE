@@ -721,7 +721,7 @@
     </div>
 </div>
 
-<!-- Modal de Entrada Manual no Estoque com Empenho, CNPJ e Recálculo de Divergência -->
+<!-- Modal de Entrada Manual no Estoque com Autocompletar por Código EFISCO (U.M manual) -->
 <div class="modal-overlay" id="modalEntradaEstoqueManual">
     <div class="modal">
         <div class="modal-header">
@@ -751,19 +751,21 @@
                     <input type="text" id="manualEmpenho" placeholder="Ex: 2026NE00012">
                 </div>
             </div>
-            <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+            <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; position: relative;">
                 <div>
                     <label>Código EFISCO *</label>
-                    <input type="text" id="manualCodEstoque" required placeholder="Ex: 00145">
+                    <input type="text" id="manualCodEstoque" required placeholder="Ex: 00145" oninput="filtrarCodigosEstoque(this.value)" autocomplete="off">
+                    <!-- Sugestões flutuantes para o Código EFISCO -->
+                    <div id="sugestoesCodEstoque" style="display:none; position:absolute; top: 100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:6px; max-height:150px; overflow-y:auto; z-index:1050; box-shadow:0 4px 6px rgba(0,0,0,0.05);"></div>
                 </div>
                 <div>
                     <label>U.M *</label>
-                    <input type="text" id="manualUmEstoque" required value="UN">
+                    <input type="text" id="manualUmEstoque" required placeholder="Ex: UN, CX" value="UN">
                 </div>
             </div>
             <div class="form-group">
                 <label>Produto / Descrição *</label>
-                <input type="text" id="manualProdEstoque" required placeholder="Ex: Papel A4">
+                <input type="text" id="manualProdEstoque" required placeholder="Preenchido automaticamente ao selecionar o código">
             </div>
             <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                 <div>
@@ -836,7 +838,7 @@
                             <th style="text-align: center;">U.M Efetiva</th>
                             <th style="text-align: center;">Qtd Efetiva</th>
                             <th style="text-align: center;">Valor Unit. Ajustado</th>
-                            <th style="text-align: center;">Valor Total (Manido)</th>
+                            <th style="text-align: center;">Valor Total (Mantido)</th>
                             <th style="text-align: center;">Divergente?</th>
                         </tr>
                     </thead>
@@ -950,7 +952,7 @@
     </div>
 </div>
 
-<!-- Modal Unificado para Cadastrar ou Editar Material (Com 3 Níveis de Categoria) -->
+<!-- Modal Unificado para Cadastrar ou Editar Material -->
 <div class="modal-overlay" id="modalCadastro">
     <div class="modal">
         <div class="modal-header">
@@ -1132,6 +1134,46 @@
         document.getElementById('btnCadastrarCnpj').style.display = 'none';
     }
 
+    // --- AUTOCOMPLETAR CÓDIGO EFISCO NA ENTRADA MANUAL (U.M fica pendente para preenchimento) ---
+    function filtrarCodigosEstoque(termo) {
+        const divSugestoes = document.getElementById('sugestoesCodEstoque');
+        const termoLimpo = termo.trim().toLowerCase();
+
+        if (!termoLimpo) {
+            divSugestoes.style.display = 'none';
+            return;
+        }
+
+        const encontrados = todosItens.filter(i => {
+            const cod = String(i["CÓDIGO EFISCO"] || i.codigo || '').toLowerCase();
+            const prod = String(i.PRODUTO || i.produto || '').toLowerCase();
+            return cod.includes(termoLimpo) || prod.includes(termoLimpo);
+        });
+
+        if (encontrados.length > 0) {
+            divSugestoes.innerHTML = encontrados.map(i => {
+                const cod = i["CÓDIGO EFISCO"] || i.codigo || '';
+                const prod = i.PRODUTO || i.produto || '';
+                const um = i["UNIDADE DE MEDIDA"] || i.unidade || 'UN';
+                return `
+                <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 0.85rem;" onclick="selecionarItemEstoqueModal('${cod}', '${prod}', '${um}')">
+                    <b>[${cod}]</b> ${prod} (${um})
+                </div>
+                `;
+            }).join('');
+            divSugestoes.style.display = 'block';
+        } else {
+            divSugestoes.style.display = 'none';
+        }
+    }
+
+    function selecionarItemEstoqueModal(codigo, produto, unidade) {
+        document.getElementById('manualCodEstoque').value = codigo;
+        document.getElementById('manualProdEstoque').value = produto;
+        // A unidade de medida (manualUmEstoque) NÃO é preenchida automaticamente, ficando pendente para o usuário informar.
+        document.getElementById('sugestoesCodEstoque').style.display = 'none';
+    }
+
     async function salvarNovoFornecedorModal() {
         const cnpj = document.getElementById('manualCnpj').value.trim();
         const razao = document.getElementById('manualFornecedor').value.trim();
@@ -1304,7 +1346,6 @@
         const termo = document.getElementById('busca') ? document.getElementById('busca').value.toLowerCase() : '';
         const filtrados = todosItens.filter(item => {
             const qtd = Number(item.QUANTIDADE || item.quantidade || 0);
-            // O catálogo exibe apenas itens que tenham saldo na aba estoque (> 0)
             if (qtd <= 0) return false;
 
             const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
@@ -1361,7 +1402,7 @@
         }).join('');
     }
 
-    // --- ABA ESTOQUE (ERP Moderno Híbrido com 3 Níveis) ---
+    // --- ABA ESTOQUE ---
     function renderizarTabelaEstoque() {
         const tbody = document.getElementById('tabelaCorpoEstoque');
         const termo = document.getElementById('buscaEstoque') ? document.getElementById('buscaEstoque').value.toLowerCase().trim() : '';
@@ -1517,7 +1558,6 @@
             }
             textoCompleto = textoCompleto.replace(/\s+/g, ' ');
 
-            // Regex para capturar itens em relatórios de pedidos / saídas
             const regexItens = /(\d{5,8})\s*[-]?\s*(.+?)\s+(UN|CX|PC|KG|MT|L|M2|PCT|RL|PAR|FR)\s+([\d\.,]+)/gi;
             let match;
             itensPdfPedidoRevisao = [];
@@ -1683,7 +1723,7 @@
         `).join('');
     }
 
-    // --- IMPORTAÇÃO DE PDF DE RECEBIMENTO COM RECÁLCULO PROPORCIONAL DE PREÇO ---
+    // --- IMPORTAÇÃO DE PDF DE RECEBIMENTO ---
     function abrirModalImportarPdf() {
         if (!usuarioLogado) return;
         document.getElementById('modalImportarPdf').classList.add('active');
@@ -1787,7 +1827,6 @@
     function toggleDivergenciaPdf(index, checked) {
         itensPdfRevisao[index].divergente = checked;
         if (!checked) {
-            // Restaura original
             itensPdfRevisao[index].quantidadeRecebida = itensPdfRevisao[index].quantidadeOriginal;
             itensPdfRevisao[index].unidade = itensPdfRevisao[index].unidadeOriginal;
             itensPdfRevisao[index].valorUnitario = itensPdfRevisao[index].valorUnitarioOriginal;
@@ -1802,7 +1841,6 @@
             const novaQtd = parseNumeroBR(valor);
             itensPdfRevisao[index].quantidadeRecebida = novaQtd > 0 ? novaQtd : 1;
             
-            // Recálculo proporcional do preço unitário para manter o Valor Total constante!
             const totalOriginal = itensPdfRevisao[index].valorTotalOriginal;
             const qtdAtual = itensPdfRevisao[index].quantidadeRecebida;
             itensPdfRevisao[index].valorUnitario = totalOriginal / qtdAtual;
@@ -1859,7 +1897,7 @@
         mudarAba('estoque');
     }
 
-    // --- MÓDULO DE INVENTÁRIO (Atualização Direta) ---
+    // --- MÓDULO DE INVENTÁRIO ---
     function normalizarItensInventario(lista) {
         return (lista || []).map(item => {
             const c1Raw = item.contagem1;
@@ -2113,7 +2151,6 @@
         if (tipo !== 'obs') renderizarTabelaInventario();
     }
 
-    // Botão direto na aba Inventário para atualizar Estoque e Catálogo
     async function finalizarInventarioAtivoDireto() {
         if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo para atualizar.');
         if (!confirm('Deseja atualizar o ESTOQUE e o CATÁLOGO com base nas contagens deste inventário?')) return;
@@ -2164,7 +2201,6 @@
     async function exportarRelatorioDivergencias() { alert('Relatório executivo gerado.'); }
     async function exportarRelatorioPDF() { alert('Relatório PDF gerado.'); }
 
-    // Catálogo & Modal Cadastro (com 3 níveis)
     function abrirModalCadastro() {
         if (!usuarioLogado) return;
         document.getElementById('tituloModalMaterial').innerText = 'Cadastrar Material';
