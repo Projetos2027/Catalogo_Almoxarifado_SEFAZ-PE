@@ -8,12 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Biblioteca para gerar Códigos de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <!-- Biblioteca SheetJS para ler e gerar arquivos Excel (.xlsx) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Biblioteca xlsx-js-style para ler e gerar arquivos Excel (.xlsx) COM ESTILOS E BORDAS -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <!-- Biblioteca html2pdf para gerar arquivos PDF formatados -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Biblioteca PDF.js para ler arquivos PDF de recebimento -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Biblioteca Tesseract.js para OCR (leitura de validade/embalagem nas fotos) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
@@ -399,7 +401,7 @@
             padding: 24px;
             border-radius: 12px;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
@@ -434,6 +436,17 @@
             object-fit: contain;
             margin-top: 8px;
             border-radius: 6px;
+            display: none;
+        }
+
+        .ocr-status-box {
+            margin-top: 8px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
             display: none;
         }
 
@@ -651,8 +664,9 @@
 
                 <div id="invEtapa2Tela" style="display:none; flex: 1; flex-direction: column;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                            <span id="badgeTotalInventario" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 Itens carregados: 0</span>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <span id="badgeTotalInventario" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 Total na Base: 0 itens</span>
+                            <span id="badgeFaltamContar" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">⏳ Faltam contar: 0 itens</span>
                             <span id="statusSalvamentoNuvem" style="font-size: 0.85rem; color: var(--success); font-weight: 500;">💾 Sincronizado</span>
                         </div>
                     </div>
@@ -661,6 +675,7 @@
                         <input type="text" id="buscaInventario" placeholder="🔍 Filtrar por código ou produto..." oninput="renderizarTabelaInventario()" style="flex: 1; min-width: 240px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
                         <select id="filtroStatusInventario" onchange="renderizarTabelaInventario()" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
                             <option value="todos">📋 Todos os Itens</option>
+                            <option value="nao_contados">⏳ Apenas Não Contados</option>
                             <option value="divergencias">⚠️ Apenas Divergências (Falta/Sobra)</option>
                             <option value="ok">✅ Apenas OK</option>
                         </select>
@@ -708,7 +723,7 @@
                 <div style="border-top: 1px solid var(--border); padding-top: 20px;">
                     <h4 style="font-size: 0.9rem; color: var(--muted); text-transform: uppercase; margin-bottom: 10px;">Sobre os Relatórios</h4>
                     <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;">
-                        Os relatórios executivos compilam o Resumo Executivo (Total de itens auditados, conformes, sobras, faltas e acuracidade percentual do estoque), juntamente com o detalhamento completo por item e respectivas justificativas registradas durante a contagem.
+                        Os relatórios executivos compilam o Resumo Executivo (Total de itens na base, contados, pendentes/não contados, conformes, sobras, faltas e acuracidade), juntamente com o detalhamento completo por item e respectivas justificativas registradas durante a contagem.
                     </p>
                 </div>
             </div>
@@ -919,8 +934,9 @@
                 <small>Se deixar em branco, ficará como "Indeterminada".</small>
             </div>
             <div class="form-group">
-                <label>Foto do Item</label>
-                <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="previewImagem(event)">
+                <label>Foto do Item (Leitura Automática de Rótulo)</label>
+                <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="aoSelecionarFotoMaterial(event)">
+                <div id="ocrStatusBox" class="ocr-status-box"></div>
                 <img id="imgPreview" class="preview-upload">
             </div>
             <button type="submit" class="btn btn-primary" id="btnSalvarMaterial">Salvar no Catálogo</button>
@@ -1023,52 +1039,32 @@
         categoriasRecolhidas = !categoriasRecolhidas;
         const lista = document.getElementById('sidebarCategoriasList');
         const seta = document.getElementById('setaCategorias');
-        if (categoriasRecolhidas) {
-            lista.classList.add('hidden');
-            seta.classList.add('collapsed');
-        } else {
-            lista.classList.remove('hidden');
-            seta.classList.remove('collapsed');
-        }
+        lista.classList.toggle('hidden', categoriasRecolhidas);
+        seta.classList.toggle('collapsed', categoriasRecolhidas);
     }
 
     function toggleSecaoMarcas() {
         marcasRecolhidas = !marcasRecolhidas;
         const lista = document.getElementById('sidebarMarcasList');
         const seta = document.getElementById('setaMarcas');
-        if (marcasRecolhidas) {
-            lista.classList.add('hidden');
-            seta.classList.add('collapsed');
-        } else {
-            lista.classList.remove('hidden');
-            seta.classList.remove('collapsed');
-        }
+        lista.classList.toggle('hidden', marcasRecolhidas);
+        seta.classList.toggle('collapsed', marcasRecolhidas);
     }
 
     function toggleSecaoUM() {
         umRecolhidas = !umRecolhidas;
         const lista = document.getElementById('sidebarUMList');
         const seta = document.getElementById('setaUM');
-        if (umRecolhidas) {
-            lista.classList.add('hidden');
-            seta.classList.add('collapsed');
-        } else {
-            lista.classList.remove('hidden');
-            seta.classList.remove('collapsed');
-        }
+        lista.classList.toggle('hidden', umRecolhidas);
+        seta.classList.toggle('collapsed', umRecolhidas);
     }
 
     function toggleSecaoStatus() {
         statusRecolhidos = !statusRecolhidos;
         const lista = document.getElementById('sidebarStatusList');
         const seta = document.getElementById('setaStatus');
-        if (statusRecolhidos) {
-            lista.classList.add('hidden');
-            seta.classList.add('collapsed');
-        } else {
-            lista.classList.remove('hidden');
-            seta.classList.remove('collapsed');
-        }
+        lista.classList.toggle('hidden', statusRecolhidos);
+        seta.classList.toggle('collapsed', statusRecolhidos);
     }
 
     async function registrarSessaoAtiva(email) {
@@ -1310,6 +1306,107 @@
         }).join('');
     }
 
+    // --- OCR: LEITURA INTELIGENTE DE FOTO NO CATÁLOGO ---
+    async function analisarFotoOCR(file, alvoItemId = null) {
+        const statusBox = document.getElementById('ocrStatusBox');
+        if (!alvoItemId && statusBox) {
+            statusBox.style.display = 'block';
+            statusBox.innerHTML = '🔍 Lendo rótulo da imagem (validade, marca, unidade)...';
+        }
+
+        try {
+            const { data: { text } } = await Tesseract.recognize(file, 'por+eng');
+            const textoLimpo = text.replace(/\s+/g, ' ').trim();
+            const textoUpper = textoLimpo.toUpperCase();
+
+            // 1. Extrair Validade (DD/MM/AAAA, DD/MM/AA, MM/AAAA ou YYYY-MM-DD)
+            let dataEncontradaISO = null;
+            const matchFull = textoLimpo.match(/(?:VAL(?:IDADE)?[\s:.-]*)?(\b[0-3]\d)[\/\.-]([01]\d)[\/\.-](20\d{2}|\d{2})\b/i);
+            const matchMesAno = textoLimpo.match(/(?:VAL(?:IDADE)?[\s:.-]*)?(\b[01]\d)[\/\-](20\d{2})\b/i);
+
+            if (matchFull) {
+                const dia = matchFull[1].padStart(2, '0');
+                const mes = matchFull[2].padStart(2, '0');
+                let ano = matchFull[3];
+                if (ano.length === 2) ano = '20' + ano;
+                if (parseInt(mes) >= 1 && parseInt(mes) <= 12 && parseInt(dia) >= 1 && parseInt(dia) <= 31) {
+                    dataEncontradaISO = `${ano}-${mes}-${dia}`;
+                }
+            } else if (matchMesAno) {
+                const mes = matchMesAno[1].padStart(2, '0');
+                const ano = matchMesAno[2];
+                if (parseInt(mes) >= 1 && parseInt(mes) <= 12) {
+                    dataEncontradaISO = `${ano}-${mes}-28`;
+                }
+            }
+
+            // 2. Extrair Unidade de Medida
+            let unidadeDetectada = null;
+            if (/\b(CAIXA|CX)\b/.test(textoUpper)) unidadeDetectada = 'CX';
+            else if (/\b(PACOTE|PCT)\b/.test(textoUpper)) unidadeDetectada = 'PCT';
+            else if (/\b(ROLO|RL)\b/.test(textoUpper)) unidadeDetectada = 'RL';
+            else if (/\b(FRASCO|FR)\b/.test(textoUpper)) unidadeDetectada = 'FR';
+            else if (/\b(LITRO|LITROS|\d+\s*L)\b/.test(textoUpper)) unidadeDetectada = 'L';
+            else if (/\b(KG|QUILO)\b/.test(textoUpper)) unidadeDetectada = 'KG';
+            else if (/\b(UNIDADE|UNID|UN)\b/.test(textoUpper)) unidadeDetectada = 'UN';
+
+            // 3. Extrair possível Marca conhecida ou linha principal em caixa alta
+            const marcasConhecidas = ['BIC', 'CHAMEX', 'REPORT', 'HP', 'EPSON', 'CANON', 'BROTHER', '3M', 'SCOTCH', 'PILOT', 'FABER-CASTELL', 'CIS', 'TILIBRA', 'YPE', 'YPÊ', 'VEJA', 'OMO', 'COLGATE', 'PILÃO', '3 CORAÇÕES', 'MELITTA', 'SANTA CLARA', 'UNIÃO', 'DURACELL', 'PANASONIC', 'ELGIN', 'TRAMONTINA', 'TIGRE', 'SUVINIL', 'CORAL'];
+            let marcaDetectada = marcasConhecidas.find(m => textoUpper.includes(m)) || null;
+
+            const resumoAchados = [];
+            if (dataEncontradaISO) resumoAchados.push(`Validade: <b>${formatarDataBR(dataEncontradaISO)}</b>`);
+            if (marcaDetectada) resumoAchados.push(`Marca: <b>${marcaDetectada}</b>`);
+            if (unidadeDetectada) resumoAchados.push(`U.M: <b>${unidadeDetectada}</b>`);
+
+            if (!alvoItemId) {
+                // Preenchimento automático no modal de cadastro/edição
+                if (dataEncontradaISO && !document.getElementById('validade').value) {
+                    document.getElementById('validade').value = dataEncontradaISO;
+                }
+                if (unidadeDetectada && !document.getElementById('unidade').value) {
+                    document.getElementById('unidade').value = unidadeDetectada;
+                }
+                const campoProd = document.getElementById('produto');
+                if (marcaDetectada && campoProd.value && !campoProd.value.toUpperCase().includes(marcaDetectada)) {
+                    campoProd.value = `${campoProd.value} - ${marcaDetectada}`;
+                } else if (marcaDetectada && !campoProd.value) {
+                    campoProd.value = `Material (${marcaDetectada})`;
+                }
+
+                if (statusBox) {
+                    if (resumoAchados.length > 0) {
+                        statusBox.style.background = '#f0fdf4';
+                        statusBox.style.borderColor = '#bbf7d0';
+                        statusBox.style.color = '#166534';
+                        statusBox.innerHTML = `✅ Extraído da foto: ${resumoAchados.join(' | ')}`;
+                    } else {
+                        statusBox.style.background = '#f8fafc';
+                        statusBox.style.borderColor = '#e2e8f0';
+                        statusBox.style.color = '#64748b';
+                        statusBox.innerHTML = 'ℹ️ Foto anexada. Nenhum texto nítido de validade/marca identificado.';
+                    }
+                }
+            }
+
+            return { dataEncontradaISO, unidadeDetectada, marcaDetectada };
+        } catch (err) {
+            console.warn('Falha no OCR:', err);
+            if (!alvoItemId && statusBox) {
+                statusBox.style.display = 'none';
+            }
+            return {};
+        }
+    }
+
+    async function aoSelecionarFotoMaterial(event) {
+        previewImagem(event);
+        const file = event.target.files[0];
+        if (file) {
+            await analisarFotoOCR(file, null);
+        }
+    }
+
     // --- ETIQUETAS ---
     function abrirModalEscolhaEtiqueta(item) {
         if (!usuarioLogado) return;
@@ -1387,6 +1484,7 @@
         document.getElementById('editandoItemId').value = '';
         document.getElementById('formBem').reset();
         document.getElementById('imgPreview').style.display = 'none';
+        document.getElementById('ocrStatusBox').style.display = 'none';
         document.getElementById('grupoNovaCategoria').style.display = 'none';
         document.getElementById('grupoNovaUnidade').style.display = 'none';
         atualizarSelectsCategoriasEUnidades();
@@ -1404,6 +1502,7 @@
         document.getElementById('produto').value = item.PRODUTO || '';
         document.getElementById('quantidade').value = item.QUANTIDADE !== undefined ? item.QUANTIDADE : 0;
         document.getElementById('validade').value = item.validade ? item.validade.split('T')[0] : '';
+        document.getElementById('ocrStatusBox').style.display = 'none';
         
         atualizarSelectsCategoriasEUnidades();
         document.getElementById('categoria').value = item.CATEGORIA || 'Outros';
@@ -1657,6 +1756,10 @@
     }
 
     // --- MÓDULO DE INVENTÁRIO & ABA INVENTÁRIO ---
+    function itemEstaContado(item) {
+        return item.contagem1 !== '' && item.contagem1 !== undefined && item.contagem1 !== null && !isNaN(Number(item.contagem1));
+    }
+
     async function verificarInventarioNuvem() {
         try {
             const { data } = await supabaseClient.from('inventario_andamento').select('itens_json, atualizado_em').eq('id', 1).maybeSingle();
@@ -1803,7 +1906,7 @@
         e.preventDefault();
         const codigo = document.getElementById('manualCodigo').value.trim();
         const produto = document.getElementById('manualProduto').value.trim();
-        const unidade = document.getElementById('manualUnidade').value.trim();
+        const unidade = document.getElementById('manualUnidade').value.trim().toUpperCase();
         const qtd = parseInt(document.getElementById('manualQtd').value) || 0;
         const obs = document.getElementById('manualObs').value.trim();
 
@@ -1819,36 +1922,53 @@
         const termo = document.getElementById('buscaInventario') ? document.getElementById('buscaInventario').value.toLowerCase().trim() : '';
         const filtroStatus = document.getElementById('filtroStatusInventario') ? document.getElementById('filtroStatusInventario').value : 'todos';
 
+        let faltamContar = 0;
+        itensInventarioBase.forEach(item => {
+            if (!itemEstaContado(item)) faltamContar++;
+        });
+
         let html = '';
         itensInventarioBase.forEach((item, index) => {
             const cod = String(item.codigo || '').toLowerCase();
             const prod = String(item.produto || '').toLowerCase();
             if (termo && !cod.includes(termo) && !prod.includes(termo)) return;
 
-            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined && !isNaN(item.contagem1)) ? Number(item.contagem1) : 0;
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
+            const contado = itemEstaContado(item);
+            const c1 = contado ? Number(item.contagem1) : 0;
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(Number(item.contagem2))) ? Number(item.contagem2) : null;
             const efetiva = c2 !== null ? c2 : c1;
-            const dif = efetiva - item.base;
+            const dif = contado ? (efetiva - item.base) : null;
 
-            if (filtroStatus === 'divergencias' && dif === 0) return;
-            if (filtroStatus === 'ok' && dif !== 0) return;
+            if (filtroStatus === 'nao_contados' && contado) return;
+            if (filtroStatus === 'divergencias' && (!contado || dif === 0)) return;
+            if (filtroStatus === 'ok' && (!contado || dif !== 0)) return;
 
-            let statusBadge = '<span style="color:var(--success); font-weight:bold;">OK</span>';
-            if (dif > 0) statusBadge = `<span style="color:#d97706; font-weight:bold;">+${dif} (Sobra)</span>`;
-            else if (dif < 0) statusBadge = `<span style="color:var(--danger); font-weight:bold;">${dif} (Falta)</span>`;
+            let statusBadge = '<span style="color:#64748b; background:#f1f5f9; padding:3px 8px; border-radius:4px; font-size:0.78rem; font-weight:600;">NÃO CONTADO</span>';
+            let difTexto = '-';
+
+            if (contado) {
+                difTexto = dif;
+                if (dif === 0) {
+                    statusBadge = '<span style="color:var(--success); font-weight:bold;">OK</span>';
+                } else if (dif > 0) {
+                    statusBadge = `<span style="color:#d97706; font-weight:bold;">+${dif} (Sobra)</span>`;
+                } else {
+                    statusBadge = `<span style="color:var(--danger); font-weight:bold;">${dif} (Falta)</span>`;
+                }
+            }
 
             html += `
                 <tr>
                     <td>
-                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px; border: none;" onclick="marcarNaoEncontrado(${index})" title="Não encontrado">❌</button>
+                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px; border: none;" onclick="marcarNaoEncontrado(${index})" title="Não encontrado (marcar 0)">❌</button>
                         <code>${item.codigo}</code>
                     </td>
                     <td><b>${item.produto}</b></td>
                     <td>${item.unidade}</td>
                     <td style="text-align: center; font-weight:bold;">${item.base}</td>
-                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem1 ?? ''}" min="0" onchange="atualizarContagem(${index}, 'c1', this.value)"></td>
-                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem2 ?? ''}" min="0" onchange="atualizarContagem(${index}, 'c2', this.value)" placeholder="-"></td>
-                    <td style="text-align: center;" id="dif_${index}">${dif}</td>
+                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem1 ?? ''}" min="0" placeholder="-" onchange="atualizarContagem(${index}, 'c1', this.value)"></td>
+                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem2 ?? ''}" min="0" placeholder="-" onchange="atualizarContagem(${index}, 'c2', this.value)"></td>
+                    <td style="text-align: center; font-weight:bold;" id="dif_${index}">${difTexto}</td>
                     <td id="status_${index}">${statusBadge}</td>
                     <td><input type="text" class="inv-input-text" value="${item.obs || ''}" onchange="atualizarContagem(${index}, 'obs', this.value)" placeholder="Justificativa..."></td>
                 </tr>
@@ -1856,6 +1976,21 @@
         });
 
         document.getElementById('badgeTotalInventario').innerText = `📦 Total na Base: ${itensInventarioBase.length} itens`;
+        const badgeFaltam = document.getElementById('badgeFaltamContar');
+        if (badgeFaltam) {
+            badgeFaltam.innerText = `⏳ Faltam contar: ${faltamContar} itens`;
+            if (faltamContar === 0 && itensInventarioBase.length > 0) {
+                badgeFaltam.style.background = '#f0fdf4';
+                badgeFaltam.style.color = '#15803d';
+                badgeFaltam.style.borderColor = '#bbf7d0';
+                badgeFaltam.innerText = `✅ Todos os itens contados!`;
+            } else {
+                badgeFaltam.style.background = '#fffbeb';
+                badgeFaltam.style.color = '#b45309';
+                badgeFaltam.style.borderColor = '#fde68a';
+            }
+        }
+
         tbody.innerHTML = html || `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item encontrado.</td></tr>`;
     }
 
@@ -1869,11 +2004,66 @@
     }
 
     async function finalizarInventarioAtivo() {
-        if (!confirm('Deseja realmente finalizar este inventário? Os dados salvos serão limpos.')) return;
-        await supabaseClient.from('inventario_andamento').delete().eq('id', 1);
-        itensInventarioBase = [];
-        await atualizarVisualTelaInventario();
-        alert('Inventário finalizado e limpo com sucesso.');
+        if (itensInventarioBase.length === 0) return;
+
+        const desejaAtualizarCatalogo = confirm(
+            'Deseja atualizar o CATÁLOGO com base no resultado deste inventário?\n\n' +
+            '• Clique em OK (SIM) para atualizar as quantidades dos itens existentes e criar automaticamente no catálogo os itens novos contados.\n' +
+            '• Clique em CANCELAR (NÃO) para apenas encerrar o inventário sem alterar o catálogo.'
+        );
+
+        if (desejaAtualizarCatalogo) {
+            let atualizados = 0;
+            let criados = 0;
+
+            for (const invItem of itensInventarioBase) {
+                const contado = itemEstaContado(invItem);
+                const c1 = contado ? Number(invItem.contagem1) : 0;
+                const c2 = (invItem.contagem2 !== '' && invItem.contagem2 !== null && invItem.contagem2 !== undefined && !isNaN(Number(invItem.contagem2))) ? Number(invItem.contagem2) : null;
+                // Se o item não teve contagem digitada, mantém o saldo base; se foi contado, usa a contagem efetiva
+                const quantidadeFinal = contado ? (c2 !== null ? c2 : c1) : Number(invItem.base || 0);
+
+                const codLimpo = String(invItem.codigo || '').trim();
+                const unLimpa = String(invItem.unidade || 'UN').trim().toUpperCase();
+
+                const itemCatalogo = todosItens.find(i =>
+                    String(i["CÓDIGO EFISCO"] || '').trim() === codLimpo &&
+                    String(i["UNIDADE DE MEDIDA"] || '').trim().toUpperCase() === unLimpa
+                ) || todosItens.find(i => String(i["CÓDIGO EFISCO"] || '').trim() === codLimpo);
+
+                if (itemCatalogo) {
+                    const { error } = await supabaseClient
+                        .from('bens')
+                        .update({ "QUANTIDADE": quantidadeFinal })
+                        .eq('id', itemCatalogo.id);
+                    if (!error) atualizados++;
+                } else {
+                    const { error } = await supabaseClient
+                        .from('bens')
+                        .insert([{
+                            "CÓDIGO EFISCO": codLimpo,
+                            "PRODUTO": String(invItem.produto || 'Item do Inventário').trim(),
+                            "CATEGORIA": "Outros",
+                            "UNIDADE DE MEDIDA": unLimpa,
+                            "QUANTIDADE": quantidadeFinal,
+                            "validade": null
+                        }]);
+                    if (!error) criados++;
+                }
+            }
+
+            await supabaseClient.from('inventario_andamento').delete().eq('id', 1);
+            itensInventarioBase = [];
+            await carregarItens();
+            await atualizarVisualTelaInventario();
+            alert(`Inventário finalizado e Catálogo sincronizado!\n\n• Itens atualizados: ${atualizados}\n• Novos itens criados no catálogo: ${criados}`);
+        } else {
+            if (!confirm('Confirma o encerramento do inventário SEM alterar o catálogo? Os dados da contagem atual serão limpos.')) return;
+            await supabaseClient.from('inventario_andamento').delete().eq('id', 1);
+            itensInventarioBase = [];
+            await atualizarVisualTelaInventario();
+            alert('Inventário finalizado sem alterações no catálogo.');
+        }
     }
 
     // --- PAINEL E ABA DE RELATÓRIOS ---
@@ -1881,10 +2071,11 @@
         await verificarInventarioNuvem();
         const infoEl = document.getElementById('infoInventarioRelatorio');
         if (itensInventarioBase.length > 0) {
+            const naoContados = itensInventarioBase.filter(i => !itemEstaContado(i)).length;
             infoEl.innerHTML = `
                 📂 <b>Inventário Ativo Carregado</b><br>
                 ⏱️ <b>Período / Data da Contagem:</b> ${periodoInventarioAtual}<br>
-                📊 <b>Total de Itens no Escopo:</b> ${itensInventarioBase.length} itens
+                📊 <b>Total na Base:</b> ${itensInventarioBase.length} itens | ⏳ <b>Não Contados:</b> ${naoContados} itens
             `;
         } else {
             infoEl.innerHTML = `⚠️ Nenhum inventário ativo no momento. Carregue um inventário na aba <b>Inventário</b> para gerar os relatórios executivos.`;
@@ -1894,38 +2085,94 @@
     async function exportarRelatorioDivergencias() {
         if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo para gerar relatório.');
 
-        itensInventarioBase.forEach(item => {
-            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) item.contagem1 = 0;
-        });
-        await salvarInventarioNuvem();
-
         const totalItens = itensInventarioBase.length;
-        let totalOk = 0, totalSobra = 0, totalFalta = 0;
+        let totalOk = 0, totalSobra = 0, totalFalta = 0, totalNaoContado = 0;
+
         itensInventarioBase.forEach(item => {
-            const c1 = Number(item.contagem1 || 0);
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
+            if (!itemEstaContado(item)) {
+                totalNaoContado++;
+                return;
+            }
+            const c1 = Number(item.contagem1);
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(Number(item.contagem2))) ? Number(item.contagem2) : null;
             const dif = (c2 !== null ? c2 : c1) - item.base;
-            if (dif === 0) totalOk++; else if (dif > 0) totalSobra++; else totalFalta++;
+            if (dif === 0) totalOk++;
+            else if (dif > 0) totalSobra++;
+            else totalFalta++;
         });
-        const acuracidade = ((totalOk / totalItens) * 100).toFixed(1) + '%';
+
+        const totalContados = totalItens - totalNaoContado;
+        const acuracidade = totalContados > 0 ? ((totalOk / totalContados) * 100).toFixed(1) + '%' : '0.0%';
         const dataStr = new Date().toLocaleDateString('pt-BR');
 
+        // Estilos Sobrios Profissionais (xlsx-js-style)
+        const borderThin = {
+            top: { style: "thin", color: { rgb: "CBD5E1" } },
+            bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+            left: { style: "thin", color: { rgb: "CBD5E1" } },
+            right: { style: "thin", color: { rgb: "CBD5E1" } }
+        };
+
+        const styleTitulo = {
+            font: { name: "Segoe UI", sz: 13, bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "1E3A8A" } },
+            alignment: { vertical: "center", horizontal: "left" }
+        };
+
+        const styleSubtitulo = {
+            font: { name: "Segoe UI", sz: 9, italic: true, color: { rgb: "334155" } },
+            fill: { fgColor: { rgb: "EFF6FF" } },
+            alignment: { vertical: "center", horizontal: "left" }
+        };
+
+        const styleSecaoHeader = {
+            font: { name: "Segoe UI", sz: 10, bold: true, color: { rgb: "1E3A8A" } },
+            fill: { fgColor: { rgb: "DBEAFE" } },
+            border: borderThin,
+            alignment: { vertical: "center", horizontal: "left" }
+        };
+
+        const styleResumoLabel = {
+            font: { name: "Segoe UI", sz: 10, bold: true, color: { rgb: "334155" } },
+            fill: { fgColor: { rgb: "F8FAFC" } },
+            border: borderThin,
+            alignment: { vertical: "center", horizontal: "left" }
+        };
+
+        const styleResumoVal = {
+            font: { name: "Segoe UI", sz: 10, bold: true, color: { rgb: "0F172A" } },
+            fill: { fgColor: { rgb: "FFFFFF" } },
+            border: borderThin,
+            alignment: { vertical: "center", horizontal: "center" }
+        };
+
+        const styleTableHeader = {
+            font: { name: "Segoe UI", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "1E293B" } },
+            border: borderThin,
+            alignment: { vertical: "center", horizontal: "center", wrapText: true }
+        };
+
         const aoa = [
-            ["ALMOXARIFADO SEFAZ/PE - RELATÓRIO EXECUTIVO DE INVENTÁRIO"],
-            [`Data de Emissão: ${dataStr} | Período de Contagem: ${periodoInventarioAtual}`],
+            ["ALMOXARIFADO SEFAZ/PE - RELATÓRIO EXECUTIVO DE INVENTÁRIO", "", "", "", "", "", "", "", ""],
+            [`Data de Emissão: ${dataStr} | Período de Contagem: ${periodoInventarioAtual}`, "", "", "", "", "", "", "", ""],
             [],
-            ["RESUMO EXECUTIVO"],
-            ["Total de Itens Auditados", totalItens, "Itens Conformes (OK)", totalOk],
-            ["Itens com Sobra", totalSobra, "Itens com Falta", totalFalta],
-            ["Acuracidade do Estoque", acuracidade, "", ""],
+            ["RESUMO EXECUTIVO DO BALANÇO", "", "", "", "", "", "", "", ""],
+            ["Total de Itens na Base", totalItens, "Itens Já Contados", totalContados, "Itens Não Contados", totalNaoContado, "", "", ""],
+            ["Itens Conformes (OK)", totalOk, "Itens com Sobra", totalSobra, "Itens com Falta", totalFalta, "Acuracidade (Contados)", acuracidade, ""],
             [],
-            ["DETALHAMENTO DO INVENTÁRIO FÍSICO"],
+            ["DETALHAMENTO DO INVENTÁRIO FÍSICO", "", "", "", "", "", "", "", ""],
             ["CÓDIGO EFISCO", "PRODUTO / DESCRIÇÃO", "U.M", "ESTOQUE BASE", "1ª CONTAGEM", "2ª CONTAGEM", "DIFERENÇA FINAL", "STATUS", "OBSERVAÇÕES"]
         ];
 
         itensInventarioBase.forEach(item => {
-            const c1 = Number(item.contagem1 || 0);
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
+            const contado = itemEstaContado(item);
+            if (!contado) {
+                aoa.push([item.codigo, item.produto, item.unidade, item.base, "", "", "", "NÃO CONTADO", item.obs || ""]);
+                return;
+            }
+            const c1 = Number(item.contagem1);
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(Number(item.contagem2))) ? Number(item.contagem2) : null;
             const efetiva = c2 !== null ? c2 : c1;
             const dif = efetiva - item.base;
             let status = 'OK';
@@ -1935,29 +2182,102 @@
             aoa.push([item.codigo, item.produto, item.unidade, item.base, c1, c2 !== null ? c2 : '', dif, status, item.obs || '']);
         });
 
-        const worksheet = XLSX.utils.aoa_to_sheet(aoa);
-        worksheet['!cols'] = [{wch: 16}, {wch: 45}, {wch: 8}, {wch: 14}, {wch: 14}, {wch: 14}, {wch: 16}, {wch: 12}, {wch: 40}];
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        // Mesclagens de cabeçalhos
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
+            { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } },
+            { s: { r: 7, c: 0 }, e: { r: 7, c: 8 } }
+        ];
+
+        // Aplicar estilos nas linhas de cabeçalho e resumo
+        for (let c = 0; c <= 8; c++) {
+            const addr0 = XLSX.utils.encode_cell({ r: 0, c });
+            const addr1 = XLSX.utils.encode_cell({ r: 1, c });
+            const addr3 = XLSX.utils.encode_cell({ r: 3, c });
+            const addr7 = XLSX.utils.encode_cell({ r: 7, c });
+            const addr8 = XLSX.utils.encode_cell({ r: 8, c });
+            if (ws[addr0]) ws[addr0].s = styleTitulo;
+            if (ws[addr1]) ws[addr1].s = styleSubtitulo;
+            if (ws[addr3]) ws[addr3].s = styleSecaoHeader;
+            if (ws[addr7]) ws[addr7].s = styleSecaoHeader;
+            if (ws[addr8]) ws[addr8].s = styleTableHeader;
+        }
+
+        // Estilos do Bloco de Resumo (Linhas 4 e 5)
+        [4, 5].forEach(r => {
+            for (let c = 0; c <= 7; c++) {
+                const addr = XLSX.utils.encode_cell({ r, c });
+                if (!ws[addr]) ws[addr] = { v: "", t: "s" };
+                ws[addr].s = (c % 2 === 0) ? styleResumoLabel : styleResumoVal;
+            }
+        });
+
+        // Estilos da Tabela de Dados (Linha 9 em diante)
+        for (let r = 9; r < aoa.length; r++) {
+            const isEven = (r % 2 === 0);
+            const rowBg = isEven ? "F8FAFC" : "FFFFFF";
+            const statusVal = aoa[r][7];
+
+            for (let c = 0; c <= 8; c++) {
+                const addr = XLSX.utils.encode_cell({ r, c });
+                if (!ws[addr]) ws[addr] = { v: "", t: "s" };
+
+                let cellFill = rowBg;
+                let fontColor = "0F172A";
+                let isBold = (c === 0 || c === 7);
+                let alignH = (c === 1 || c === 8) ? "left" : "center";
+
+                if (c === 7) {
+                    if (statusVal === 'OK') { cellFill = "DCFCE7"; fontColor = "166534"; }
+                    else if (statusVal === 'SOBRA') { cellFill = "FEF3C7"; fontColor = "92400E"; }
+                    else if (statusVal === 'FALTA') { cellFill = "FEE2E2"; fontColor = "991B1B"; }
+                    else if (statusVal === 'NÃO CONTADO') { cellFill = "F1F5F9"; fontColor = "475569"; }
+                }
+
+                ws[addr].s = {
+                    font: { name: "Segoe UI", sz: 9.5, bold: isBold, color: { rgb: fontColor } },
+                    fill: { fgColor: { rgb: cellFill } },
+                    border: borderThin,
+                    alignment: { vertical: "center", horizontal: alignH, wrapText: (c === 1 || c === 8) }
+                };
+            }
+        }
+
+        ws['!cols'] = [
+            { wch: 16 }, { wch: 46 }, { wch: 8 }, { wch: 14 },
+            { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 42 }
+        ];
+        ws['!rows'] = [{ hpt: 28 }, { hpt: 20 }, { hpt: 10 }, { hpt: 22 }, { hpt: 20 }, { hpt: 20 }, { hpt: 10 }, { hpt: 22 }, { hpt: 26 }];
+
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio_Executivo");
+        XLSX.utils.book_append_sheet(workbook, ws, "Relatorio_Executivo");
         XLSX.writeFile(workbook, `Relatorio_Inventario_Executivo_${new Date().toISOString().split('T')[0]}.xlsx`);
     }
 
     function exportarRelatorioPDF() {
         if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo para gerar relatório.');
 
+        const totalItens = itensInventarioBase.length;
+        let totalOk = 0, totalSobra = 0, totalFalta = 0, totalNaoContado = 0;
+
         itensInventarioBase.forEach(item => {
-            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) item.contagem1 = 0;
+            if (!itemEstaContado(item)) {
+                totalNaoContado++;
+                return;
+            }
+            const c1 = Number(item.contagem1);
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(Number(item.contagem2))) ? Number(item.contagem2) : null;
+            const dif = (c2 !== null ? c2 : c1) - item.base;
+            if (dif === 0) totalOk++;
+            else if (dif > 0) totalSobra++;
+            else totalFalta++;
         });
 
-        const totalItens = itensInventarioBase.length;
-        let totalOk = 0, totalSobra = 0, totalFalta = 0;
-        itensInventarioBase.forEach(item => {
-            const c1 = Number(item.contagem1 || 0);
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
-            const dif = (c2 !== null ? c2 : c1) - item.base;
-            if (dif === 0) totalOk++; else if (dif > 0) totalSobra++; else totalFalta++;
-        });
-        const acuracidade = ((totalOk / totalItens) * 100).toFixed(1);
+        const totalContados = totalItens - totalNaoContado;
+        const acuracidade = totalContados > 0 ? ((totalOk / totalContados) * 100).toFixed(1) : '0.0';
 
         const elemento = document.createElement('div');
         elemento.style.padding = '20px';
@@ -1965,9 +2285,9 @@
         elemento.style.color = '#0f172a';
 
         let htmlConteudo = `
-            <div style="border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h2 style="color:#2563eb; font-size: 18px; margin: 0;">RELATÓRIO EXECUTIVO DE INVENTÁRIO</h2>
+                    <h2 style="color:#1e3a8a; font-size: 18px; margin: 0;">RELATÓRIO EXECUTIVO DE INVENTÁRIO</h2>
                     <p style="font-size: 11px; color:#64748b; margin-top: 2px;">Almoxarifado SEFAZ/PE | Período: ${periodoInventarioAtual}</p>
                 </div>
                 <div style="text-align: right; font-size: 11px; color:#64748b;">
@@ -1975,60 +2295,72 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 18px;">
-                <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #64748b; font-weight: bold;">TOTAL AUDITADO</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #2563eb;">${totalItens}</div>
+            <div style="display: flex; gap: 8px; margin-bottom: 18px;">
+                <div style="flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #475569; font-weight: bold;">TOTAL NA BASE</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #1e3a8a;">${totalItens}</div>
                 </div>
-                <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #166534; font-weight: bold;">CONFORMES (OK)</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #10b981;">${totalOk}</div>
+                <div style="flex: 1; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #475569; font-weight: bold;">NÃO CONTADOS</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #64748b;">${totalNaoContado}</div>
                 </div>
-                <div style="flex: 1; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #92400e; font-weight: bold;">SOBRAS / FALTAS</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #f59e0b;">${totalSobra} / ${totalFalta}</div>
+                <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #166534; font-weight: bold;">CONFORMES (OK)</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #15803d;">${totalOk}</div>
                 </div>
-                <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #2563eb; font-weight: bold;">ACURACIDADE</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #1d4ed8;">${acuracidade}%</div>
+                <div style="flex: 1; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #92400e; font-weight: bold;">SOBRAS / FALTAS</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #b45309;">${totalSobra} / ${totalFalta}</div>
+                </div>
+                <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #1e40af; font-weight: bold;">ACURACIDADE</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #1d4ed8;">${acuracidade}%</div>
                 </div>
             </div>
 
-            <table style="width:100%; border-collapse:collapse; font-size:10px;">
+            <table style="width:100%; border-collapse:collapse; font-size:10px; border: 1px solid #cbd5e1;">
                 <thead>
-                    <tr style="background:#2563eb; color: white;">
-                        <th style="padding:6px; text-align:left;">Código</th>
-                        <th style="padding:6px; text-align:left;">Produto</th>
-                        <th style="padding:6px; text-align:center;">U.M</th>
-                        <th style="padding:6px; text-align:center;">Base</th>
-                        <th style="padding:6px; text-align:center;">Contado</th>
-                        <th style="padding:6px; text-align:center;">Dif.</th>
-                        <th style="padding:6px; text-align:left;">Status</th>
-                        <th style="padding:6px; text-align:left;">Observação</th>
+                    <tr style="background:#1e293b; color: white;">
+                        <th style="padding:6px; text-align:left; border: 1px solid #334155;">Código</th>
+                        <th style="padding:6px; text-align:left; border: 1px solid #334155;">Produto</th>
+                        <th style="padding:6px; text-align:center; border: 1px solid #334155;">U.M</th>
+                        <th style="padding:6px; text-align:center; border: 1px solid #334155;">Base</th>
+                        <th style="padding:6px; text-align:center; border: 1px solid #334155;">Contado</th>
+                        <th style="padding:6px; text-align:center; border: 1px solid #334155;">Dif.</th>
+                        <th style="padding:6px; text-align:center; border: 1px solid #334155;">Status</th>
+                        <th style="padding:6px; text-align:left; border: 1px solid #334155;">Observação</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
 
         itensInventarioBase.forEach((item, idx) => {
-            const c1 = Number(item.contagem1 || 0);
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
-            const efetiva = c2 !== null ? c2 : c1;
-            const dif = efetiva - item.base;
-            let status = 'OK', corStatus = '#10b981';
-            if (dif > 0) { status = `+${dif} (SOBRA)`; corStatus = '#d97706'; }
-            if (dif < 0) { status = `${dif} (FALTA)`; corStatus = '#dc2626'; }
+            const contado = itemEstaContado(item);
+            let efetivaTxt = '-', difTxt = '-', status = 'NÃO CONTADO', corStatus = '#64748b';
+
+            if (contado) {
+                const c1 = Number(item.contagem1);
+                const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(Number(item.contagem2))) ? Number(item.contagem2) : null;
+                const efetiva = c2 !== null ? c2 : c1;
+                const dif = efetiva - item.base;
+                efetivaTxt = efetiva;
+                difTxt = dif;
+                status = 'OK';
+                corStatus = '#15803d';
+                if (dif > 0) { status = `+${dif} (SOBRA)`; corStatus = '#b45309'; }
+                if (dif < 0) { status = `${dif} (FALTA)`; corStatus = '#b91c1c'; }
+            }
 
             htmlConteudo += `
-                <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom:1px solid #e2e8f0;">
-                    <td style="padding:5px;"><b>${item.codigo}</b></td>
-                    <td style="padding:5px;">${item.produto}</td>
-                    <td style="padding:5px; text-align:center;">${item.unidade}</td>
-                    <td style="padding:5px; text-align:center;">${item.base}</td>
-                    <td style="padding:5px; text-align:center;">${efetiva}</td>
-                    <td style="padding:5px; text-align:center; font-weight:bold;">${dif}</td>
-                    <td style="padding:5px; color:${corStatus}; font-weight:bold;">${status}</td>
-                    <td style="padding:5px; color:#64748b;">${item.obs || ''}</td>
+                <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                    <td style="padding:5px; border: 1px solid #cbd5e1;"><b>${item.codigo}</b></td>
+                    <td style="padding:5px; border: 1px solid #cbd5e1;">${item.produto}</td>
+                    <td style="padding:5px; text-align:center; border: 1px solid #cbd5e1;">${item.unidade}</td>
+                    <td style="padding:5px; text-align:center; border: 1px solid #cbd5e1;">${item.base}</td>
+                    <td style="padding:5px; text-align:center; border: 1px solid #cbd5e1;">${efetivaTxt}</td>
+                    <td style="padding:5px; text-align:center; font-weight:bold; border: 1px solid #cbd5e1;">${difTxt}</td>
+                    <td style="padding:5px; text-align:center; color:${corStatus}; font-weight:bold; border: 1px solid #cbd5e1;">${status}</td>
+                    <td style="padding:5px; color:#475569; border: 1px solid #cbd5e1;">${item.obs || ''}</td>
                 </tr>
             `;
         });
@@ -2080,16 +2412,31 @@
         const codigo = String(itemAlvo["CÓDIGO EFISCO"] || 'item').replace(/[^a-zA-Z0-9]/g, '');
 
         try {
+            // Analisa OCR em segundo plano para aproveitar validade/marca caso o item ainda não tenha
+            const dadosOCR = await analisarFotoOCR(file, itemIdSelecionadoFoto);
+
             const fotoComprimida = await comprimirImagem(file);
             const nomeArquivo = `${Date.now()}_${codigo}.jpg`;
             const { error: uploadError } = await supabaseClient.storage.from('fotos-bens').upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
             if (uploadError) throw uploadError;
             const { data: urlData } = supabaseClient.storage.from('fotos-bens').getPublicUrl(nomeArquivo);
 
-            const { error: updateError } = await supabaseClient.from('bens').update({ "foto_url": urlData.publicUrl }).eq('id', itemIdSelecionadoFoto);
+            const camposAtualizar = { "foto_url": urlData.publicUrl };
+            if (dadosOCR.dataEncontradaISO && !itemAlvo.validade) {
+                camposAtualizar.validade = dadosOCR.dataEncontradaISO;
+            }
+            if (dadosOCR.marcaDetectada && itemAlvo.PRODUTO && !itemAlvo.PRODUTO.toUpperCase().includes(dadosOCR.marcaDetectada)) {
+                camposAtualizar.PRODUTO = `${itemAlvo.PRODUTO} - ${dadosOCR.marcaDetectada}`;
+            }
+
+            const { error: updateError } = await supabaseClient.from('bens').update(camposAtualizar).eq('id', itemIdSelecionadoFoto);
             if (updateError) throw updateError;
 
-            alert('Foto anexada com sucesso!');
+            let msgExtra = '';
+            if (camposAtualizar.validade) msgExtra += `\n• Validade detectada: ${formatarDataBR(camposAtualizar.validade)}`;
+            if (camposAtualizar.PRODUTO) msgExtra += `\n• Marca identificada: ${dadosOCR.marcaDetectada}`;
+
+            alert('Foto anexada com sucesso!' + msgExtra);
             await carregarItens();
         } catch (err) {
             alert('Erro ao enviar foto: ' + err.message);
