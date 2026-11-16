@@ -266,7 +266,7 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .btn:hover { background: #f8fafc; border-color: var(--muted); }
-        .btn-add { background: var(--primary); color: white; border-color: var(--primary); display: none; }
+        .btn-add { background: var(--primary); color: white; border-color: var(--primary); }
         .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; border: none; }
         .btn-primary:hover { background: var(--primary-light); }
 
@@ -432,7 +432,7 @@
                     <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
                 </div>
                 <div class="header-buttons">
-                    <button class="btn btn-add admin-only" id="btnCarregarCat" onclick="abrirModalImportar()" style="display:none;">📥 Carregar Catálogo</button>
+                    <button class="btn btn-add" onclick="abrirModalImportar()">📥 Carregar Catálogo</button>
                 </div>
             </div>
             <div class="catalog-container">
@@ -633,12 +633,16 @@
     }
 
     async function iniciarSistema() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        atualizarEstadoAuth(session ? session.user : null);
-
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
             atualizarEstadoAuth(session ? session.user : null);
-        });
+
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                atualizarEstadoAuth(session ? session.user : null);
+            });
+        } catch (e) {
+            console.warn('Sessão Supabase ignorada:', e);
+        }
 
         await carregarItens();
         verificarInventarioSalvo();
@@ -646,14 +650,11 @@
 
     function atualizarEstadoAuth(user) {
         usuarioLogado = user;
-        const elementosAdmin = document.querySelectorAll('.admin-only');
         const labelUsuario = document.getElementById('labelUsuarioTopo');
         if (user) {
-            elementosAdmin.forEach(el => el.style.display = 'inline-flex');
             const nomeAdmin = user.email.split('@')[0];
             labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
         } else {
-            elementosAdmin.forEach(el => el.style.display = 'none');
             labelUsuario.innerText = 'Entrar';
         }
     }
@@ -663,6 +664,7 @@
             if (confirm('Deseja sair do modo administrador?')) {
                 supabaseClient.auth.signOut();
                 alert('Você saiu do modo administrador.');
+                window.location.reload();
             }
         } else {
             document.getElementById('modalLogin').classList.add('active');
@@ -673,21 +675,25 @@
 
     async function fazerLogin(e) {
         e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
+        const email = document.getElementById('loginEmail').value.trim();
         const senha = document.getElementById('loginSenha').value;
         const btn = document.getElementById('btnLogar');
         btn.disabled = true; btn.innerText = 'Entrando...';
 
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-        btn.disabled = false; btn.innerText = 'Entrar no Sistema';
-
-        if (error) {
-            alert('Erro ao entrar: E-mail ou senha incorretos.');
-        } else {
+        try {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+            if (error) throw error;
+            
             fecharModalLogin();
             document.getElementById('loginEmail').value = '';
             document.getElementById('loginSenha').value = '';
             alert('Login efetuado com sucesso!');
+            window.location.reload();
+        } catch (err) {
+            alert('Erro ao entrar: ' + (err.message || 'Credenciais inválidas.'));
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Entrar no Sistema';
         }
     }
 
@@ -731,15 +737,23 @@
         try {
             const { data, error } = await supabaseClient.from('bens').select('*').order('criado_em', { ascending: false });
             if (error) throw error;
+            
             todosItens = data || [];
-            atualizarSidebarMacroCategorias();
-            filtrarItens();
+            if (todosItens.length > 0) {
+                localStorage.setItem('catalogo_cache_local', JSON.stringify(todosItens));
+            }
         } catch (err) {
-            console.error(err);
-            grid.innerHTML = `<div class="status-msg" style="color:var(--danger)">Erro ao conectar com o Supabase: ${err.message}. Verifique sua conexão ou carregue o catálogo via Excel.</div>`;
-            todosItens = [];
-            filtrarItens();
+            console.warn('Aviso do Supabase (tentando cache local):', err.message);
+            const cacheLocal = localStorage.getItem('catalogo_cache_local');
+            if (cacheLocal) {
+                todosItens = JSON.parse(cacheLocal);
+            } else {
+                todosItens = [];
+            }
         }
+
+        atualizarSidebarMacroCategorias();
+        filtrarItens();
     }
 
     function obterTodasMacroUnicas() {
@@ -786,7 +800,7 @@
     function renderizarGrid(lista) {
         const grid = document.getElementById('gridCatalogo');
         if (lista.length === 0) {
-            grid.innerHTML = '<div class="status-msg">Nenhum item com saldo positivo encontrado no catálogo.</div>';
+            grid.innerHTML = '<div class="status-msg">Nenhum item com saldo positivo encontrado no catálogo. Clique em "Carregar Catálogo" se a tabela estiver vazia.</div>';
             return;
         }
         grid.innerHTML = lista.map(item => `
@@ -948,6 +962,7 @@
             const workbook = XLSX.read(data, { type: 'array', raw: false });
             const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: false });
 
+            let tempItens = [];
             for (let i = 3; i < linhas.length; i++) {
                 let r = linhas[i];
                 if (!r || !r[0]) continue;
@@ -958,7 +973,7 @@
                 const quantidade = parseNumeroBR(r[5]);
                 const hierarquia = determinarHierarquia(categoriaOriginal || produto);
 
-                await supabaseClient.from('bens').upsert({
+                const itemObj = {
                     "CÓDIGO EFISCO": codigo,
                     "PRODUTO": produto,
                     "UNIDADE DE MEDIDA": unidade,
@@ -966,8 +981,18 @@
                     "macro_categoria": hierarquia.macro,
                     "categoria": hierarquia.cat,
                     "micro_categoria": hierarquia.micro
-                }, { onConflict: 'CÓDIGO EFISCO' });
+                };
+
+                tempItens.push(itemObj);
+
+                try {
+                    await supabaseClient.from('bens').upsert(itemObj, { onConflict: 'CÓDIGO EFISCO' });
+                } catch (err) {
+                    console.warn('Erro ao salvar no Supabase:', err);
+                }
             }
+
+            localStorage.setItem('catalogo_cache_local', JSON.stringify(tempItens));
             alert('Catálogo importado e sincronizado com sucesso!');
             fecharModalImportar();
             await carregarItens();
