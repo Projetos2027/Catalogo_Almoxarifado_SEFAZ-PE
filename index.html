@@ -1319,7 +1319,6 @@
             const textoLimpo = text.replace(/\s+/g, ' ').trim();
             const textoUpper = textoLimpo.toUpperCase();
 
-            // 1. Extrair Validade (DD/MM/AAAA, DD/MM/AA, MM/AAAA ou YYYY-MM-DD)
             let dataEncontradaISO = null;
             const matchFull = textoLimpo.match(/(?:VAL(?:IDADE)?[\s:.-]*)?(\b[0-3]\d)[\/\.-]([01]\d)[\/\.-](20\d{2}|\d{2})\b/i);
             const matchMesAno = textoLimpo.match(/(?:VAL(?:IDADE)?[\s:.-]*)?(\b[01]\d)[\/\-](20\d{2})\b/i);
@@ -1340,7 +1339,6 @@
                 }
             }
 
-            // 2. Extrair Unidade de Medida
             let unidadeDetectada = null;
             if (/\b(CAIXA|CX)\b/.test(textoUpper)) unidadeDetectada = 'CX';
             else if (/\b(PACOTE|PCT)\b/.test(textoUpper)) unidadeDetectada = 'PCT';
@@ -1350,7 +1348,6 @@
             else if (/\b(KG|QUILO)\b/.test(textoUpper)) unidadeDetectada = 'KG';
             else if (/\b(UNIDADE|UNID|UN)\b/.test(textoUpper)) unidadeDetectada = 'UN';
 
-            // 3. Extrair possível Marca conhecida ou linha principal em caixa alta
             const marcasConhecidas = ['BIC', 'CHAMEX', 'REPORT', 'HP', 'EPSON', 'CANON', 'BROTHER', '3M', 'SCOTCH', 'PILOT', 'FABER-CASTELL', 'CIS', 'TILIBRA', 'YPE', 'YPÊ', 'VEJA', 'OMO', 'COLGATE', 'PILÃO', '3 CORAÇÕES', 'MELITTA', 'SANTA CLARA', 'UNIÃO', 'DURACELL', 'PANASONIC', 'ELGIN', 'TRAMONTINA', 'TIGRE', 'SUVINIL', 'CORAL'];
             let marcaDetectada = marcasConhecidas.find(m => textoUpper.includes(m)) || null;
 
@@ -1360,7 +1357,6 @@
             if (unidadeDetectada) resumoAchados.push(`U.M: <b>${unidadeDetectada}</b>`);
 
             if (!alvoItemId) {
-                // Preenchimento automático no modal de cadastro/edição
                 if (dataEncontradaISO && !document.getElementById('validade').value) {
                     document.getElementById('validade').value = dataEncontradaISO;
                 }
@@ -1392,9 +1388,7 @@
             return { dataEncontradaISO, unidadeDetectada, marcaDetectada };
         } catch (err) {
             console.warn('Falha no OCR:', err);
-            if (!alvoItemId && statusBox) {
-                statusBox.style.display = 'none';
-            }
+            if (!alvoItemId && statusBox) statusBox.style.display = 'none';
             return {};
         }
     }
@@ -1402,9 +1396,7 @@
     async function aoSelecionarFotoMaterial(event) {
         previewImagem(event);
         const file = event.target.files[0];
-        if (file) {
-            await analisarFotoOCR(file, null);
-        }
+        if (file) await analisarFotoOCR(file, null);
     }
 
     // --- ETIQUETAS ---
@@ -1756,8 +1748,30 @@
     }
 
     // --- MÓDULO DE INVENTÁRIO & ABA INVENTÁRIO ---
+    function normalizarItensInventario(lista) {
+        return (lista || []).map(item => {
+            const c1Raw = item.contagem1;
+            const isZeroOrEmpty = (c1Raw === '' || c1Raw === null || c1Raw === undefined || Number(c1Raw) === 0);
+            const marcadoNaoEncontrado = item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado fisicamente');
+
+            // Se estava 0 ou vazio e NÃO foi marcado como "não encontrado" (❌), força ficar vazio ('')
+            if (isZeroOrEmpty && !marcadoNaoEncontrado) {
+                return { ...item, contagem1: '', naoEncontrado: false };
+            }
+            if (Number(c1Raw) === 0 && marcadoNaoEncontrado) {
+                return { ...item, contagem1: 0, naoEncontrado: true };
+            }
+            return { ...item, naoEncontrado: false };
+        });
+    }
+
     function itemEstaContado(item) {
-        return item.contagem1 !== '' && item.contagem1 !== undefined && item.contagem1 !== null && !isNaN(Number(item.contagem1));
+        const c1 = item.contagem1;
+        if (c1 === '' || c1 === undefined || c1 === null || isNaN(Number(c1))) return false;
+        if (Number(c1) === 0) {
+            return item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado fisicamente');
+        }
+        return true;
     }
 
     async function verificarInventarioNuvem() {
@@ -1766,7 +1780,7 @@
             if (data && data.itens_json) {
                 const parsed = JSON.parse(data.itens_json);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    itensInventarioBase = parsed;
+                    itensInventarioBase = normalizarItensInventario(parsed);
                     periodoInventarioAtual = data.atualizado_em ? new Date(data.atualizado_em).toLocaleString('pt-BR') : 'Data não registrada';
                     return true;
                 }
@@ -1869,8 +1883,14 @@
                     if (qtdBase <= 0) continue;
 
                     novosItens.push({
-                        codigo, produto: String(r[1] || 'Sem descrição').trim(),
-                        unidade, base: qtdBase, contagem1: '', contagem2: '', obs: ''
+                        codigo,
+                        produto: String(r[1] || 'Sem descrição').trim(),
+                        unidade,
+                        base: qtdBase,
+                        contagem1: '',
+                        contagem2: '',
+                        naoEncontrado: false,
+                        obs: ''
                     });
                 }
 
@@ -1888,6 +1908,7 @@
 
     async function marcarNaoEncontrado(index) {
         itensInventarioBase[index].contagem1 = 0;
+        itensInventarioBase[index].naoEncontrado = true;
         if (!itensInventarioBase[index].obs) itensInventarioBase[index].obs = 'Item não encontrado fisicamente';
         await salvarInventarioNuvem();
         renderizarTabelaInventario();
@@ -1910,7 +1931,16 @@
         const qtd = parseInt(document.getElementById('manualQtd').value) || 0;
         const obs = document.getElementById('manualObs').value.trim();
 
-        itensInventarioBase.push({ codigo, produto, unidade, base: 0, contagem1: qtd, contagem2: '', obs });
+        itensInventarioBase.push({
+            codigo,
+            produto,
+            unidade,
+            base: 0,
+            contagem1: qtd,
+            contagem2: '',
+            naoEncontrado: qtd === 0,
+            obs
+        });
         await salvarInventarioNuvem();
         renderizarTabelaInventario();
         fecharModalAdicionarItemInv();
@@ -1934,6 +1964,7 @@
             if (termo && !cod.includes(termo) && !prod.includes(termo)) return;
 
             const contado = itemEstaContado(item);
+            const valorInputC1 = contado ? item.contagem1 : '';
             const c1 = contado ? Number(item.contagem1) : 0;
             const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(Number(item.contagem2))) ? Number(item.contagem2) : null;
             const efetiva = c2 !== null ? c2 : c1;
@@ -1960,14 +1991,14 @@
             html += `
                 <tr>
                     <td>
-                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px; border: none;" onclick="marcarNaoEncontrado(${index})" title="Não encontrado (marcar 0)">❌</button>
+                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px; border: none;" onclick="marcarNaoEncontrado(${index})" title="Não encontrado no depósito (marcar 0)">❌</button>
                         <code>${item.codigo}</code>
                     </td>
                     <td><b>${item.produto}</b></td>
                     <td>${item.unidade}</td>
                     <td style="text-align: center; font-weight:bold;">${item.base}</td>
-                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem1 ?? ''}" min="0" placeholder="-" onchange="atualizarContagem(${index}, 'c1', this.value)"></td>
-                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem2 ?? ''}" min="0" placeholder="-" onchange="atualizarContagem(${index}, 'c2', this.value)"></td>
+                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${valorInputC1}" min="0" placeholder="" onchange="atualizarContagem(${index}, 'c1', this.value)"></td>
+                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem2 ?? ''}" min="0" placeholder="" onchange="atualizarContagem(${index}, 'c2', this.value)"></td>
                     <td style="text-align: center; font-weight:bold;" id="dif_${index}">${difTexto}</td>
                     <td id="status_${index}">${statusBadge}</td>
                     <td><input type="text" class="inv-input-text" value="${item.obs || ''}" onchange="atualizarContagem(${index}, 'obs', this.value)" placeholder="Justificativa..."></td>
@@ -1995,9 +2026,26 @@
     }
 
     async function atualizarContagem(index, tipo, valor) {
-        if (tipo === 'c1') itensInventarioBase[index].contagem1 = (valor !== '') ? parseInt(valor) : '';
-        else if (tipo === 'c2') itensInventarioBase[index].contagem2 = (valor !== '') ? parseInt(valor) : null;
-        else if (tipo === 'obs') itensInventarioBase[index].obs = valor;
+        if (tipo === 'c1') {
+            if (valor === '' || valor === null) {
+                itensInventarioBase[index].contagem1 = '';
+                itensInventarioBase[index].naoEncontrado = false;
+            } else {
+                const num = parseInt(valor);
+                if (isNaN(num) || num <= 0) {
+                    // Se o usuário digitou 0 manualmente na caixa, só aceita 0 se usar o botão ❌; caso contrário mantém vazio
+                    itensInventarioBase[index].contagem1 = '';
+                    itensInventarioBase[index].naoEncontrado = false;
+                } else {
+                    itensInventarioBase[index].contagem1 = num;
+                    itensInventarioBase[index].naoEncontrado = false;
+                }
+            }
+        } else if (tipo === 'c2') {
+            itensInventarioBase[index].contagem2 = (valor !== '') ? parseInt(valor) : null;
+        } else if (tipo === 'obs') {
+            itensInventarioBase[index].obs = valor;
+        }
 
         await salvarInventarioNuvem();
         if (tipo !== 'obs') renderizarTabelaInventario();
@@ -2020,7 +2068,6 @@
                 const contado = itemEstaContado(invItem);
                 const c1 = contado ? Number(invItem.contagem1) : 0;
                 const c2 = (invItem.contagem2 !== '' && invItem.contagem2 !== null && invItem.contagem2 !== undefined && !isNaN(Number(invItem.contagem2))) ? Number(invItem.contagem2) : null;
-                // Se o item não teve contagem digitada, mantém o saldo base; se foi contado, usa a contagem efetiva
                 const quantidadeFinal = contado ? (c2 !== null ? c2 : c1) : Number(invItem.base || 0);
 
                 const codLimpo = String(invItem.codigo || '').trim();
@@ -2105,7 +2152,6 @@
         const acuracidade = totalContados > 0 ? ((totalOk / totalContados) * 100).toFixed(1) + '%' : '0.0%';
         const dataStr = new Date().toLocaleDateString('pt-BR');
 
-        // Estilos Sobrios Profissionais (xlsx-js-style)
         const borderThin = {
             top: { style: "thin", color: { rgb: "CBD5E1" } },
             bottom: { style: "thin", color: { rgb: "CBD5E1" } },
@@ -2184,7 +2230,6 @@
 
         const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        // Mesclagens de cabeçalhos
         ws['!merges'] = [
             { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
             { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
@@ -2192,7 +2237,6 @@
             { s: { r: 7, c: 0 }, e: { r: 7, c: 8 } }
         ];
 
-        // Aplicar estilos nas linhas de cabeçalho e resumo
         for (let c = 0; c <= 8; c++) {
             const addr0 = XLSX.utils.encode_cell({ r: 0, c });
             const addr1 = XLSX.utils.encode_cell({ r: 1, c });
@@ -2206,7 +2250,6 @@
             if (ws[addr8]) ws[addr8].s = styleTableHeader;
         }
 
-        // Estilos do Bloco de Resumo (Linhas 4 e 5)
         [4, 5].forEach(r => {
             for (let c = 0; c <= 7; c++) {
                 const addr = XLSX.utils.encode_cell({ r, c });
@@ -2215,7 +2258,6 @@
             }
         });
 
-        // Estilos da Tabela de Dados (Linha 9 em diante)
         for (let r = 9; r < aoa.length; r++) {
             const isEven = (r % 2 === 0);
             const rowBg = isEven ? "F8FAFC" : "FFFFFF";
@@ -2412,7 +2454,6 @@
         const codigo = String(itemAlvo["CÓDIGO EFISCO"] || 'item').replace(/[^a-zA-Z0-9]/g, '');
 
         try {
-            // Analisa OCR em segundo plano para aproveitar validade/marca caso o item ainda não tenha
             const dadosOCR = await analisarFotoOCR(file, itemIdSelecionadoFoto);
 
             const fotoComprimida = await comprimirImagem(file);
