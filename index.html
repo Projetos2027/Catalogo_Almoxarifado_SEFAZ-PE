@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Almoxarifado SEFAZ/PE</title>
+    <title>Almoxarifado SEFAZ/PE - SaaS Minimalista</title>
     <!-- SDK Oficial do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Biblioteca para gerar Códigos de Barras -->
@@ -19,7 +19,7 @@
     </script>
     <style>
         :root {
-            --primary: #1e40af;
+            --primary: #2563eb;
             --primary-light: #3b82f6;
             --bg: #f8fafc;
             --card: #ffffff;
@@ -32,20 +32,116 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 40px; }
+        body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+        /* Sidebar Minimalista */
+        aside {
+            width: 260px;
+            background: white;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-section h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .sidebar-nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sidebar-nav-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: var(--text);
+            transition: 0.15s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-nav-item:hover, .sidebar-nav-item.active {
+            background: #eff6ff;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Conteúdo Principal */
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
 
         header {
-            background: var(--primary);
-            color: white;
+            background: white;
+            border-bottom: 1px solid var(--border);
             padding: 16px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 90;
         }
-        header h1 { font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
+        .search-spotlight {
+            flex: 1;
+            max-width: 500px;
+            position: relative;
+        }
+        .search-spotlight input {
+            width: 100%;
+            padding: 10px 14px 10px 38px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #f8fafc;
+            transition: 0.15s;
+        }
+        .search-spotlight input:focus {
+            background: white;
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .search-spotlight span {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+        }
 
         .header-buttons {
             display: flex;
@@ -55,12 +151,12 @@
         }
 
         .btn {
-            padding: 10px 16px;
+            padding: 9px 14px;
             border: none;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: 0.2s;
             display: inline-flex;
             align-items: center;
@@ -74,51 +170,36 @@
         .btn-inventory:hover { background: #6d28d9; }
         .btn-primary { background: var(--primary); color: white; width: 100%; }
         .btn-primary:hover { background: var(--primary-light); }
-        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.8rem; display: none; }
-        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.8rem; display: none; }
-        .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.8rem; display: none; }
+        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; display: none; }
+        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.75rem; display: none; }
+        .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.75rem; display: none; }
         .btn-photo:hover { background: #fde047; }
         .btn-login { background: #334155; color: white; }
         .btn-login:hover { background: #475569; }
 
-        .controls {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 16px;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
+        .catalog-container {
+            padding: 24px;
+            flex: 1;
         }
-        .controls input, .controls select {
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: white;
-        }
-        .controls input { flex: 1; min-width: 240px; }
 
         .catalog-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 16px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 20px;
         }
 
         .item-card {
             background: var(--card);
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
             border: 1px solid var(--border);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
             display: flex;
             flex-direction: column;
-            transition: transform 0.15s;
+            transition: all 0.15s ease;
         }
         .item-card.admin-clicavel { cursor: pointer; }
-        .item-card.admin-clicavel:hover { transform: translateY(-3px); border-color: var(--primary-light); }
+        .item-card.admin-clicavel:hover { transform: translateY(-3px); border-color: var(--primary-light); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
 
         .item-card.esgotado {
             background: #fff5f5;
@@ -130,13 +211,14 @@
 
         .item-img-box {
             width: 100%;
-            height: 190px;
-            background: #e2e8f0;
+            height: 170px;
+            background: #f1f5f9;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
+            border-bottom: 1px solid var(--border);
         }
         .item-img-box img {
             width: 100%;
@@ -152,7 +234,7 @@
             padding: 4px 8px;
             border-radius: 6px;
             font-family: monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: bold;
         }
 
@@ -164,14 +246,15 @@
             justify-content: space-between;
         }
         .item-cat {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            color: var(--primary-light);
+            color: var(--primary);
             font-weight: 700;
             margin-bottom: 4px;
+            letter-spacing: 0.03em;
         }
         .item-title {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             margin-bottom: 6px;
             line-height: 1.3;
@@ -192,7 +275,7 @@
         }
         .item-actions {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             align-items: center;
         }
 
@@ -200,7 +283,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.5);
             justify-content: center;
             align-items: center;
             padding: 16px;
@@ -215,6 +298,7 @@
             max-width: 420px;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
         .modal-large {
             max-width: 1150px;
@@ -255,7 +339,7 @@
             grid-column: 1 / -1;
         }
 
-        /* Estilos da Tabela de Inventário / Revisão PDF */
+        /* Tabela de Inventário / Revisão PDF */
         .inventory-table-container {
             flex: 1;
             overflow-y: auto;
@@ -297,30 +381,62 @@
             border-radius: 6px;
             font-size: 0.85rem;
         }
+
+        @media (max-width: 768px) {
+            aside { transform: translateX(-100%); transition: 0.3s; }
+            aside.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>📦 Almoxarifado SEFAZ/PE</h1>
-    <div class="header-buttons">
-        <button class="btn btn-inventory admin-only" id="btnInventario" onclick="abrirModalInventario()" style="display:none;">📊 Realizar Inventário</button>
-        <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Importar Recebimento (.pdf)</button>
-        <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Importar Excel (.xlsx)</button>
-        <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
-        <button class="btn btn-login" id="btnAuth" onclick="controlarSessao()">🔑 Entrar (Admin)</button>
+<!-- Sidebar Minimalista (Opção 3) -->
+<aside id="appSidebar">
+    <div class="sidebar-brand">
+        📦 SEFAZ/PE
     </div>
-</header>
+    <div class="sidebar-section">
+        <h3>Categorias</h3>
+        <ul class="sidebar-nav-list" id="sidebarCategoriasList">
+            <li class="sidebar-nav-item active" onclick="selecionarCategoriaSidebar('')">
+                <span>📁 Todas as Categorias</span>
+            </li>
+        </ul>
+    </div>
+    <div class="sidebar-section">
+        <h3>Filtros Rápidos</h3>
+        <ul class="sidebar-nav-list">
+            <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('todos')">
+                <span>📋 Todos os Itens</span>
+            </li>
+            <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('esgotados')">
+                <span>⚠️ Apenas Esgotados</span>
+            </li>
+        </ul>
+    </div>
+</aside>
 
-<div class="controls">
-    <input type="text" id="busca" placeholder="🔍 Buscar por código, produto ou categoria..." oninput="filtrarItens()">
-    <select id="filtroCategoria" onchange="filtrarItens()">
-        <option value="">Todas as Categorias</option>
-    </select>
-</div>
+<div class="main-content">
+    <header>
+        <div class="search-spotlight">
+            <span>🔍</span>
+            <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
+        </div>
+        <div class="header-buttons">
+            <button class="btn btn-inventory admin-only" id="btnInventario" onclick="abrirModalInventario()" style="display:none;">📊 Inventário</button>
+            <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 PDF Recebimento</button>
+            <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Excel</button>
+            <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
+            <button class="btn btn-login" id="btnAuth" onclick="controlarSessao()">🔑 Entrar</button>
+        </div>
+    </header>
 
-<div class="catalog-grid" id="gridCatalogo">
-    <div class="status-msg">Carregando itens do catálogo...</div>
+    <div class="catalog-container">
+        <div class="catalog-grid" id="gridCatalogo">
+            <div class="status-msg">Carregando itens do catálogo...</div>
+        </div>
+    </div>
 </div>
 
 <input type="file" id="inputFotoOculto" accept="image/*" capture="environment" style="display:none" onchange="salvarFotoDireta(event)">
@@ -381,7 +497,7 @@
                 <input type="text" id="ajusteNomeProduto" disabled style="background: #f1f5f9; font-weight: bold;">
             </div>
             <div class="form-group">
-                <label>Quantidade de Volumes Recebidos (Ex: 10 latas, 5 caixas) *</label>
+                <label>Quantidade de Volumes Recebidos *</label>
                 <input type="number" id="ajusteVolumes" required min="1" placeholder="Ex: 10">
             </div>
             <div class="form-group">
@@ -392,7 +508,7 @@
             </div>
             <div class="form-group">
                 <label>Justificativa / Observação do Empenho</label>
-                <input type="text" id="ajusteObsEmpenho" placeholder="Ex: Entregue em latas de 3,6L conforme acordo">
+                <input type="text" id="ajusteObsEmpenho" placeholder="Ex: Entregue em embalagem diferenciada conforme acordo">
             </div>
             <button type="submit" class="btn btn-primary">Aplicar Ajuste de Embalagem</button>
         </form>
@@ -676,6 +792,8 @@
     let usuarioLogado = null;
     let itemIdSelecionadoFoto = null;
     let itemSelecionadoParaEtiqueta = null;
+    let categoriaSelecionadaSidebar = '';
+    let statusFiltroSidebar = 'todos';
     let tokenSessaoLocal = 'token_' + Math.random().toString(36).substring(2) + Date.now();
     let intervaloVerificacaoSessao = null;
 
@@ -750,7 +868,7 @@
             btnAuth.style.background = '#b91c1c';
         } else {
             botoesAdmin.forEach(el => el.style.display = 'none');
-            btnAuth.innerText = '🔑 Entrar (Admin)';
+            btnAuth.innerText = '🔑 Entrar';
             btnAuth.style.background = '#334155';
         }
         renderizarGrid(todosItens);
@@ -805,6 +923,7 @@
         }
 
         todosItens = data || [];
+        atualizarSidebarCategorias();
         atualizarSelectsCategoriasEUnidades();
         filtrarItens();
     }
@@ -830,31 +949,52 @@
         return combinadas.sort();
     }
 
-    function atualizarSelectsCategoriasEUnidades() {
-        const selectFiltro = document.getElementById('filtroCategoria');
-        const valorFiltroAtual = selectFiltro.value;
+    function atualizarSidebarCategorias() {
         const listaCats = obterTodasCategoriasUnicas();
+        const container = document.getElementById('sidebarCategoriasList');
+        
+        let html = `<li class="sidebar-nav-item ${categoriaSelecionadaSidebar === '' ? 'active' : ''}" onclick="selecionarCategoriaSidebar('')"><span>📁 Todas as Categorias</span><span>(${todosItens.length})</span></li>`;
+        
+        listaCats.forEach(cat => {
+            const count = todosItens.filter(i => i.CATEGORIA === cat).length;
+            html += `<li class="sidebar-nav-item ${categoriaSelecionadaSidebar === cat ? 'active' : ''}" onclick="selecionarCategoriaSidebar('${cat}')"><span>${cat}</span><span>(${count})</span></li>`;
+        });
+        
+        container.innerHTML = html;
+    }
 
-        selectFiltro.innerHTML = '<option value="">Todas as Categorias</option>' + 
-            listaCats.map(c => `<option value="${c}">${c}</option>`).join('');
-        selectFiltro.value = valorFiltroAtual;
+    function selecionarCategoriaSidebar(cat) {
+        categoriaSelecionadaSidebar = cat;
+        atualizarSidebarCategorias();
+        filtrarItens();
+    }
 
+    function filtrarStatusSidebar(status) {
+        statusFiltroSidebar = status;
+        filtrarItens();
+    }
+
+    function atualizarSelectsCategoriasEUnidades() {
+        const listaCats = obterTodasCategoriasUnicas();
         const selectModalCat = document.getElementById('categoria');
-        const valorModalCatAtual = selectModalCat.value;
-        selectModalCat.innerHTML = '<option value="">Selecione a Categoria</option>' + 
-            listaCats.map(c => `<option value="${c}">${c}</option>`).join('') +
-            '<option value="__NOVA__" style="font-weight:bold; color:var(--primary);">➕ Adicionar Nova Categoria...</option>';
-        selectModalCat.value = valorModalCatAtual;
+        if (selectModalCat) {
+            const valorModalCatAtual = selectModalCat.value;
+            selectModalCat.innerHTML = '<option value="">Selecione a Categoria</option>' + 
+                listaCats.map(c => `<option value="${c}">${c}</option>`).join('') +
+                '<option value="__NOVA__" style="font-weight:bold; color:var(--primary);">➕ Adicionar Nova Categoria...</option>';
+            selectModalCat.value = valorModalCatAtual;
+        }
 
         const selectModalUn = document.getElementById('unidade');
-        const valorModalUnAtual = selectModalUn.value;
         const listaUnidades = obterTodasUnidadesUnicas();
-        selectModalUn.innerHTML = '<option value="">Selecione a Unidade</option>' + 
-            listaUnidades.map(u => `<option value="${u}">${u}</option>`).join('') +
-            '<option value="__NOVA__" style="font-weight:bold; color:var(--primary);">➕ Adicionar Nova Unidade...</option>';
-        selectModalUn.value = valorModalUnAtual;
+        if (selectModalUn) {
+            const valorModalUnAtual = selectModalUn.value;
+            selectModalUn.innerHTML = '<option value="">Selecione a Unidade</option>' + 
+                listaUnidades.map(u => `<option value="${u}">${u}</option>`).join('') +
+                '<option value="__NOVA__" style="font-weight:bold; color:var(--primary);">➕ Adicionar Nova Unidade...</option>';
+            selectModalUn.value = valorModalUnAtual;
+        }
 
-        // Select do modal de ajuste de empenho
         const selectAjusteUn = document.getElementById('ajusteNovaUnidade');
         if (selectAjusteUn) {
             selectAjusteUn.innerHTML = '<option value="">Selecione a Unidade Correta</option>' + 
@@ -912,7 +1052,7 @@
                     <span class="badge-cod">${item["CÓDIGO EFISCO"] || 'SEM CÓDIGO'}</span>
                     ${item.foto_url 
                         ? `<img src="${item.foto_url}" alt="${item.PRODUTO}" loading="lazy">` 
-                        : `<span style="color:#94a3b8; font-size:0.9rem;">📷 Sem foto</span>`}
+                        : `<span style="color:#94a3b8; font-size:0.85rem;">📷 Sem foto</span>`}
                 </div>
                 <div class="item-body">
                     <div>
@@ -934,7 +1074,7 @@
         }).join('');
     }
 
-    // --- FUNÇÕES DE ETIQUETA ---
+    // --- ETIQUETAS ---
     function abrirModalEscolhaEtiqueta(item) {
         if (!usuarioLogado) return alert('Acesso negado.');
         itemSelecionadoParaEtiqueta = item;
@@ -962,8 +1102,8 @@
 
         if (tipo === 'pallet') {
             container.innerHTML = `
-                <div style="width: 700px; padding: 40px; border: 4px solid #1e40af; border-radius: 12px; font-family: 'Segoe UI', sans-serif; background: white; text-align: center;">
-                    <div style="font-size: 20px; font-weight: bold; color: #1e40af; text-transform: uppercase; margin-bottom: 10px;">Almoxarifado SEFAZ/PE</div>
+                <div style="width: 700px; padding: 40px; border: 4px solid #2563eb; border-radius: 12px; font-family: 'Segoe UI', sans-serif; background: white; text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 10px;">Almoxarifado SEFAZ/PE</div>
                     <div style="font-size: 16px; font-weight: bold; background: #e2e8f0; padding: 6px; border-radius: 6px; margin-bottom: 25px;">ETIQUETA DE PALLET</div>
                     
                     <div style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: bold;">Código EFISCO</div>
@@ -1033,9 +1173,8 @@
             html2pdf().from(container).set(opt).save().then(() => container.remove());
         }
     }
-    // --- FIM DAS ETIQUETAS ---
 
-    // --- FUNÇÕES DE CADASTRO E EDIÇÃO DE ITENS ---
+    // --- CADASTRO E EDIÇÃO ---
     function abrirModalCadastro() {
         if (!usuarioLogado) return;
         document.getElementById('tituloModalMaterial').innerText = 'Cadastrar Material';
@@ -1063,10 +1202,10 @@
         atualizarSelectsCategoriasEUnidades();
         
         const selectCat = document.getElementById('categoria');
-        selectCat.value = item.CATEGORIA || 'Outros';
+        if (selectCat) selectCat.value = item.CATEGORIA || 'Outros';
 
         const selectUn = document.getElementById('unidade');
-        selectUn.value = item["UNIDADE DE MEDIDA"] || 'UN';
+        if (selectUn) selectUn.value = item["UNIDADE DE MEDIDA"] || 'UN';
 
         const imgPrev = document.getElementById('imgPreview');
         if (item.foto_url) {
@@ -1181,9 +1320,8 @@
             btn.innerText = 'Salvar no Catálogo';
         }
     }
-    // --- FIM DO CADASTRO E EDIÇÃO ---
 
-    // --- FUNÇÕES DE IMPORTAÇÃO E REVISÃO DE PDF DE RECEBIMENTO (PEINTEGRADO) ---
+    // --- IMPORTAÇÃO DE PDF DE RECEBIMENTO ---
     function abrirModalImportarPdf() {
         if (!usuarioLogado) return alert('Acesso negado.');
         document.getElementById('modalImportarPdf').classList.add('active');
@@ -1399,9 +1537,8 @@
         fecharModalImportarPdf();
         await carregarItens();
     }
-    // --- FIM DAS FUNÇÕES DE PDF ---
 
-    // --- FUNÇÕES DE INVENTÁRIO (SUPABASE + INDICADOR VISUAL) ---
+    // --- MÓDULO DE INVENTÁRIO ---
     async function verificarInventarioNuvem() {
         const btnInv = document.getElementById('btnInventario');
         
@@ -1425,7 +1562,7 @@
         }
 
         itensInventarioBase = [];
-        if (btnInv) btnInv.innerText = '📊 Realizar Inventário';
+        if (btnInv) btnInv.innerText = '📊 Inventário';
     }
 
     async function salvarInventarioNuvem() {
@@ -1655,11 +1792,11 @@
 
             contadorExibidos++;
 
-            let statusBadge = '<span class="badge-dif-ok">OK</span>';
+            let statusBadge = '<span style="color:var(--success); font-weight:bold;">OK</span>';
             if (dif > 0) {
-                statusBadge = `<span class="badge-dif-sobra">+${dif} (Sobra)</span>`;
+                statusBadge = `<span style="color:#d97706; font-weight:bold;">+${dif} (Sobra)</span>`;
             } else if (dif < 0) {
-                statusBadge = `<span class="badge-dif-falta">${dif} (Falta)</span>`;
+                statusBadge = `<span style="color:var(--danger); font-weight:bold;">${dif} (Falta)</span>`;
             }
 
             const obsValor = item.obs !== undefined && item.obs !== null ? item.obs : '';
@@ -1669,7 +1806,7 @@
             html += `
                 <tr>
                     <td>
-                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px;" onclick="marcarNaoEncontrado(${index})" title="Marcar como Não Encontrado (Zera 1ª Cont.)">❌</button>
+                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px;" onclick="marcarNaoEncontrado(${index})" title="Marcar como Não Encontrado">❌</button>
                         <code>${item.codigo}</code>
                     </td>
                     <td><b>${item.produto}</b></td>
@@ -1684,7 +1821,7 @@
                     <td style="text-align: center;" id="dif_${index}">${dif}</td>
                     <td id="status_${index}">${statusBadge}</td>
                     <td>
-                        <input type="text" class="inv-input-obs" value="${obsValor}" onchange="atualizarContagem(${index}, 'obs', this.value)" placeholder="Digite a justificativa...">
+                        <input type="text" class="inv-input-text" value="${obsValor}" onchange="atualizarContagem(${index}, 'obs', this.value)" placeholder="Justificativa...">
                     </td>
                 </tr>
             `;
@@ -1726,11 +1863,11 @@
             if (tdDif) tdDif.innerText = dif;
             if (tdStatus) {
                 if (dif > 0) {
-                    tdStatus.innerHTML = `<span class="badge-dif-sobra">+${dif} (Sobra)</span>`;
+                    tdStatus.innerHTML = `<span style="color:#d97706; font-weight:bold;">+${dif} (Sobra)</span>`;
                 } else if (dif < 0) {
-                    tdStatus.innerHTML = `<span class="badge-dif-falta">${dif} (Falta)</span>`;
+                    tdStatus.innerHTML = `<span style="color:var(--danger); font-weight:bold;">${dif} (Falta)</span>`;
                 } else {
-                    tdStatus.innerHTML = '<span class="badge-dif-ok">OK</span>';
+                    tdStatus.innerHTML = '<span style="color:var(--success); font-weight:bold;">OK</span>';
                 }
             }
         }
@@ -1825,9 +1962,9 @@
         elemento.style.color = '#0f172a';
 
         let htmlConteudo = `
-            <div style="border-bottom: 3px solid #1e40af; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h2 style="color:#1e40af; font-size: 18px; margin: 0;">RELATÓRIO EXECUTIVO DE INVENTÁRIO</h2>
+                    <h2 style="color:#2563eb; font-size: 18px; margin: 0;">RELATÓRIO EXECUTIVO DE INVENTÁRIO</h2>
                     <p style="font-size: 11px; color:#64748b; margin-top: 2px;">Almoxarifado SEFAZ/PE - Auditoria Física</p>
                 </div>
                 <div style="text-align: right; font-size: 11px; color:#64748b;">
@@ -1839,7 +1976,7 @@
             <div style="display: flex; gap: 10px; margin-bottom: 18px;">
                 <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center;">
                     <div style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase;">Total Auditado</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #1e40af; margin-top: 4px;">${totalItens}</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #2563eb; margin-top: 4px;">${totalItens}</div>
                 </div>
                 <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px; text-align: center;">
                     <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Conformes (OK)</div>
@@ -1850,14 +1987,14 @@
                     <div style="font-size: 16px; font-weight: bold; color: #f59e0b; margin-top: 4px;">${totalSobra} / ${totalFalta}</div>
                 </div>
                 <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Acuracidade</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #2563eb; margin-top: 4px;">${acuracidade}%</div>
+                    <div style="font-size: 10px; color: #2563eb; font-weight: bold; text-transform: uppercase;">Acuracidade</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #1d4ed8; margin-top: 4px;">${acuracidade}%</div>
                 </div>
             </div>
 
             <table style="width:100%; border-collapse:collapse; font-size:10px;">
                 <thead>
-                    <tr style="background:#1e40af; color: white;">
+                    <tr style="background:#2563eb; color: white;">
                         <th style="padding:6px; text-align:left;">Código</th>
                         <th style="padding:6px; text-align:left;">Produto</th>
                         <th style="padding:6px; text-align:center;">U.M</th>
@@ -1900,17 +2037,6 @@
         htmlConteudo += `
                 </tbody>
             </table>
-            
-            <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 10px; color: #475569;">
-                <div style="text-align: center; width: 45%;">
-                    <div style="border-bottom: 1px solid #94a3b8; margin-bottom: 5px; height: 30px;"></div>
-                    <b>Responsável pelo Almoxarifado</b>
-                </div>
-                <div style="text-align: center; width: 45%;">
-                    <div style="border-bottom: 1px solid #94a3b8; margin-bottom: 5px; height: 30px;"></div>
-                    <b>Auditoria / Controle Interno</b>
-                </div>
-            </div>
         `;
 
         elemento.innerHTML = htmlConteudo;
@@ -2097,16 +2223,22 @@
 
     function filtrarItens() {
         const termo = document.getElementById('busca').value.toLowerCase();
-        const cat = document.getElementById('filtroCategoria').value;
 
         const filtrados = todosItens.filter(item => {
             const cod = String(item["CÓDIGO EFISCO"] || '').toLowerCase();
             const prod = String(item.PRODUTO || '').toLowerCase();
             const categ = String(item.CATEGORIA || '').toLowerCase();
+            const qtd = Number(item.QUANTIDADE || 0);
             
             const bateTexto = cod.includes(termo) || prod.includes(termo) || categ.includes(termo);
-            const bateCat = !cat || String(item.CATEGORIA || '') === cat;
-            return bateTexto && bateCat;
+            const bateCat = !categoriaSelecionadaSidebar || String(item.CATEGORIA || '') === categoriaSelecionadaSidebar;
+            
+            let bateStatus = true;
+            if (statusFiltroSidebar === 'esgotados') {
+                bateStatus = qtd === 0;
+            }
+
+            return bateTexto && bateCat && bateStatus;
         });
         renderizarGrid(filtrados);
     }
