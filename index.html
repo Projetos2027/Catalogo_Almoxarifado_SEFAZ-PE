@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Biblioteca para gerar Códigos de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <!-- Biblioteca xlsx-js-style para ler e gerar arquivos Excel (.xlsx) COM ESTILOS E BORDAS -->
+    <!-- Biblioteca xlsx-js-style para ler e gerar arquivos Excel (.xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <!-- Biblioteca html2pdf para gerar arquivos PDF formatados -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -266,12 +266,10 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .btn:hover { background: #f8fafc; border-color: var(--muted); }
-        .btn-add { background: var(--primary); color: white; border-color: var(--primary); display: none; }
+        .btn-add { background: var(--primary); color: white; border-color: var(--primary); }
         .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; border: none; }
         .btn-primary:hover { background: var(--primary-light); }
-        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
-        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
-        .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
+        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; border: none; }
 
         .catalog-container { padding: 24px; flex: 1; }
         .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
@@ -300,7 +298,6 @@
             position: relative;
             border-bottom: 1px solid var(--border);
         }
-        .item-img-box img { width: 100%; height: 100%; object-fit: cover; }
         .badge-cod {
             position: absolute;
             top: 10px;
@@ -317,9 +314,7 @@
         .item-body { padding: 14px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .item-cat { font-size: 0.7rem; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.03em; }
         .item-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
-        .item-validade { font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; }
         .item-meta { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); align-items: center; }
-        .item-actions { display: flex; gap: 4px; align-items: center; }
 
         .erp-container { padding: 24px; flex: 1; display: flex; flex-direction: column; }
         .erp-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); flex: 1; display: flex; flex-direction: column; }
@@ -327,7 +322,6 @@
         table.erp-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
         table.erp-table th { background: #f1f5f9; color: var(--text); font-weight: 600; padding: 12px 14px; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); }
         table.erp-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); background: white; }
-        table.erp-table tr:hover td { background: #f8fafc; }
 
         .modal-overlay {
             display: none;
@@ -350,21 +344,12 @@
             overflow-y: auto;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
-        .modal-large { max-width: 1150px; max-height: 92vh; display: flex; flex-direction: column; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
         .form-group { margin-bottom: 14px; }
         .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: #fff;
-        }
-        .form-group small { color: var(--muted); font-size: 0.75rem; display: block; margin-top: 4px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
 
-        .preview-upload { width: 100%; max-height: 160px; object-fit: contain; margin-top: 8px; border-radius: 6px; display: none; }
         .status-msg { text-align: center; padding: 40px; color: var(--muted); grid-column: 1 / -1; }
 
         .inventory-table-container {
@@ -383,12 +368,6 @@
 
         .app-view { display: none; flex: 1; flex-direction: column; }
         .app-view.active { display: flex; }
-
-        @media (max-width: 768px) {
-            aside { transform: translateX(-100%); transition: 0.3s; }
-            aside.mobile-open { transform: translateX(0); }
-            .content-wrapper { margin-left: 0 !important; }
-        }
     </style>
 </head>
 <body>
@@ -402,10 +381,10 @@
     </div>
     <ul class="top-nav-links" id="navLinksContainer">
         <li class="top-nav-item active" id="abaNavCatalogo" onclick="mudarAba('catalogo')">📦 Catálogo</li>
-        <li class="top-nav-item admin-only" id="abaNavEstoque" onclick="mudarAba('estoque')" style="display:none;">📋 Estoque</li>
-        <li class="top-nav-item admin-only" id="abaNavPedidos" onclick="mudarAba('pedidos')" style="display:none;">🛒 Pedidos</li>
-        <li class="top-nav-item admin-only" id="abaNavInventario" onclick="mudarAba('inventario')" style="display:none;">📊 Inventário</li>
-        <li class="top-nav-item admin-only" id="abaNavRelatorios" onclick="mudarAba('relatorios')" style="display:none;">📈 Relatórios</li>
+        <li class="top-nav-item" id="abaNavEstoque" onclick="mudarAba('estoque')">📋 Estoque</li>
+        <li class="top-nav-item" id="abaNavPedidos" onclick="mudarAba('pedidos')">🛒 Pedidos</li>
+        <li class="top-nav-item" id="abaNavInventario" onclick="mudarAba('inventario')">📊 Inventário</li>
+        <li class="top-nav-item" id="abaNavRelatorios" onclick="mudarAba('relatorios')">📈 Relatórios</li>
     </ul>
     <div class="top-user-area">
         <span style="cursor:pointer;" title="Notificações">🔔</span>
@@ -456,9 +435,8 @@
                     <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
                 </div>
                 <div class="header-buttons">
-                    <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Novo Recebimento</button>
-                    <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Carregar Catálogo</button>
-                    <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
+                    <button class="btn btn-add" onclick="abrirModalImportar()">📥 Carregar Catálogo</button>
+                    <button class="btn btn-add" onclick="abrirModalCadastro()">+ Novo Item</button>
                 </div>
             </div>
             <div class="catalog-container">
@@ -473,22 +451,12 @@
             <div class="sub-header">
                 <div class="search-spotlight">
                     <span>🔍</span>
-                    <input type="text" id="buscaEstoque" placeholder="Pesquisar por Código, Produto ou Empenho..." oninput="renderizarTabelaEstoque()">
-                </div>
-                <div class="header-buttons">
-                    <button class="btn admin-only" onclick="abrirModalEntradaEstoqueManual()" style="background:var(--primary); color:white; border:none;">➕ Entrada Manual / Empenho</button>
-                    <button class="btn admin-only" onclick="abrirModalImportarPdf()">📥 Entrada via PDF</button>
+                    <input type="text" id="buscaEstoque" placeholder="Pesquisar por Código, Produto..." oninput="renderizarTabelaEstoque()">
                 </div>
             </div>
             <div class="erp-container">
                 <div class="erp-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <h2 style="font-size: 1.15rem; color: var(--text);">📋 Controle de Estoque por Hierarquia e PK (Código + U.M)</h2>
-                            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 2px;">Macro Categoria > Categoria > Micro Categoria | Preço Médio e Saldos</p>
-                        </div>
-                        <span id="badgeTotalEstoque" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 SKUs Ativos: 0</span>
-                    </div>
+                    <h2>📋 Controle de Estoque por Hierarquia</h2>
                     <div class="erp-table-container">
                         <table class="erp-table">
                             <thead>
@@ -499,12 +467,10 @@
                                     <th>U.M</th>
                                     <th style="text-align: right;">Preço Médio</th>
                                     <th style="text-align: center;">Disponível</th>
-                                    <th style="text-align: center;">Reservado</th>
-                                    <th>Empenho Vinculado</th>
                                 </tr>
                             </thead>
                             <tbody id="tabelaCorpoEstoque">
-                                <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--muted);">Carregando estoque...</td></tr>
+                                <tr><td colspan="6" style="text-align: center; padding: 30px;">Carregando estoque...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -514,82 +480,49 @@
 
         <!-- ABA 3: PEDIDOS -->
         <div id="viewPedidos" class="app-view" style="padding: 24px;">
-            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 950px; margin: 0 auto; width: 100%;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <h2 style="font-size: 1.25rem; color: var(--text);">🛒 Módulo de Pedidos e Baixas (Saídas)</h2>
-                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Registre saídas manualmente ou importe o PDF gerado pelo sistema externo</p>
-                    </div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalImportarPdfPedido()">📥 Importar Pedido via PDF</button>
-                        <button class="btn btn-primary" onclick="abrirModalNovoPedido()" style="width: auto;">➕ Nova Requisição Manual</button>
-                    </div>
-                </div>
-                <div id="listaPedidosContainer">
-                    <div class="status-msg" style="padding: 30px;">Nenhuma requisição de saída registrada neste período.</div>
-                </div>
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 900px; margin: 0 auto; width: 100%;">
+                <h2>🛒 Módulo de Pedidos e Baixas (Saídas)</h2>
+                <p style="color: var(--muted); margin-top: 6px;">Nenhuma requisição de saída registrada neste período.</p>
             </div>
         </div>
 
         <!-- ABA 4: INVENTÁRIO -->
         <div id="viewInventario" class="app-view" style="padding: 24px;">
-            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; flex: 1;">
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                     <div>
-                        <h2 style="font-size: 1.25rem; color: var(--text);">📊 Módulo de Inventário e Balanço Físico</h2>
-                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos, contagem física e atualização direta de estoque</p>
+                        <h2>📊 Módulo de Inventário e Balanço Físico</h2>
+                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos e contagem física</p>
                     </div>
-                    <div id="acoesTopoInventario" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="btn" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;" onclick="abrirSeletorCorrigirBase()">🔄 Corrigir Base (Excel)</button>
-                        <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
+                    <div>
                         <button class="btn" style="background: var(--success); color: white; border: none; font-weight: bold;" onclick="finalizarInventarioAtivoDireto()">✅ Atualizar Estoque e Catálogo com Base no Inventário</button>
                     </div>
                 </div>
 
-                <input type="file" id="arquivoCorrigirBaseInv" accept=".xlsx, .xls" style="display:none;" onchange="executarCorrecaoBaseInventario(event)">
-
                 <div id="invEtapaSelecaoTela" style="display:none; text-align: center; padding: 40px;">
                     <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 24px; border-radius: 8px; max-width: 600px; margin: 0 auto 20px auto;">
-                        <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário em Andamento Encontrado</h3>
-                        <p id="periodoInventarioAtivoLabel" style="font-size: 0.95rem; color: #334155; margin-bottom: 10px;">Carregando...</p>
+                        <h3 style="color: #1e40af; margin-bottom: 8px;">Inventário em Andamento Encontrado</h3>
+                        <p id="periodoInventarioAtivoLabel" style="font-size: 0.95rem; color: #334155;">Carregando...</p>
                     </div>
-                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                        <button class="btn" style="background: #2563eb; color: white; padding: 12px 24px; border: none;" onclick="continuarContagemExistenteTela()">▶️ Continuar Contagem</button>
-                        <button class="btn" style="background: white; color: var(--text); border: 1px solid var(--border); padding: 12px 24px;" onclick="irParaIniciarNovaContagemTela()">🔄 Iniciar Nova Contagem</button>
-                    </div>
+                    <button class="btn" style="background: #2563eb; color: white; padding: 12px 24px; border: none;" onclick="continuarContagemExistenteTela()">▶️ Continuar Contagem</button>
                 </div>
 
                 <div id="invEtapa1Tela" style="max-width: 600px; margin: 40px auto; width: 100%;">
                     <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                        <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Iniciar Novo Balanço Físico</h3>
-                        <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">Selecione o arquivo Excel base extraído do sistema para carregar a base de saldos.</p>
+                        <h3 style="color: #1e40af; margin-bottom: 6px;">Iniciar Novo Balanço Físico</h3>
+                        <p style="font-size: 0.9rem; color: #334155;">Selecione o arquivo Excel base extraído do sistema para carregar a base de saldos.</p>
                     </div>
                     <div class="form-group">
                         <label>Arquivo Excel Base (.xlsx) do Sistema:</label>
                         <input type="file" id="arquivoBaseInventario" accept=".xlsx, .xls" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
                     </div>
-                    <button type="button" class="btn btn-primary" onclick="iniciarContagemInventario()" id="btnIniciarInv">Carregar e Iniciar Contagem</button>
+                    <button type="button" class="btn btn-primary" onclick="iniciarContagemInventario()">Carregar e Iniciar Contagem</button>
                 </div>
 
                 <div id="invEtapa2Tela" style="display:none; flex: 1; flex-direction: column;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <span id="badgeTotalInventario" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 Total na Base: 0 itens</span>
-                            <span id="badgeFaltamContar" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">⏳ Faltam contar: 0 itens</span>
-                            <span id="statusSalvamentoNuvem" style="font-size: 0.85rem; color: var(--success); font-weight: 500;">💾 Sincronizado</span>
-                        </div>
-                    </div>
-
                     <div style="margin-bottom: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
-                        <input type="text" id="buscaInventario" placeholder="🔍 Filtrar por código ou produto..." oninput="renderizarTabelaInventario()" style="flex: 1; min-width: 240px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
-                        <select id="filtroStatusInventario" onchange="renderizarTabelaInventario()" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
-                            <option value="todos">📋 Todos os Itens</option>
-                            <option value="nao_contados">⏳ Apenas Não Contados</option>
-                            <option value="divergencias">⚠️ Apenas Divergências (Falta/Sobra)</option>
-                            <option value="ok">✅ Apenas OK</option>
-                        </select>
+                        <input type="text" id="buscaInventario" placeholder="🔍 Filtrar por código ou produto..." oninput="renderizarTabelaInventario()" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
                     </div>
-                    
                     <div class="inventory-table-container">
                         <table class="inv-table">
                             <thead>
@@ -602,7 +535,7 @@
                                     <th style="text-align: center;">2ª Cont.</th>
                                     <th style="text-align: center;">Dif.</th>
                                     <th>Status</th>
-                                    <th>Observações / Justificativa</th>
+                                    <th>Observações</th>
                                 </tr>
                             </thead>
                             <tbody id="tabelaCorpoInventario"></tbody>
@@ -614,21 +547,27 @@
 
         <!-- ABA 5: RELATÓRIOS -->
         <div id="viewRelatorios" class="app-view" style="padding: 24px;">
-            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 900px; margin: 0 auto; width: 100%;">
-                <h2 style="font-size: 1.25rem; color: var(--text); margin-bottom: 6px;">📈 Central de Relatórios Executivos</h2>
-                <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 24px;">Selecione o inventário auditado para gerar os relatórios gerenciais e conferir o período de contagem.</p>
-
-                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                    <h3 style="font-size: 0.95rem; color: var(--text); margin-bottom: 12px;">🗓️ Seleção de Inventário para Relatório</h3>
-                    <div id="infoInventarioRelatorio" style="font-size: 0.95rem; color: #334155; margin-bottom: 16px;">Carregando informações...</div>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <button class="btn" style="background: white; color: var(--text); border: 1px solid var(--border); padding: 12px 20px;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório Executivo (.xlsx)</button>
-                        <button class="btn" style="background: white; color: var(--danger); border: 1px solid #fecaca; padding: 12px 20px;" onclick="exportarRelatorioPDF()">📥 Baixar Relatório Executivo (.pdf)</button>
-                    </div>
-                </div>
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 900px; margin: 0 auto; width: 100%;">
+                <h2>📈 Central de Relatórios Executivos</h2>
+                <p style="color: var(--muted); margin-top: 6px;">Geração de relatórios gerenciais e de divergências.</p>
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- Modal Importar Catálogo -->
+<div class="modal-overlay" id="modalImportar">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Carregar Catálogo via Excel</h2>
+            <button class="close-btn" onclick="fecharModalImportar()">&times;</button>
+        </div>
+        <div class="form-group">
+            <label>Selecione o arquivo gerado pelo sistema (.xlsx):</label>
+            <input type="file" id="arquivoExcel" accept=".xlsx, .xls" style="margin-top: 10px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
+        </div>
+        <button class="btn btn-primary" onclick="processarArquivoExcel()">Ler e Sincronizar Estoque</button>
     </div>
 </div>
 
@@ -639,8 +578,6 @@
 
     let todosItens = [];
     let itensInventarioBase = [];
-    let periodoInventarioAtual = 'Inventário em Andamento';
-    let usuarioLogado = null;
     let macroSelecionadaSidebar = '';
 
     function determinarHierarquia(categoriaOriginal) {
@@ -678,30 +615,8 @@
     }
 
     async function iniciarSistema() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        atualizarEstadoAuth(session ? session.user : null);
-
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            atualizarEstadoAuth(session ? session.user : null);
-        });
-
         await carregarItens();
         verificarInventarioSalvo();
-    }
-
-    function atualizarEstadoAuth(user) {
-        usuarioLogado = user;
-        const elementosAdmin = document.querySelectorAll('.admin-only');
-        const labelUsuario = document.getElementById('labelUsuarioTopo');
-        if (user) {
-            elementosAdmin.forEach(el => el.style.display = 'inline-flex');
-            const nomeAdmin = user.email.split('@')[0];
-            labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
-        } else {
-            elementosAdmin.forEach(el => el.style.display = 'none');
-            labelUsuario.innerText = 'Entrar';
-        }
-        filtrarItens();
     }
 
     function mudarAba(nomeAba) {
@@ -725,21 +640,60 @@
                 document.getElementById('viewEstoque').classList.add('active');
                 document.getElementById('abaNavEstoque').classList.add('active');
                 renderizarTabelaEstoque();
+            } else if (nomeAba === 'pedidos') {
+                document.getElementById('viewPedidos').classList.add('active');
+                document.getElementById('abaNavPedidos').classList.add('active');
             } else if (nomeAba === 'inventario') {
                 document.getElementById('viewInventario').classList.add('active');
                 document.getElementById('abaNavInventario').classList.add('active');
                 verificarInventarioSalvo();
+            } else if (nomeAba === 'relatorios') {
+                document.getElementById('viewRelatorios').classList.add('active');
+                document.getElementById('abaNavRelatorios').classList.add('active');
             }
         }
     }
 
     async function carregarItens() {
         const grid = document.getElementById('gridCatalogo');
-        const { data, error } = await supabaseClient.from('bens').select('*').order('criado_em', { ascending: false });
-        if (!error && data) {
-            todosItens = data;
+        try {
+            const { data, error } = await supabaseClient.from('bens').select('*').order('criado_em', { ascending: false });
+            if (error) throw error;
+            todosItens = data || [];
+            atualizarSidebarMacroCategorias();
+            filtrarItens();
+        } catch (err) {
+            console.error(err);
+            grid.innerHTML = `<div class="status-msg" style="color:var(--danger)">Erro ao conectar com o Supabase: ${err.message}. Verifique sua conexão ou carregue o catálogo via Excel.</div>`;
+            todosItens = [];
             filtrarItens();
         }
+    }
+
+    function obterTodasMacroUnicas() {
+        const macros = todosItens.map(i => i.macro_categoria || i.MACRO_CATEGORIA || 'Geral').filter(Boolean);
+        return [...new Set(macros)].sort();
+    }
+
+    function atualizarSidebarMacroCategorias() {
+        const listaMacros = obterTodasMacroUnicas();
+        const container = document.getElementById('sidebarCategoriasList');
+        let html = `<li class="sidebar-nav-item ${macroSelecionadaSidebar === '' ? 'active' : ''}" onclick="selecionarMacroSidebar('')"><span>📁 Todas</span><span>(${todosItens.length})</span></li>`;
+        listaMacros.forEach(macro => {
+            const count = todosItens.filter(i => (i.macro_categoria || i.MACRO_CATEGORIA || 'Geral') === macro).length;
+            html += `<li class="sidebar-nav-item ${macroSelecionadaSidebar === macro ? 'active' : ''}" onclick="selecionarMacroSidebar('${macro}')"><span>${macro}</span><span>(${count})</span></li>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function selecionarMacroSidebar(macro) {
+        macroSelecionadaSidebar = macro;
+        atualizarSidebarMacroCategorias();
+        filtrarItens();
+    }
+
+    function filtrarStatusSidebar(status) {
+        filtrarItens();
     }
 
     function filtrarItens() {
@@ -749,7 +703,10 @@
             if (qtd <= 0) return false;
             const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
             const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
-            return cod.includes(termo) || prod.includes(termo);
+            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || 'Geral');
+            const bateTexto = cod.includes(termo) || prod.includes(termo);
+            const bateMacro = !macroSelecionadaSidebar || macro === macroSelecionadaSidebar;
+            return bateTexto && bateMacro;
         });
         renderizarGrid(filtrados);
     }
@@ -766,9 +723,10 @@
                     <span class="badge-cod">${item["CÓDIGO EFISCO"] || item.codigo || 'SEM CÓDIGO'}</span>
                 </div>
                 <div class="item-body">
+                    <div class="item-cat">${item.macro_categoria || 'Materiais Diversos'}</div>
                     <div class="item-title">${item.PRODUTO || item.produto || 'Sem descrição'}</div>
                     <div class="item-meta">
-                        <span>Disponível: <b>${item.QUANTIDADE || item.quantidade || 0}</b></span>
+                        <span>Disponível: <b>${item.QUANTIDADE || item.quantidade || 0}</b> (${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'})</span>
                     </div>
                 </div>
             </div>
@@ -777,25 +735,29 @@
 
     function renderizarTabelaEstoque() {
         const tbody = document.getElementById('tabelaCorpoEstoque');
-        if (!todosItens.length) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px;">Nenhum item cadastrado.</td></tr>`;
+        const termo = document.getElementById('buscaEstoque') ? document.getElementById('buscaEstoque').value.toLowerCase() : '';
+        const filtrados = todosItens.filter(i => {
+            const cod = String(i["CÓDIGO EFISCO"] || i.codigo || '').toLowerCase();
+            const prod = String(i.PRODUTO || i.produto || '').toLowerCase();
+            return !termo || cod.includes(termo) || prod.includes(termo);
+        });
+
+        if (!filtrados.length) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px;">Nenhum item no estoque.</td></tr>`;
             return;
         }
-        tbody.innerHTML = todosItens.map(item => `
+        tbody.innerHTML = filtrados.map(item => `
             <tr>
                 <td><code>${item["CÓDIGO EFISCO"] || item.codigo || '---'}</code></td>
                 <td><b>${item.PRODUTO || item.produto || 'Sem descrição'}</b></td>
-                <td>${item.macro_categoria || 'Geral'}</td>
+                <td>${item.macro_categoria || 'Geral'} > ${item.categoria || 'Geral'}</td>
                 <td><b>${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'}</b></td>
                 <td style="text-align: right;">R$ ${Number(item.preco_medio || 0).toFixed(2)}</td>
                 <td style="text-align: center;">${item.QUANTIDADE || item.quantidade || 0}</td>
-                <td style="text-align: center;">0</td>
-                <td>${item.empenho || '---'}</td>
             </tr>
         `).join('');
     }
 
-    // --- LÓGICA DE INVENTÁRIO COM SALVAMENTO LOCAL E RETOMADA ---
     function verificarInventarioSalvo() {
         const salvoLocal = localStorage.getItem('inventario_itens_salvo');
         if (salvoLocal) {
@@ -819,11 +781,6 @@
         document.getElementById('invEtapaSelecaoTela').style.display = 'none';
         document.getElementById('invEtapa2Tela').style.display = 'flex';
         renderizarTabelaInventario();
-    }
-
-    function irParaIniciarNovaContagemTela() {
-        document.getElementById('invEtapaSelecaoTela').style.display = 'none';
-        document.getElementById('invEtapa1Tela').style.display = 'block';
     }
 
     function iniciarContagemInventario() {
@@ -864,26 +821,12 @@
 
     function renderizarTabelaInventario() {
         const tbody = document.getElementById('tabelaCorpoInventario');
-        const termo = document.getElementById('buscaInventario') ? document.getElementById('buscaInventario'].value.toLowerCase() : '';
-        const filtroStatus = document.getElementById('filtroStatusInventario') ? document.getElementById('filtroStatusInventario').value : 'todos';
-
+        const termo = document.getElementById('buscaInventario') ? document.getElementById('buscaInventario').value.toLowerCase() : '';
         const filtrados = itensInventarioBase.filter(item => {
-            const cod = String(item.codigo).toLowerCase();
-            const prod = String(item.produto).toLowerCase();
-            const bateTexto = cod.includes(termo) || prod.includes(termo);
-            if (!bateTexto) return false;
-
-            if (filtroStatus === 'nao_contados') return item.cont1 === '' || item.cont1 === null;
-            if (filtroStatus === 'ok') return Number(item.cont1) === Number(item.base);
-            if (filtroStatus === 'divergencias') return item.cont1 !== '' && Number(item.cont1) !== Number(item.base);
-            return true;
+            return String(item.codigo).toLowerCase().includes(termo) || String(item.produto).toLowerCase().includes(termo);
         });
 
-        const totalContados = itensInventarioBase.filter(i => i.cont1 !== '' && i.cont1 !== null).length;
-        document.getElementById('badgeTotalInventario').innerText = `📦 Total na Base: ${itensInventarioBase.length} itens`;
-        document.getElementById('badgeFaltamContar').innerText = `⏳ Faltam contar: ${itensInventarioBase.length - totalContados} itens`;
-
-        tbody.innerHTML = filtrados.map((item, idx) => {
+        tbody.innerHTML = filtrados.map((item) => {
             const realIdx = itensInventarioBase.indexOf(item);
             const cont1Num = item.cont1 !== '' ? Number(item.cont1) : null;
             const diff = cont1Num !== null ? cont1Num - Number(item.base) : 0;
@@ -919,6 +862,45 @@
         alert('Inventário aplicado com sucesso!');
         localStorage.removeItem('inventario_itens_salvo');
         window.location.reload();
+    }
+
+    function abrirModalImportar() { document.getElementById('modalImportar').classList.add('active'); }
+    function fecharModalImportar() { document.getElementById('modalImportar').classList.remove('active'); }
+
+    async function processarArquivoExcel() {
+        const input = document.getElementById('arquivoExcel');
+        if (!input.files || input.files.length === 0) return alert('Selecione o arquivo Excel!');
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', raw: false });
+            const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: false });
+
+            for (let i = 3; i < linhas.length; i++) {
+                let r = linhas[i];
+                if (!r || !r[0]) continue;
+                const codigo = String(r[0]).trim();
+                const produto = String(r[1] || '').trim();
+                const categoriaOriginal = String(r[2] || '').trim();
+                const unidade = String(r[3] || 'UN').trim().toUpperCase();
+                const quantidade = parseNumeroBR(r[5]);
+                const hierarquia = determinarHierarquia(categoriaOriginal || produto);
+
+                await supabaseClient.from('bens').upsert({
+                    "CÓDIGO EFISCO": codigo,
+                    "PRODUTO": produto,
+                    "UNIDADE DE MEDIDA": unidade,
+                    "QUANTIDADE": quantidade,
+                    "macro_categoria": hierarquia.macro,
+                    "categoria": hierarquia.cat,
+                    "micro_categoria": hierarquia.micro
+                }, { onConflict: 'CÓDIGO EFISCO' });
+            }
+            alert('Catálogo importado e sincronizado com sucesso!');
+            fecharModalImportar();
+            await carregarItens();
+        };
+        reader.readAsArrayBuffer(input.files[0]);
     }
 
     window.onload = iniciarSistema;
