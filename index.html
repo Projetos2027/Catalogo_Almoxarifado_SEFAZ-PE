@@ -266,10 +266,9 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .btn:hover { background: #f8fafc; border-color: var(--muted); }
-        .btn-add { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-add { background: var(--primary); color: white; border-color: var(--primary); display: none; }
         .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; border: none; }
         .btn-primary:hover { background: var(--primary-light); }
-        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; border: none; }
 
         .catalog-container { padding: 24px; flex: 1; }
         .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
@@ -284,8 +283,6 @@
             flex-direction: column;
             transition: all 0.15s ease;
         }
-        .item-card.admin-clicavel { cursor: pointer; }
-        .item-card.admin-clicavel:hover { transform: translateY(-3px); border-color: var(--primary-light); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
 
         .item-img-box {
             width: 100%;
@@ -339,7 +336,7 @@
             padding: 24px;
             border-radius: 12px;
             width: 100%;
-            max-width: 500px;
+            max-width: 400px;
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
@@ -348,7 +345,7 @@
         .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
         .form-group { margin-bottom: 14px; }
         .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
 
         .status-msg { text-align: center; padding: 40px; color: var(--muted); grid-column: 1 / -1; }
 
@@ -435,8 +432,7 @@
                     <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
                 </div>
                 <div class="header-buttons">
-                    <button class="btn btn-add" onclick="abrirModalImportar()">📥 Carregar Catálogo</button>
-                    <button class="btn btn-add" onclick="abrirModalCadastro()">+ Novo Item</button>
+                    <button class="btn btn-add admin-only" id="btnCarregarCat" onclick="abrirModalImportar()" style="display:none;">📥 Carregar Catálogo</button>
                 </div>
             </div>
             <div class="catalog-container">
@@ -556,9 +552,30 @@
     </div>
 </div>
 
+<!-- Modal de Login -->
+<div class="modal-overlay" id="modalLogin">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Acesso Restrito (Admin)</h2>
+            <button class="close-btn" onclick="fecharModalLogin()">&times;</button>
+        </div>
+        <form onsubmit="fazerLogin(event)">
+            <div class="form-group">
+                <label>E-mail de Administrador</label>
+                <input type="email" id="loginEmail" required placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="loginSenha" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary" id="btnLogar">Entrar no Sistema</button>
+        </form>
+    </div>
+</div>
+
 <!-- Modal Importar Catálogo -->
 <div class="modal-overlay" id="modalImportar">
-    <div class="modal">
+    <div class="modal" style="max-width: 450px;">
         <div class="modal-header">
             <h2>Carregar Catálogo via Excel</h2>
             <button class="close-btn" onclick="fecharModalImportar()">&times;</button>
@@ -579,6 +596,7 @@
     let todosItens = [];
     let itensInventarioBase = [];
     let macroSelecionadaSidebar = '';
+    let usuarioLogado = null;
 
     function determinarHierarquia(categoriaOriginal) {
         const c = String(categoriaOriginal || '').toUpperCase();
@@ -615,8 +633,62 @@
     }
 
     async function iniciarSistema() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        atualizarEstadoAuth(session ? session.user : null);
+
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            atualizarEstadoAuth(session ? session.user : null);
+        });
+
         await carregarItens();
         verificarInventarioSalvo();
+    }
+
+    function atualizarEstadoAuth(user) {
+        usuarioLogado = user;
+        const elementosAdmin = document.querySelectorAll('.admin-only');
+        const labelUsuario = document.getElementById('labelUsuarioTopo');
+        if (user) {
+            elementosAdmin.forEach(el => el.style.display = 'inline-flex');
+            const nomeAdmin = user.email.split('@')[0];
+            labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
+        } else {
+            elementosAdmin.forEach(el => el.style.display = 'none');
+            labelUsuario.innerText = 'Entrar';
+        }
+    }
+
+    function controlarSessao() {
+        if (usuarioLogado) {
+            if (confirm('Deseja sair do modo administrador?')) {
+                supabaseClient.auth.signOut();
+                alert('Você saiu do modo administrador.');
+            }
+        } else {
+            document.getElementById('modalLogin').classList.add('active');
+        }
+    }
+
+    function fecharModalLogin() { document.getElementById('modalLogin').classList.remove('active'); }
+
+    async function fazerLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const senha = document.getElementById('loginSenha').value;
+        const btn = document.getElementById('btnLogar');
+        btn.disabled = true; btn.innerText = 'Entrando...';
+
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+        btn.disabled = false; btn.innerText = 'Entrar no Sistema';
+
+        if (error) {
+            alert('Erro ao entrar: E-mail ou senha incorretos.');
+        } else {
+            fecharModalLogin();
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginSenha').value = '';
+            alert('Login efetuado com sucesso!');
+        }
     }
 
     function mudarAba(nomeAba) {
@@ -821,7 +893,7 @@
 
     function renderizarTabelaInventario() {
         const tbody = document.getElementById('tabelaCorpoInventario');
-        const termo = document.getElementById('buscaInventario') ? document.getElementById('buscaInventario').value.toLowerCase() : '';
+        const termo = document.getElementById('buscaInventario') ? document.getElementById('buscaInventario'].value.toLowerCase() : '';
         const filtrados = itensInventarioBase.filter(item => {
             return String(item.codigo).toLowerCase().includes(termo) || String(item.produto).toLowerCase().includes(termo);
         });
