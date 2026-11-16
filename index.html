@@ -34,7 +34,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; flex-direction: column; }
 
-        /* Top Bar Principal (Estilo da Referência) */
+        /* Top Bar Principal */
         .top-navbar {
             background: white;
             border-bottom: 1px solid var(--border);
@@ -54,9 +54,6 @@
             font-weight: 700;
             font-size: 1rem;
             color: var(--text);
-        }
-        .top-brand img, .top-brand span.logo-icon {
-            font-size: 1.2rem;
         }
         .top-nav-links {
             display: flex;
@@ -107,7 +104,7 @@
             margin-top: 60px;
         }
 
-        /* Sidebar Minimalista com Acordeons Exatos */
+        /* Sidebar Minimalista */
         aside {
             width: 260px;
             background: white;
@@ -190,7 +187,6 @@
             gap: 8px;
             cursor: pointer;
             font-size: 0.9rem;
-            margin-bottom: 6px;
         }
 
         /* Conteúdo Principal */
@@ -250,32 +246,34 @@
             align-items: center;
         }
 
+        /* Ajuste Profissional dos Botões do Cabeçote */
         .btn {
-            padding: 9px 14px;
+            padding: 10px 14px;
             border: none;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             font-size: 0.85rem;
-            transition: 0.2s;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
-        .btn-add { background: var(--success); color: white; display: none; }
-        .btn-import { background: #d97706; color: white; display: none; }
-        .btn-import-pdf { background: var(--primary); color: white; display: none; }
-        .btn-import-pdf:hover { background: var(--primary-light); }
-        .btn-inventory { background: #7c3aed; color: white; display: none; }
-        .btn-inventory:hover { background: #6d28d9; }
-        .btn-primary { background: var(--primary); color: white; width: 100%; }
-        .btn-primary:hover { background: var(--primary-light); }
+        .btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+        .btn-add { background: #10b981; color: white; display: none; } /* + Novo Item */
+        .btn-import { background: #d97706; color: white; display: none; } /* Carregar Catálogo */
+        .btn-import-pdf { background: #2563eb; color: white; display: none; } /* Novo Recebimento */
+        .btn-inventory { background: #7c3aed; color: white; display: none; } /* Inventário */
+        
+        .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; }
         .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; display: none; }
         .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.75rem; display: none; }
         .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.75rem; display: none; }
-        .btn-photo:hover { background: #fde047; }
         .btn-login { background: #334155; color: white; }
-        .btn-login:hover { background: #475569; }
 
         .catalog-container {
             padding: 24px;
@@ -440,14 +438,14 @@
             grid-column: 1 / -1;
         }
 
-        /* Tabela de Inventário / Revisão PDF */
+        /* Tabelas de Inventário e Revisão */
         .inventory-table-container {
             flex: 1;
             overflow-y: auto;
             border: 1px solid var(--border);
             border-radius: 8px;
             margin-top: 12px;
-            max-height: 50vh;
+            max-height: 55vh;
         }
         table.inv-table {
             width: 100%;
@@ -483,6 +481,16 @@
             font-size: 0.85rem;
         }
 
+        /* Seções de Abas Principais */
+        .app-view {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+        .app-view.active {
+            display: flex;
+        }
+
         @media (max-width: 768px) {
             aside { transform: translateX(-100%); transition: 0.3s; }
             aside.mobile-open { transform: translateX(0); }
@@ -492,7 +500,7 @@
 </head>
 <body>
 
-<!-- Top Navigation Bar Exata -->
+<!-- Top Navigation Bar -->
 <nav class="top-navbar">
     <div class="top-brand">
         <span>🛡️</span>
@@ -501,10 +509,10 @@
         <span style="color: var(--primary);">Almoxarifado SEFAZ/PE</span>
     </div>
     <ul class="top-nav-links">
-        <li class="top-nav-item active">📦 Catálogo</li>
+        <li class="top-nav-item active" id="abaNavCatalogo" onclick="mudarAba('catalogo')">📦 Catálogo</li>
         <li class="top-nav-item" onclick="alert('Módulo de Pedidos em desenvolvimento')">🛒 Pedidos</li>
-        <li class="top-nav-item" onclick="abrirModalInventario()">📊 Inventário</li>
-        <li class="top-nav-item" onclick="alert('Relatórios gerais acessíveis pelo módulo de inventário/PDF')">📈 Relatórios</li>
+        <li class="top-nav-item" id="abaNavInventario" onclick="mudarAba('inventario')">📊 Inventário</li>
+        <li class="top-nav-item" id="abaNavRelatorios" onclick="mudarAba('relatorios')">📈 Relatórios</li>
     </ul>
     <div class="top-user-area">
         <span style="cursor:pointer;" title="Notificações">🔔</span>
@@ -517,11 +525,11 @@
 </nav>
 
 <div class="main-layout">
-    <!-- Sidebar Minimalista com Acordeons -->
+    <!-- Sidebar Minimalista -->
     <aside id="appSidebar">
         <div class="sidebar-section">
             <button class="btn-filtros-sidebar">
-                <span>⚙️</span> Filtros
+                <span>⚙️</span> Filtros de Busca
             </button>
         </div>
         <div class="sidebar-section">
@@ -572,24 +580,135 @@
     </aside>
 
     <div class="content-wrapper">
-        <div class="sub-header">
-            <div class="search-spotlight">
-                <span>🔍</span>
-                <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
+        
+        <!-- ABA 1: CATÁLOGO -->
+        <div id="viewCatalogo" class="app-view active">
+            <div class="sub-header">
+                <div class="search-spotlight">
+                    <span>🔍</span>
+                    <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
+                </div>
+                <div class="header-buttons">
+                    <button class="btn btn-inventory admin-only" id="btnInventario" onclick="mudarAba('inventario')" style="display:none;">📊 Inventário</button>
+                    <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Novo Recebimento</button>
+                    <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Carregar Catálogo</button>
+                    <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
+                </div>
             </div>
-            <div class="header-buttons">
-                <button class="btn btn-inventory admin-only" id="btnInventario" onclick="abrirModalInventario()" style="display:none;">📊 Inventário</button>
-                <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Novo Recebimento</button>
-                <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Excel</button>
-                <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
+
+            <div class="catalog-container">
+                <div class="catalog-grid" id="gridCatalogo">
+                    <div class="status-msg">Carregando itens do catálogo...</div>
+                </div>
             </div>
         </div>
 
-        <div class="catalog-container">
-            <div class="catalog-grid" id="gridCatalogo">
-                <div class="status-msg">Carregando itens do catálogo...</div>
+        <!-- ABA 2: INVENTÁRIO -->
+        <div id="viewInventario" class="app-view" style="padding: 24px;">
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+                    <div>
+                        <h2 style="font-size: 1.25rem; color: var(--text);">📊 Módulo de Inventário e Balanço Físico</h2>
+                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos, contagem física e registro de divergências</p>
+                    </div>
+                    <div id="acoesTopoInventario" style="display: flex; gap: 10px;">
+                        <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
+                        <button class="btn" style="background: var(--danger); color: white;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
+                    </div>
+                </div>
+
+                <div id="invEtapaSelecaoTela" style="display:none; text-align: center; padding: 40px;">
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 24px; border-radius: 8px; max-width: 600px; margin: 0 auto 20px auto;">
+                        <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário em Andamento Encontrado</h3>
+                        <p id="periodoInventarioAtivoLabel" style="font-size: 0.95rem; color: #334155; margin-bottom: 10px;">
+                            Período de contagem / última atualização: Carregando...
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn" style="background: #7c3aed; color: white; padding: 12px 24px;" onclick="continuarContagemExistenteTela()">▶️ Continuar Contagem</button>
+                        <button class="btn" style="background: #2563eb; color: white; padding: 12px 24px;" onclick="irParaIniciarNovaContagemTela()">🔄 Iniciar Nova Contagem</button>
+                    </div>
+                </div>
+
+                <div id="invEtapa1Tela" style="max-width: 600px; margin: 40px auto; width: 100%;">
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Iniciar Novo Balanço Físico</h3>
+                        <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
+                            Selecione o arquivo Excel base extraído do sistema para carregar a base de saldos.
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <label>Arquivo Excel Base (.xlsx) do Sistema:</label>
+                        <input type="file" id="arquivoBaseInventario" accept=".xlsx, .xls" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="iniciarContagemInventario()" id="btnIniciarInv">Carregar e Iniciar Contagem</button>
+                </div>
+
+                <div id="invEtapa2Tela" style="display:none; flex: 1; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <span id="badgeTotalInventario" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 Itens carregados: 0</span>
+                            <span id="statusSalvamentoNuvem" style="font-size: 0.85rem; color: var(--success); font-weight: 500;">💾 Sincronizado</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="buscaInventario" placeholder="🔍 Filtrar por código ou produto..." oninput="renderizarTabelaInventario()" style="flex: 1; min-width: 240px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
+                        <select id="filtroStatusInventario" onchange="renderizarTabelaInventario()" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
+                            <option value="todos">📋 Todos os Itens</option>
+                            <option value="divergencias">⚠️ Apenas Divergências (Falta/Sobra)</option>
+                            <option value="ok">✅ Apenas OK</option>
+                        </select>
+                    </div>
+                    
+                    <div class="inventory-table-container">
+                        <table class="inv-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Produto</th>
+                                    <th>U.M</th>
+                                    <th style="text-align: center;">Base</th>
+                                    <th style="text-align: center;">1ª Cont.</th>
+                                    <th style="text-align: center;">2ª Cont.</th>
+                                    <th style="text-align: center;">Dif.</th>
+                                    <th>Status</th>
+                                    <th>Observações / Justificativa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaCorpoInventario"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- ABA 3: RELATÓRIOS -->
+        <div id="viewRelatorios" class="app-view" style="padding: 24px;">
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 900px; margin: 0 auto; width: 100%;">
+                <h2 style="font-size: 1.25rem; color: var(--text); margin-bottom: 6px;">📈 Central de Relatórios Executivos</h2>
+                <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 24px;">Selecione o inventário auditado para gerar os relatórios gerenciais e conferir o período de contagem.</p>
+
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                    <h3 style="font-size: 0.95rem; color: var(--text); margin-bottom: 12px;">🗓️ Seleção de Inventário para Relatório</h3>
+                    <div id="infoInventarioRelatorio" style="font-size: 0.95rem; color: #334155; margin-bottom: 16px;">
+                        Carregando informações do inventário ativo...
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn" style="background: #047857; color: white; padding: 12px 20px;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório Executivo (.xlsx)</button>
+                        <button class="btn" style="background: #dc2626; color: white; padding: 12px 20px;" onclick="exportarRelatorioPDF()">📥 Baixar Relatório Executivo (.pdf)</button>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border); padding-top: 20px;">
+                    <h4 style="font-size: 0.9rem; color: var(--muted); text-transform: uppercase; margin-bottom: 10px;">Sobre os Relatórios</h4>
+                    <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;">
+                        Os relatórios executivos compilam o Resumo Executivo (Total de itens auditados, conformes, sobras, faltas e acuracidade percentual do estoque), juntamente com o detalhamento completo por item e respectivas justificativas registradas durante a contagem.
+                    </p>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -637,7 +756,7 @@
     </div>
 </div>
 
-<!-- Modal de Ajuste de Divergência de Empenho / Embalagem no PDF (z-index superior) -->
+<!-- Modal de Ajuste de Divergência de Empenho / Embalagem no PDF -->
 <div class="modal-overlay" id="modalAjusteEmpenho" style="z-index: 1100;">
     <div class="modal">
         <div class="modal-header">
@@ -656,13 +775,11 @@
             </div>
             <div class="form-group">
                 <label>Nova Unidade de Medida Correta *</label>
-                <select id="ajusteNovaUnidade" required>
-                    <!-- Preenchido via JS -->
-                </select>
+                <select id="ajusteNovaUnidade" required></select>
             </div>
             <div class="form-group">
                 <label>Justificativa / Observação do Empenho</label>
-                <input type="text" id="ajusteObsEmpenho" placeholder="Ex: Entregue em embalagem diferenciada conforme acordo">
+                <input type="text" id="ajusteObsEmpenho" placeholder="Ex: Entregue em embalagem diferenciada">
             </div>
             <button type="submit" class="btn btn-primary">Aplicar Ajuste de Embalagem</button>
         </form>
@@ -681,7 +798,7 @@
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                 <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Entrada</h3>
                 <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
-                    Selecione o arquivo PDF do <b>Termo de Recebimento (Peintegrado)</b>. O leitor extrairá automaticamente todos os itens para você <b>revisar, ajustar quantidades e unidades de medida</b> antes de atualizar o catálogo.
+                    Selecione o arquivo PDF do <b>Termo de Recebimento (Peintegrado)</b> para revisar, ajustar quantidades e unidades antes de atualizar o estoque.
                 </p>
             </div>
             <div class="form-group">
@@ -693,7 +810,7 @@
 
         <div id="pdfEtapa2" style="display:none; flex: 1; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Confirme os dados abaixo antes de atualizar o estoque. Utilize o botão "⚠️ Dif. Empenho" se a embalagem entregue divergir do pedido.</div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Confirme os dados abaixo antes de atualizar o estoque.</div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn" style="background: #64748b; color: white;" onclick="voltarParaUploadPdf()">Voltar</button>
                     <button class="btn" style="background: var(--success); color: white;" onclick="confirmarAtualizacaoEstoquePdf()">✅ Confirmar e Atualizar Estoque</button>
@@ -719,90 +836,7 @@
     </div>
 </div>
 
-<!-- Modal de Módulo de Inventário / Balanço -->
-<div class="modal-overlay" id="modalInventario">
-    <div class="modal modal-large">
-        <div class="modal-header">
-            <h2 id="tituloModalInv">📊 Módulo de Inventário e Balanço Físico</h2>
-            <button class="close-btn" onclick="fecharModalInventario()">&times;</button>
-        </div>
-
-        <div id="invEtapaSelecao" style="display:none; text-align: center; padding: 20px;">
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário em Andamento Encontrado</h3>
-                <p style="font-size: 0.95rem; color: #334155;">
-                    Existe um inventário salvo no sistema. O que você deseja fazer?
-                </p>
-            </div>
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                <button class="btn" style="background: #7c3aed; color: white; padding: 14px 24px; font-size: 1rem;" onclick="continuarContagemExistente()">▶️ Continuar Contagem</button>
-                <button class="btn" style="background: #2563eb; color: white; padding: 14px 24px; font-size: 1rem;" onclick="irParaIniciarNovaContagem()">🔄 Iniciar Nova Contagem</button>
-            </div>
-        </div>
-
-        <div id="invEtapa1" style="display:none;">
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Auditoria</h3>
-                <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">
-                    Selecione o arquivo Excel base extraído do sistema. Itens com saldo base zero serão ignorados automaticamente para manter a lista limpa.
-                </p>
-            </div>
-            <div class="form-group">
-                <label>Arquivo Excel Base (.xlsx) do Sistema:</label>
-                <input type="file" id="arquivoBaseInventario" accept=".xlsx, .xls" style="margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button type="button" class="btn btn-primary" onclick="iniciarContagemInventario()" id="btnIniciarInv" style="flex: 1;">Carregar e Iniciar Contagem</button>
-                <button type="button" class="btn" style="background: #64748b; color: white; display: none;" onclick="voltarParaSelecaoInventario()" id="btnVoltarSel">Voltar</button>
-            </div>
-        </div>
-
-        <div id="invEtapa2" style="display:none; flex: 1; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--success);" id="statusSalvamentoNuvem">💾 Pronto para iniciar contagem.</div>
-                    <span id="badgeTotalInventario" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 Itens carregados: 0</span>
-                </div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
-                    <button class="btn" style="background: #047857; color: white;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório (.xlsx)</button>
-                    <button class="btn" style="background: #dc2626; color: white;" onclick="exportarRelatorioPDF()">📥 Relatório Executivo (.pdf)</button>
-                    <button class="btn" style="background: var(--danger); color: white;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="text" id="buscaInventario" placeholder="🔍 Filtrar por código ou produto..." oninput="renderizarTabelaInventario()" style="flex: 1; min-width: 240px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
-                <select id="filtroStatusInventario" onchange="renderizarTabelaInventario()" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
-                    <option value="todos">📋 Todos os Itens</option>
-                    <option value="divergencias">⚠️ Apenas Divergências (Falta/Sobra)</option>
-                    <option value="ok">✅ Apenas OK</option>
-                </select>
-            </div>
-            
-            <div class="inventory-table-container">
-                <table class="inv-table">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Produto</th>
-                            <th>U.M</th>
-                            <th style="text-align: center;">Base</th>
-                            <th style="text-align: center;">1ª Cont.</th>
-                            <th style="text-align: center;">2ª Cont.</th>
-                            <th style="text-align: center;">Dif.</th>
-                            <th>Status</th>
-                            <th>Observações / Justificativa</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaCorpoInventario"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Adicionar Item Físico Manual no Inventário (z-index superior) -->
+<!-- Modal para Adicionar Item Físico Manual no Inventário -->
 <div class="modal-overlay" id="modalAdicionarItemInv" style="z-index: 1100;">
     <div class="modal">
         <div class="modal-header">
@@ -854,9 +888,7 @@
             </div>
             <div class="form-group">
                 <label>CATEGORIA *</label>
-                <select id="categoria" required onchange="verificarSelecaoCategoria(this)">
-                    <!-- Preenchido via JS -->
-                </select>
+                <select id="categoria" required onchange="verificarSelecaoCategoria(this)"></select>
             </div>
             <div class="form-group" id="grupoNovaCategoria" style="display:none;">
                 <label>DIGITE A NOVA CATEGORIA *</label>
@@ -865,9 +897,7 @@
             <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
                 <div>
                     <label>UNIDADE DE MEDIDA *</label>
-                    <select id="unidade" required onchange="verificarSelecaoUnidade(this)">
-                        <!-- Preenchido via JS -->
-                    </select>
+                    <select id="unidade" required onchange="verificarSelecaoUnidade(this)"></select>
                 </div>
                 <div>
                     <label>QUANTIDADE</label>
@@ -893,11 +923,11 @@
     </div>
 </div>
 
-<!-- Modal para Importar Arquivo Excel Original -->
+<!-- Modal para Importar Arquivo Excel ("Carregar Catálogo") -->
 <div class="modal-overlay" id="modalImportar">
     <div class="modal">
         <div class="modal-header">
-            <h2>Importar Relatório Excel</h2>
+            <h2>Carregar Catálogo via Excel</h2>
             <button class="close-btn" onclick="fecharModalImportar()">&times;</button>
         </div>
         <div class="form-group">
@@ -916,30 +946,11 @@
     // =================================================================
 
     const CATEGORIAS_FIXAS = [
-        "Informática",
-        "Expediente",
-        "Limpeza",
-        "Copa e Cozinha",
-        "Pintura",
-        "Alvenaria",
-        "Marcenaria",
-        "Elétrica",
-        "Mobiliário",
-        "Outros"
+        "Informática", "Expediente", "Limpeza", "Copa e Cozinha",
+        "Pintura", "Alvenaria", "Marcenaria", "Elétrica", "Mobiliário", "Outros"
     ];
 
-    const UNIDADES_FIXAS = [
-        "UN",
-        "CX",
-        "PC",
-        "KG",
-        "MT",
-        "L",
-        "PCT",
-        "RL",
-        "PAR",
-        "FR"
-    ];
+    const UNIDADES_FIXAS = ["UN", "CX", "PC", "KG", "MT", "L", "PCT", "RL", "PAR", "FR"];
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let todosItens = [];
@@ -953,8 +964,8 @@
 
     let itensInventarioBase = [];
     let itensPdfRevisao = [];
+    let periodoInventarioAtual = 'Nenhum inventário ativo';
 
-    // Estados de recolhimento da sidebar
     let categoriasRecolhidas = false;
     let marcasRecolhidas = false;
     let umRecolhidas = false;
@@ -982,6 +993,25 @@
 
         await verificarInventarioNuvem();
         await carregarItens();
+    }
+
+    // Navegação por Abas Principais
+    function mudarAba(nomeAba) {
+        document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.top-nav-item').forEach(i => i.classList.remove('active'));
+
+        if (nomeAba === 'catalogo') {
+            document.getElementById('viewCatalogo').classList.add('active');
+            document.getElementById('abaNavCatalogo').classList.add('active');
+        } else if (nomeAba === 'inventario') {
+            document.getElementById('viewInventario').classList.add('active');
+            document.getElementById('abaNavInventario').classList.add('active');
+            atualizarVisualTelaInventario();
+        } else if (nomeAba === 'relatorios') {
+            document.getElementById('viewRelatorios').classList.add('active');
+            document.getElementById('abaNavRelatorios').classList.add('active');
+            atualizarPainelRelatorios();
+        }
     }
 
     function toggleSecaoCategorias() {
@@ -1047,7 +1077,7 @@
         
         intervaloVerificacaoSessao = setInterval(async () => {
             if (!usuarioLogado) return;
-            const { data, error } = await supabaseClient
+            const { data } = await supabaseClient
                 .from('controle_sessao')
                 .select('token_sessao')
                 .eq('id', 1)
@@ -1105,10 +1135,7 @@
         btn.disabled = true;
         btn.innerText = 'Entrando...';
 
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email: email,
-            password: senha
-        });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
 
         btn.disabled = false;
         btn.innerText = 'Entrar no Sistema';
@@ -1144,22 +1171,18 @@
     function formatarDataBR(dataIso) {
         if (!dataIso) return 'Indeterminada';
         const partes = dataIso.split('T')[0].split('-');
-        if (partes.length === 3) {
-            return `${partes[2]}/${partes[1]}/${partes[0]}`;
-        }
+        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
         return dataIso;
     }
 
     function obterTodasCategoriasUnicas() {
         const catsRegistradas = todosItens.map(i => i.CATEGORIA).filter(Boolean);
-        const combinadas = [...new Set([...CATEGORIAS_FIXAS, ...catsRegistradas])];
-        return combinadas.sort();
+        return [...new Set([...CATEGORIAS_FIXAS, ...catsRegistradas])].sort();
     }
 
     function obterTodasUnidadesUnicas() {
         const unidadesRegistradas = todosItens.map(i => i["UNIDADE DE MEDIDA"]).filter(Boolean);
-        const combinadas = [...new Set([...UNIDADES_FIXAS, ...unidadesRegistradas])];
-        return combinadas.sort();
+        return [...new Set([...UNIDADES_FIXAS, ...unidadesRegistradas])].sort();
     }
 
     function atualizarSidebarCategorias() {
@@ -1251,21 +1274,16 @@
         }
 
         grid.innerHTML = lista.map(item => {
-            const qtdExibida = (item.QUANTIDADE !== undefined && item.QUANTIDADE !== null && item.QUANTIDADE !== '') 
-                ? Number(item.QUANTIDADE) 
-                : 0;
-
+            const qtdExibida = (item.QUANTIDADE !== undefined && item.QUANTIDADE !== null && item.QUANTIDADE !== '') ? Number(item.QUANTIDADE) : 0;
             const esgotado = qtdExibida === 0;
             const validadeTexto = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
             const eAdmin = !!usuarioLogado;
 
             return `
-            <div class="item-card ${esgotado ? 'esgotado' : ''} ${eAdmin ? 'admin-clicavel' : ''}" ${eAdmin ? `onclick="abrirModalEdicaoItem(${item.id})" title="Clique para editar as informações do item"` : ''}>
+            <div class="item-card ${esgotado ? 'esgotado' : ''} ${eAdmin ? 'admin-clicavel' : ''}" ${eAdmin ? `onclick="abrirModalEdicaoItem(${item.id})" title="Clique para editar"` : ''}>
                 <div class="item-img-box">
                     <span class="badge-cod">${item["CÓDIGO EFISCO"] || 'SEM CÓDIGO'}</span>
-                    ${item.foto_url 
-                        ? `<img src="${item.foto_url}" alt="${item.PRODUTO}" loading="lazy">` 
-                        : `<span style="color:#94a3b8; font-size:0.85rem;">📷 Sem foto</span>`}
+                    ${item.foto_url ? `<img src="${item.foto_url}" alt="${item.PRODUTO}" loading="lazy">` : `<span style="color:#94a3b8; font-size:0.85rem;">📷 Sem foto</span>`}
                 </div>
                 <div class="item-body">
                     <div>
@@ -1277,7 +1295,7 @@
                         <span>Qtd: <b>${qtdExibida}</b> (${item["UNIDADE DE MEDIDA"] || 'UN'}) ${esgotado ? '<span style="color:var(--danger); font-weight:bold; margin-left:4px;">(Esgotado)</span>' : ''}</span>
                         <div class="item-actions" onclick="event.stopPropagation()">
                             <button class="btn btn-label" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick='abrirModalEscolhaEtiqueta(${JSON.stringify(item)})' title="Gerar Etiqueta">🏷️</button>
-                            <button class="btn btn-photo" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick="gatilhoAdicionarFoto(${item.id})" title="Anexar ou Alterar Foto">📷 Foto</button>
+                            <button class="btn btn-photo" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick="gatilhoAdicionarFoto(${item.id})" title="Foto">📷 Foto</button>
                             <button class="btn btn-danger" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick="excluirItem(${item.id})" title="Excluir">🗑️</button>
                         </div>
                     </div>
@@ -1289,7 +1307,7 @@
 
     // --- ETIQUETAS ---
     function abrirModalEscolhaEtiqueta(item) {
-        if (!usuarioLogado) return alert('Acesso negado.');
+        if (!usuarioLogado) return;
         itemSelecionadoParaEtiqueta = item;
         document.getElementById('modalEscolhaEtiqueta').classList.add('active');
     }
@@ -1318,36 +1336,20 @@
                 <div style="width: 700px; padding: 40px; border: 4px solid #2563eb; border-radius: 12px; font-family: 'Segoe UI', sans-serif; background: white; text-align: center;">
                     <div style="font-size: 20px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 10px;">Almoxarifado SEFAZ/PE</div>
                     <div style="font-size: 16px; font-weight: bold; background: #e2e8f0; padding: 6px; border-radius: 6px; margin-bottom: 25px;">ETIQUETA DE PALLET</div>
-                    
                     <div style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: bold;">Código EFISCO</div>
                     <div style="font-size: 36px; font-weight: bold; font-family: monospace; margin-bottom: 20px; color: #0f172a;">${cod}</div>
-                    
                     <div style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: bold;">Descrição do Material</div>
                     <div style="font-size: 24px; font-weight: bold; margin-bottom: 25px; line-height: 1.3; color: #0f172a;">${produto}</div>
-                    
                     <div style="display: flex; justify-content: space-around; margin-bottom: 30px; font-size: 18px;">
                         <div><b>Categoria:</b> ${categoria}</div>
                         <div><b>Unidade:</b> ${unidade}</div>
                     </div>
-
-                    <div style="margin-top: 20px;">
-                        <svg id="barcodePalletPdf"></svg>
-                    </div>
+                    <div><svg id="barcodePalletPdf"></svg></div>
                 </div>
             `;
             document.body.appendChild(container);
             JsBarcode("#barcodePalletPdf", cod, { format: "CODE128", width: 3, height: 80, displayValue: true, fontSize: 22, margin: 5 });
-
-            const opt = {
-                margin: 10,
-                filename: `Etiqueta_Pallet_${cod}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().from(container).set(opt).save().then(() => container.remove());
-
+            html2pdf().from(container).set({ margin: 10, filename: `Etiqueta_Pallet_${cod}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).save().then(() => container.remove());
         } else {
             container.innerHTML = `
                 <div style="width: 700px; padding: 25px; border: 2px dashed #0284c7; border-radius: 8px; font-family: 'Segoe UI', sans-serif; background: white;">
@@ -1355,35 +1357,21 @@
                         <div style="font-size: 14px; font-weight: bold; color: #0284c7; text-transform: uppercase;">SEFAZ/PE - Prateleira</div>
                         <div style="font-size: 14px; font-weight: bold; background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px;">${categoria}</div>
                     </div>
-                    
                     <div style="display: flex; gap: 20px; align-items: center;">
                         <div style="flex: 1;">
                             <div style="font-size: 11px; color: #64748b; font-weight: bold;">CÓDIGO EFISCO</div>
                             <div style="font-size: 26px; font-weight: bold; font-family: monospace; color: #0f172a; margin-bottom: 10px;">${cod}</div>
-                            
                             <div style="font-size: 11px; color: #64748b; font-weight: bold;">PRODUTO</div>
                             <div style="font-size: 16px; font-weight: bold; color: #0f172a; line-height: 1.2; margin-bottom: 10px;">${produto}</div>
-                            
                             <div style="font-size: 13px;"><b>Unidade:</b> ${unidade}</div>
                         </div>
-                        <div style="text-align: center;">
-                            <svg id="barcodePratPdf"></svg>
-                        </div>
+                        <div style="text-align: center;"><svg id="barcodePratPdf"></svg></div>
                     </div>
                 </div>
             `;
             document.body.appendChild(container);
             JsBarcode("#barcodePratPdf", cod, { format: "CODE128", width: 2, height: 60, displayValue: true, fontSize: 16, margin: 2 });
-
-            const opt = {
-                margin: 10,
-                filename: `Etiqueta_Prateleira_${cod}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a5', orientation: 'landscape' }
-            };
-
-            html2pdf().from(container).set(opt).save().then(() => container.remove());
+            html2pdf().from(container).set({ margin: 10, filename: `Etiqueta_Prateleira_${cod}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a5', orientation: 'landscape' } }).save().then(() => container.remove());
         }
     }
 
@@ -1413,12 +1401,8 @@
         document.getElementById('validade').value = item.validade ? item.validade.split('T')[0] : '';
         
         atualizarSelectsCategoriasEUnidades();
-        
-        const selectCat = document.getElementById('categoria');
-        if (selectCat) selectCat.value = item.CATEGORIA || 'Outros';
-
-        const selectUn = document.getElementById('unidade');
-        if (selectUn) selectUn.value = item["UNIDADE DE MEDIDA"] || 'UN';
+        document.getElementById('categoria').value = item.CATEGORIA || 'Outros';
+        document.getElementById('unidade').value = item["UNIDADE DE MEDIDA"] || 'UN';
 
         const imgPrev = document.getElementById('imgPreview');
         if (item.foto_url) {
@@ -1439,7 +1423,7 @@
 
     async function salvarItemMaterial(e) {
         e.preventDefault();
-        if (!usuarioLogado) return alert('Acesso negado.');
+        if (!usuarioLogado) return;
 
         const btn = document.getElementById('btnSalvarMaterial');
         btn.disabled = true;
@@ -1459,7 +1443,7 @@
             let unidade = document.getElementById('unidade').value;
             if (unidade === '__NOVA__') {
                 unidade = document.getElementById('novaUnidadeInput').value.trim().toUpperCase();
-                if (!unidade) return alert('Informe a sigla da nova unidade de medida!');
+                if (!unidade) return alert('Informe a sigla da nova unidade!');
             }
 
             const inputQtd = document.getElementById('quantidade').value;
@@ -1477,50 +1461,25 @@
             if (fotoFile) {
                 const fotoComprimida = await comprimirImagem(fotoFile);
                 const nomeArquivo = `${Date.now()}_${codigo.replace(/[^a-zA-Z0-9]/g, '')}.jpg`;
-
-                const { error: uploadError } = await supabaseClient.storage
-                    .from('fotos-bens')
-                    .upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
-
+                const { error: uploadError } = await supabaseClient.storage.from('fotos-bens').upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
                 if (uploadError) throw uploadError;
-
-                const { data: urlData } = supabaseClient.storage
-                    .from('fotos-bens')
-                    .getPublicUrl(nomeArquivo);
-
+                const { data: urlData } = supabaseClient.storage.from('fotos-bens').getPublicUrl(nomeArquivo);
                 fotoUrl = urlData.publicUrl;
             }
 
             if (idEditando) {
-                const { error: updateError } = await supabaseClient
-                    .from('bens')
-                    .update({ 
-                        "CÓDIGO EFISCO": codigo, 
-                        "PRODUTO": produto, 
-                        "CATEGORIA": categoria, 
-                        "UNIDADE DE MEDIDA": unidade, 
-                        "QUANTIDADE": quantidade,
-                        "validade": validade,
-                        "foto_url": fotoUrl 
-                    })
-                    .eq('id', idEditando);
-
-                if (updateError) throw updateError;
+                const { error } = await supabaseClient.from('bens').update({ 
+                    "CÓDIGO EFISCO": codigo, "PRODUTO": produto, "CATEGORIA": categoria, 
+                    "UNIDADE DE MEDIDA": unidade, "QUANTIDADE": quantidade, "validade": validade, "foto_url": fotoUrl 
+                }).eq('id', idEditando);
+                if (error) throw error;
                 alert('Item atualizado com sucesso!');
             } else {
-                const { error: insertError } = await supabaseClient
-                    .from('bens')
-                    .insert([{ 
-                        "CÓDIGO EFISCO": codigo, 
-                        "PRODUTO": produto, 
-                        "CATEGORIA": categoria, 
-                        "UNIDADE DE MEDIDA": unidade, 
-                        "QUANTIDADE": quantidade,
-                        "validade": validade,
-                        "foto_url": fotoUrl 
-                    }]);
-
-                if (insertError) throw insertError;
+                const { error } = await supabaseClient.from('bens').insert([{ 
+                    "CÓDIGO EFISCO": codigo, "PRODUTO": produto, "CATEGORIA": categoria, 
+                    "UNIDADE DE MEDIDA": unidade, "QUANTIDADE": quantidade, "validade": validade, "foto_url": fotoUrl 
+                }]);
+                if (error) throw error;
                 alert('Item cadastrado com sucesso!');
             }
 
@@ -1536,7 +1495,7 @@
 
     // --- IMPORTAÇÃO DE PDF DE RECEBIMENTO ---
     function abrirModalImportarPdf() {
-        if (!usuarioLogado) return alert('Acesso negado.');
+        if (!usuarioLogado) return;
         document.getElementById('modalImportarPdf').classList.add('active');
         document.getElementById('pdfEtapa1').style.display = 'block';
         document.getElementById('pdfEtapa2').style.display = 'none';
@@ -1555,9 +1514,7 @@
 
     async function processarPdfRecebimento() {
         const input = document.getElementById('arquivoPdfRecebimento');
-        if (!input.files || input.files.length === 0) {
-            return alert('Selecione o arquivo PDF de recebimento!');
-        }
+        if (!input.files || input.files.length === 0) return alert('Selecione o arquivo PDF de recebimento!');
 
         const arquivo = input.files[0];
         const btn = document.getElementById('btnProcessarPdf');
@@ -1570,18 +1527,14 @@
             const pdfDoc = await loadingTask.promise;
             
             let textoCompleto = '';
-
             for (let i = 1; i <= pdfDoc.numPages; i++) {
                 const page = await pdfDoc.getPage(i);
                 const textContent = await page.getTextContent();
-                const textoPagina = textContent.items.map(item => item.str).join(' ');
-                textoCompleto += ' ' + textoPagina;
+                textoCompleto += ' ' + textContent.items.map(item => item.str).join(' ');
             }
-
             textoCompleto = textoCompleto.replace(/\s+/g, ' ');
 
             const regexItens = /(\d{5,8})\s+\(\1\)\s*[-]?\s*(.+?)\s+(UN|CX|PC|KG|MT|L|M2|PCT|RL|PAR|FR)\s+([\d\.,]+)\s+([\d\.,]+)/gi;
-            
             let match;
             itensPdfRevisao = [];
 
@@ -1590,7 +1543,6 @@
                 let produto = match[2].trim();
                 if (produto.startsWith('-')) produto = produto.substring(1).trim();
                 const unidade = match[3].trim().toUpperCase();
-                
                 const qtdRecebidaStr = (match[5] || match[4] || '1').replace(/\./g, '').replace(',', '.');
                 const quantidadeRecebida = parseFloat(qtdRecebidaStr) || 1;
 
@@ -1600,26 +1552,19 @@
                 ) || todosItens.find(i => String(i["CÓDIGO EFISCO"] || '').trim() === codigo);
 
                 itensPdfRevisao.push({
-                    codigo: codigo,
-                    produto: produto,
-                    unidade: unidade,
-                    quantidadeRecebida: quantidadeRecebida,
+                    codigo, produto, unidade, quantidadeRecebida,
                     existeNoCatalogo: !!itemExistente,
                     idCatalogo: itemExistente ? itemExistente.id : null,
                     estoqueAtual: itemExistente ? Number(itemExistente.QUANTIDADE || 0) : 0,
-                    empenhoDiferente: false,
-                    obsEmpenho: ''
+                    empenhoDiferente: false, obsEmpenho: ''
                 });
             }
 
-            if (itensPdfRevisao.length === 0) {
-                return alert('Não foi possível extrair os itens automaticamente deste PDF. Verifique se é o Termo de Recebimento correto do Peintegrado.');
-            }
+            if (itensPdfRevisao.length === 0) return alert('Não foi possível extrair os itens automaticamente deste PDF.');
 
             renderizarTabelaConferenciaPdf();
             document.getElementById('pdfEtapa1').style.display = 'none';
             document.getElementById('pdfEtapa2').style.display = 'flex';
-
         } catch (err) {
             alert('Erro ao ler o arquivo PDF: ' + err.message);
         } finally {
@@ -1630,47 +1575,28 @@
 
     function renderizarTabelaConferenciaPdf() {
         const tbody = document.getElementById('tabelaCorpoPdf');
-        let html = '';
-
-        itensPdfRevisao.forEach((item, index) => {
-            html += `
-                <tr>
-                    <td>
-                        <input type="text" class="inv-input-text" value="${item.codigo}" onchange="atualizarItemPdfRevisao(${index}, 'codigo', this.value)">
-                    </td>
-                    <td>
-                        <input type="text" class="inv-input-text" value="${item.produto}" onchange="atualizarItemPdfRevisao(${index}, 'produto', this.value)">
-                    </td>
-                    <td style="text-align: center;">
-                        <input type="text" class="inv-input-qtd" style="width: 70px;" value="${item.unidade}" onchange="atualizarItemPdfRevisao(${index}, 'unidade', this.value)">
-                    </td>
-                    <td style="text-align: center;">
-                        <input type="number" class="inv-input-qtd" min="0" value="${item.quantidadeRecebida}" onchange="atualizarItemPdfRevisao(${index}, 'quantidadeRecebida', this.value)">
-                    </td>
-                    <td style="text-align: center;">
-                        <button class="btn" style="background: ${item.empenhoDiferente ? '#10b981' : '#f59e0b'}; color: white; padding: 6px 10px; font-size: 0.8rem;" onclick="abrirModalAjusteEmpenho(${index})" title="Informar divergência de embalagem/empenho">
-                            ${item.empenhoDiferente ? '✅ Ajustado' : '⚠️ Dif. Empenho'}
-                        </button>
-                    </td>
-                    <td>
-                        ${item.existeNoCatalogo 
-                            ? `<span style="color:var(--success); font-weight:bold;">✅ No Catálogo (Atual: ${item.estoqueAtual})</span>` 
-                            : `<span style="color:var(--warning); font-weight:bold;">⚠️ Novo Item (Será cadastrado)</span>`}
-                        ${item.obsEmpenho ? `<br><small style="color:var(--danger)">Obs: ${item.obsEmpenho}</small>` : ''}
-                    </td>
-                </tr>
-            `;
-        });
-
-        tbody.innerHTML = html;
+        tbody.innerHTML = itensPdfRevisao.map((item, index) => `
+            <tr>
+                <td><input type="text" class="inv-input-text" value="${item.codigo}" onchange="atualizarItemPdfRevisao(${index}, 'codigo', this.value)"></td>
+                <td><input type="text" class="inv-input-text" value="${item.produto}" onchange="atualizarItemPdfRevisao(${index}, 'produto', this.value)"></td>
+                <td style="text-align: center;"><input type="text" class="inv-input-qtd" style="width: 70px;" value="${item.unidade}" onchange="atualizarItemPdfRevisao(${index}, 'unidade', this.value)"></td>
+                <td style="text-align: center;"><input type="number" class="inv-input-qtd" min="0" value="${item.quantidadeRecebida}" onchange="atualizarItemPdfRevisao(${index}, 'quantidadeRecebida', this.value)"></td>
+                <td style="text-align: center;">
+                    <button class="btn" style="background: ${item.empenhoDiferente ? '#10b981' : '#f59e0b'}; color: white; padding: 6px 10px; font-size: 0.8rem;" onclick="abrirModalAjusteEmpenho(${index})">
+                        ${item.empenhoDiferente ? '✅ Ajustado' : '⚠️ Dif. Empenho'}
+                    </button>
+                </td>
+                <td>
+                    ${item.existeNoCatalogo ? `<span style="color:var(--success); font-weight:bold;">✅ No Catálogo (${item.estoqueAtual})</span>` : `<span style="color:var(--warning); font-weight:bold;">⚠️ Novo Item</span>`}
+                    ${item.obsEmpenho ? `<br><small style="color:var(--danger)">Obs: ${item.obsEmpenho}</small>` : ''}
+                </td>
+            </tr>
+        `).join('');
     }
 
     function atualizarItemPdfRevisao(index, campo, valor) {
-        if (campo === 'quantidadeRecebida') {
-            itensPdfRevisao[index][campo] = parseInt(valor) || 0;
-        } else {
-            itensPdfRevisao[index][campo] = valor.trim();
-        }
+        if (campo === 'quantidadeRecebida') itensPdfRevisao[index][campo] = parseInt(valor) || 0;
+        else itensPdfRevisao[index][campo] = valor.trim();
     }
 
     function abrirModalAjusteEmpenho(index) {
@@ -1678,11 +1604,9 @@
         document.getElementById('ajusteIndexItem').value = index;
         document.getElementById('ajusteNomeProduto').value = item.produto;
         document.getElementById('ajusteVolumes').value = item.quantidadeRecebida;
-        
         atualizarSelectsCategoriasEUnidades();
         document.getElementById('ajusteNovaUnidade').value = item.unidade;
         document.getElementById('ajusteObsEmpenho').value = item.obsEmpenho || '';
-
         document.getElementById('modalAjusteEmpenho').classList.add('active');
     }
 
@@ -1697,85 +1621,54 @@
         const novaUnidade = document.getElementById('ajusteNovaUnidade').value;
         const obs = document.getElementById('ajusteObsEmpenho').value.trim();
 
-        if (!novaUnidade) return alert('Selecione a nova unidade de medida!');
-
         itensPdfRevisao[index].quantidadeRecebida = volumes;
         itensPdfRevisao[index].unidade = novaUnidade;
         itensPdfRevisao[index].empenhoDiferente = true;
-        itensPdfRevisao[index].obsEmpenho = obs || `Entregue em ${volumes} ${novaUnidade} (divergente do empenho original)`;
+        itensPdfRevisao[index].obsEmpenho = obs || `Entregue em ${volumes} ${novaUnidade}`;
 
         fecharModalAjusteEmpenho();
         renderizarTabelaConferenciaPdf();
-        alert('Ajuste de empenho aplicado com sucesso para este item!');
+        alert('Ajuste de empenho aplicado!');
     }
 
     async function confirmarAtualizacaoEstoquePdf() {
-        if (!confirm('Deseja confirmar os dados e atualizar o estoque no sistema com os valores informados?')) return;
+        if (!confirm('Deseja confirmar os dados e atualizar o estoque no sistema?')) return;
 
-        let atualizados = 0;
-        let inseridos = 0;
-
+        let atualizados = 0, inseridos = 0;
         for (const item of itensPdfRevisao) {
             if (!item.codigo || !item.produto) continue;
-
             if (item.existeNoCatalogo && item.idCatalogo) {
                 const novaQtd = Number(item.estoqueAtual) + Number(item.quantidadeRecebida);
-                const { error } = await supabaseClient
-                    .from('bens')
-                    .update({ 
-                        "QUANTIDADE": novaQtd,
-                        "UNIDADE DE MEDIDA": item.unidade,
-                        "PRODUTO": item.produto
-                    })
-                    .eq('id', item.idCatalogo);
-
+                const { error } = await supabaseClient.from('bens').update({ "QUANTIDADE": novaQtd, "UNIDADE DE MEDIDA": item.unidade, "PRODUTO": item.produto }).eq('id', item.idCatalogo);
                 if (!error) atualizados++;
             } else {
-                const { error } = await supabaseClient
-                    .from('bens')
-                    .insert([{
-                        "CÓDIGO EFISCO": item.codigo,
-                        "PRODUTO": item.produto,
-                        "UNIDADE DE MEDIDA": item.unidade,
-                        "QUANTIDADE": Number(item.quantidadeRecebida),
-                        "CATEGORIA": "Outros",
-                        "validade": null
-                    }]);
-
+                const { error } = await supabaseClient.from('bens').insert([{ "CÓDIGO EFISCO": item.codigo, "PRODUTO": item.produto, "UNIDADE DE MEDIDA": item.unidade, "QUANTIDADE": Number(item.quantidadeRecebida), "CATEGORIA": "Outros", "validade": null }]);
                 if (!error) inseridos++;
             }
         }
-
-        alert(`Estoque atualizado com sucesso via PDF!\n- Itens atualizados no estoque: ${atualizados}\n- Novos itens cadastrados: ${inseridos}`);
+        alert(`Estoque atualizado via PDF!\n- Atualizados: ${atualizados}\n- Novos: ${inseridos}`);
         fecharModalImportarPdf();
         await carregarItens();
     }
 
-    // --- MÓDULO DE INVENTÁRIO ---
+    // --- MÓDULO DE INVENTÁRIO & ABA INVENTÁRIO ---
     async function verificarInventarioNuvem() {
-        const btnInv = document.getElementById('btnInventario');
-        
         try {
-            const { data, error } = await supabaseClient
-                .from('inventario_andamento')
-                .select('itens_json, atualizado_em')
-                .eq('id', 1)
-                .maybeSingle();
-
+            const { data } = await supabaseClient.from('inventario_andamento').select('itens_json, atualizado_em').eq('id', 1).maybeSingle();
             if (data && data.itens_json) {
                 const parsed = JSON.parse(data.itens_json);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     itensInventarioBase = parsed;
-                    if (btnInv) btnInv.innerText = '📊 Inventário em Andamento';
-                    return;
+                    periodoInventarioAtual = data.atualizado_em ? new Date(data.atualizado_em).toLocaleString('pt-BR') : 'Data não registrada';
+                    return true;
                 }
             }
         } catch (e) {
-            console.error('Erro ao ler do Supabase:', e);
+            console.error('Erro nuvem:', e);
         }
-
         itensInventarioBase = [];
-        if (btnInv) btnInv.innerText = '📊 Inventário';
+        periodoInventarioAtual = 'Nenhum inventário ativo';
+        return false;
     }
 
     async function salvarInventarioNuvem() {
@@ -1785,83 +1678,59 @@
         const dataHoraFormatada = agora.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
 
         try {
-            const { error } = await supabaseClient
-                .from('inventario_andamento')
-                .upsert({ id: 1, itens_json: jsonStr, atualizado_em: agora });
-            
+            await supabaseClient.from('inventario_andamento').upsert({ id: 1, itens_json: jsonStr, atualizado_em: agora });
+            periodoInventarioAtual = dataHoraFormatada;
             const statusEl = document.getElementById('statusSalvamentoNuvem');
-            if (error) {
-                if (statusEl) statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ Erro ao salvar na Base: ${error.message}</span>`;
-            } else {
-                if (statusEl) statusEl.innerHTML = `💾 Salvo na Base em ${dataHoraFormatada}`;
-            }
+            if (statusEl) statusEl.innerHTML = `💾 Sincronizado em ${dataHoraFormatada}`;
         } catch (e) {
             const statusEl = document.getElementById('statusSalvamentoNuvem');
-            if (statusEl) statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ Falha de conexão com a Base</span>`;
+            if (statusEl) statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ Falha ao salvar</span>`;
         }
     }
 
-    async function abrirModalInventario() {
-        document.getElementById('modalInventario').classList.add('active');
+    async function atualizarVisualTelaInventario() {
         await verificarInventarioNuvem();
-        
-        const etapaSel = document.getElementById('invEtapaSelecao');
-        const etapa1 = document.getElementById('invEtapa1');
-        const etapa2 = document.getElementById('invEtapa2');
-        const btnVoltarSel = document.getElementById('btnVoltarSel');
+        const etapaSel = document.getElementById('invEtapaSelecaoTela');
+        const etapa1 = document.getElementById('invEtapa1Tela');
+        const etapa2 = document.getElementById('invEtapa2Tela');
+        const acoesTopo = document.getElementById('acoesTopoInventario');
+        const labelPeriodo = document.getElementById('periodoInventarioAtivoLabel');
 
         if (itensInventarioBase.length > 0) {
             etapaSel.style.display = 'block';
             etapa1.style.display = 'none';
             etapa2.style.display = 'none';
-            if (btnVoltarSel) btnVoltarSel.style.display = 'inline-flex';
+            if (acoesTopo) acoesTopo.style.display = 'flex';
+            if (labelPeriodo) labelPeriodo.innerHTML = `Existe um inventário em andamento no sistema.<br><b>Período / Última contagem:</b> ${periodoInventarioAtual}`;
         } else {
             etapaSel.style.display = 'none';
             etapa1.style.display = 'block';
             etapa2.style.display = 'none';
-            if (btnVoltarSel) btnVoltarSel.style.display = 'none';
+            if (acoesTopo) acoesTopo.style.display = 'none';
         }
     }
 
-    function continuarContagemExistente() {
-        document.getElementById('invEtapaSelecao').style.display = 'none';
-        document.getElementById('invEtapa1').style.display = 'none';
-        document.getElementById('invEtapa2').style.display = 'flex';
+    function continuarContagemExistenteTela() {
+        document.getElementById('invEtapaSelecaoTela').style.display = 'none';
+        document.getElementById('invEtapa1Tela').style.display = 'none';
+        document.getElementById('invEtapa2Tela').style.display = 'flex';
         document.getElementById('buscaInventario').value = '';
         document.getElementById('filtroStatusInventario').value = 'todos';
         renderizarTabelaInventario();
     }
 
-    function irParaIniciarNovaContagem() {
+    function irParaIniciarNovaContagemTela() {
         if (itensInventarioBase.length > 0) {
-            if (!confirm('Atenção: Iniciar um novo inventário irá substituir o inventário atual salvo. Deseja continuar?')) {
-                return;
-            }
+            if (!confirm('Atenção: Iniciar um novo inventário irá substituir o inventário atual. Deseja continuar?')) return;
         }
-        document.getElementById('invEtapaSelecao').style.display = 'none';
-        document.getElementById('invEtapa1').style.display = 'block';
-        document.getElementById('invEtapa2').style.display = 'none';
-        const btnVoltarSel = document.getElementById('btnVoltarSel');
-        if (btnVoltarSel && itensInventarioBase.length > 0) {
-            btnVoltarSel.style.display = 'inline-flex';
-        }
-    }
-
-    function voltarParaSelecaoInventario() {
-        document.getElementById('invEtapaSelecao').style.display = 'block';
-        document.getElementById('invEtapa1').style.display = 'none';
-        document.getElementById('invEtapa2').style.display = 'none';
-    }
-
-    function fecharModalInventario() {
-        document.getElementById('modalInventario').classList.remove('active');
+        document.getElementById('invEtapaSelecaoTela').style.display = 'none';
+        document.getElementById('invEtapa1Tela').style.display = 'block';
+        document.getElementById('invEtapa2Tela').style.display = 'none';
     }
 
     async function iniciarContagemInventario() {
         const input = document.getElementById('arquivoBaseInventario');
-        if (!input.files || input.files.length === 0) {
-            return alert('Selecione o arquivo Excel base para iniciar o inventário!');
-        }
+        if (!input.files || input.files.length === 0) return alert('Selecione o arquivo Excel base!');
 
         const arquivo = input.files[0];
         const reader = new FileReader();
@@ -1870,8 +1739,7 @@
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const primeiraAba = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[primeiraAba];
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                 const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 let novosItens = [];
@@ -1880,7 +1748,6 @@
                 for (let i = 3; i < linhas.length; i++) {
                     let r = linhas[i];
                     if (!r || !r[0]) continue;
-
                     const codigo = String(r[0]).trim();
                     const unidade = String(r[3] || 'UN').trim();
                     if (!codigo) continue;
@@ -1889,37 +1756,21 @@
                     if (chavesVistas.has(chaveUnica)) continue;
                     chavesVistas.add(chaveUnica);
 
-                    const produto = String(r[1] || 'Sem descrição').trim();
                     let qtdBase = parseFloat(r[5]);
                     qtdBase = !isNaN(qtdBase) ? Math.round(qtdBase) : 0;
-
                     if (qtdBase <= 0) continue;
 
                     novosItens.push({
-                        codigo: codigo,
-                        produto: produto,
-                        unidade: unidade,
-                        base: qtdBase,
-                        contagem1: '',
-                        contagem2: '',
-                        obs: ''
+                        codigo, produto: String(r[1] || 'Sem descrição').trim(),
+                        unidade, base: qtdBase, contagem1: '', contagem2: '', obs: ''
                     });
                 }
 
-                if (novosItens.length === 0) {
-                    return alert('Nenhum item com estoque válido (> 0) foi encontrado no arquivo base.');
-                }
+                if (novosItens.length === 0) return alert('Nenhum item com estoque válido (> 0) encontrado.');
 
                 itensInventarioBase = novosItens;
                 await salvarInventarioNuvem();
-                document.getElementById('buscaInventario').value = '';
-                document.getElementById('filtroStatusInventario').value = 'todos';
-                renderizarTabelaInventario();
-                document.getElementById('invEtapaSelecao').style.display = 'none';
-                document.getElementById('invEtapa1').style.display = 'none';
-                document.getElementById('invEtapa2').style.display = 'flex';
-                await verificarInventarioNuvem();
-
+                continuarContagemExistenteTela();
             } catch (err) {
                 alert('Erro ao processar arquivo base: ' + err.message);
             }
@@ -1929,9 +1780,7 @@
 
     async function marcarNaoEncontrado(index) {
         itensInventarioBase[index].contagem1 = 0;
-        if (!itensInventarioBase[index].obs) {
-            itensInventarioBase[index].obs = 'Item não encontrado fisicamente';
-        }
+        if (!itensInventarioBase[index].obs) itensInventarioBase[index].obs = 'Item não encontrado fisicamente';
         await salvarInventarioNuvem();
         renderizarTabelaInventario();
     }
@@ -1943,8 +1792,6 @@
     function fecharModalAdicionarItemInv() {
         document.getElementById('modalAdicionarItemInv').classList.remove('active');
         document.getElementById('formItemInvManual').reset();
-        document.getElementById('manualUnidade').value = 'UN';
-        document.getElementById('manualObs').value = 'Item encontrado no depósito não constante na base';
     }
 
     async function adicionarItemManualInventario(e) {
@@ -1955,27 +1802,11 @@
         const qtd = parseInt(document.getElementById('manualQtd').value) || 0;
         const obs = document.getElementById('manualObs').value.trim();
 
-        if (!codigo || !produto) return alert('Preencha o código e o produto!');
-
-        const existe = itensInventarioBase.find(i => String(i.codigo).trim() === codigo && String(i.unidade).trim().toLowerCase() === unidade.toLowerCase());
-        if (existe) {
-            return alert('Já existe um item com este código e unidade de medida neste inventário!');
-        }
-
-        itensInventarioBase.push({
-            codigo: codigo,
-            produto: produto,
-            unidade: unidade,
-            base: 0,
-            contagem1: qtd,
-            contagem2: '',
-            obs: obs
-        });
-
+        itensInventarioBase.push({ codigo, produto, unidade, base: 0, contagem1: qtd, contagem2: '', obs });
         await salvarInventarioNuvem();
         renderizarTabelaInventario();
         fecharModalAdicionarItemInv();
-        alert('Item físico adicionado com sucesso ao inventário!');
+        alert('Item adicionado ao inventário!');
     }
 
     function renderizarTabelaInventario() {
@@ -1984,189 +1815,143 @@
         const filtroStatus = document.getElementById('filtroStatusInventario') ? document.getElementById('filtroStatusInventario').value : 'todos';
 
         let html = '';
-        let contadorExibidos = 0;
-
         itensInventarioBase.forEach((item, index) => {
             const cod = String(item.codigo || '').toLowerCase();
             const prod = String(item.produto || '').toLowerCase();
+            if (termo && !cod.includes(termo) && !prod.includes(termo)) return;
 
-            if (termo && !cod.startsWith(termo) && !cod.includes(termo) && !prod.includes(termo)) {
-                return;
-            }
-
-            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined && item.contagem1 !== null && !isNaN(item.contagem1)) ? Number(item.contagem1) : 0;
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
-            
-            const contagemEfetiva = (c2 !== null) ? c2 : c1;
-            const dif = contagemEfetiva - item.base;
+            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined && !isNaN(item.contagem1)) ? Number(item.contagem1) : 0;
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
+            const efetiva = c2 !== null ? c2 : c1;
+            const dif = efetiva - item.base;
 
             if (filtroStatus === 'divergencias' && dif === 0) return;
             if (filtroStatus === 'ok' && dif !== 0) return;
 
-            contadorExibidos++;
-
             let statusBadge = '<span style="color:var(--success); font-weight:bold;">OK</span>';
-            if (dif > 0) {
-                statusBadge = `<span style="color:#d97706; font-weight:bold;">+${dif} (Sobra)</span>`;
-            } else if (dif < 0) {
-                statusBadge = `<span style="color:var(--danger); font-weight:bold;">${dif} (Falta)</span>`;
-            }
-
-            const obsValor = item.obs !== undefined && item.obs !== null ? item.obs : '';
-            const valC1 = (item.contagem1 !== undefined && item.contagem1 !== null) ? item.contagem1 : '';
-            const valC2 = (item.contagem2 !== undefined && item.contagem2 !== null) ? item.contagem2 : '';
+            if (dif > 0) statusBadge = `<span style="color:#d97706; font-weight:bold;">+${dif} (Sobra)</span>`;
+            else if (dif < 0) statusBadge = `<span style="color:var(--danger); font-weight:bold;">${dif} (Falta)</span>`;
 
             html += `
                 <tr>
                     <td>
-                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px;" onclick="marcarNaoEncontrado(${index})" title="Marcar como Não Encontrado">❌</button>
+                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px;" onclick="marcarNaoEncontrado(${index})" title="Não encontrado">❌</button>
                         <code>${item.codigo}</code>
                     </td>
                     <td><b>${item.produto}</b></td>
                     <td>${item.unidade}</td>
                     <td style="text-align: center; font-weight:bold;">${item.base}</td>
-                    <td style="text-align: center;">
-                        <input type="number" class="inv-input-qtd" value="${valC1}" min="0" onchange="atualizarContagem(${index}, 'c1', this.value)" placeholder="0">
-                    </td>
-                    <td style="text-align: center;">
-                        <input type="number" class="inv-input-qtd" value="${valC2}" min="0" onchange="atualizarContagem(${index}, 'c2', this.value)" placeholder="-">
-                    </td>
+                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem1 ?? ''}" min="0" onchange="atualizarContagem(${index}, 'c1', this.value)"></td>
+                    <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem2 ?? ''}" min="0" onchange="atualizarContagem(${index}, 'c2', this.value)" placeholder="-"></td>
                     <td style="text-align: center;" id="dif_${index}">${dif}</td>
                     <td id="status_${index}">${statusBadge}</td>
-                    <td>
-                        <input type="text" class="inv-input-text" value="${obsValor}" onchange="atualizarContagem(${index}, 'obs', this.value)" placeholder="Justificativa...">
-                    </td>
+                    <td><input type="text" class="inv-input-text" value="${item.obs || ''}" onchange="atualizarContagem(${index}, 'obs', this.value)" placeholder="Justificativa..."></td>
                 </tr>
             `;
         });
 
-        const badgeTotal = document.getElementById('badgeTotalInventario');
-        if (badgeTotal) {
-            badgeTotal.innerText = `📦 Total para Contagem: ${itensInventarioBase.length} itens`;
-        }
-
-        if (!html) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item encontrado com os filtros selecionados.</td></tr>`;
-        } else {
-            tbody.innerHTML = html;
-        }
+        document.getElementById('badgeTotalInventario').innerText = `📦 Total na Base: ${itensInventarioBase.length} itens`;
+        tbody.innerHTML = html || `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item encontrado.</td></tr>`;
     }
 
     async function atualizarContagem(index, tipo, valor) {
-        if (tipo === 'c1') {
-            itensInventarioBase[index].contagem1 = (valor !== '') ? parseInt(valor) : '';
-        } else if (tipo === 'c2') {
-            itensInventarioBase[index].contagem2 = (valor !== '') ? parseInt(valor) : null;
-        } else if (tipo === 'obs') {
-            itensInventarioBase[index].obs = valor;
-        }
+        if (tipo === 'c1') itensInventarioBase[index].contagem1 = (valor !== '') ? parseInt(valor) : '';
+        else if (tipo === 'c2') itensInventarioBase[index].contagem2 = (valor !== '') ? parseInt(valor) : null;
+        else if (tipo === 'obs') itensInventarioBase[index].obs = valor;
 
         await salvarInventarioNuvem();
-
-        if (tipo !== 'obs') {
-            const item = itensInventarioBase[index];
-            const c1 = (item.contagem1 !== '' && item.contagem1 !== undefined && item.contagem1 !== null && !isNaN(item.contagem1)) ? Number(item.contagem1) : 0;
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
-            const contagemEfetiva = (c2 !== null) ? c2 : c1;
-            const dif = contagemEfetiva - item.base;
-
-            const tdDif = document.getElementById(`dif_${index}`);
-            const tdStatus = document.getElementById(`status_${index}`);
-            
-            if (tdDif) tdDif.innerText = dif;
-            if (tdStatus) {
-                if (dif > 0) {
-                    tdStatus.innerHTML = `<span style="color:#d97706; font-weight:bold;">+${dif} (Sobra)</span>`;
-                } else if (dif < 0) {
-                    tdStatus.innerHTML = `<span style="color:var(--danger); font-weight:bold;">${dif} (Falta)</span>`;
-                } else {
-                    tdStatus.innerHTML = '<span style="color:var(--success); font-weight:bold;">OK</span>';
-                }
-            }
-        }
+        if (tipo !== 'obs') renderizarTabelaInventario();
     }
 
     async function finalizarInventarioAtivo() {
-        if (!confirm('Deseja realmente finalizar este inventário? Os itens sem contagem serão preenchidos com 0 e os dados salvos serão limpos.')) return;
-        
-        itensInventarioBase.forEach(item => {
-            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
-                item.contagem1 = 0;
-            }
-        });
-
+        if (!confirm('Deseja realmente finalizar este inventário? Os dados salvos serão limpos.')) return;
         await supabaseClient.from('inventario_andamento').delete().eq('id', 1);
         itensInventarioBase = [];
-        await verificarInventarioNuvem();
-        fecharModalInventario();
+        await atualizarVisualTelaInventario();
         alert('Inventário finalizado e limpo com sucesso.');
     }
 
+    // --- PAINEL E ABA DE RELATÓRIOS ---
+    async function atualizarPainelRelatorios() {
+        await verificarInventarioNuvem();
+        const infoEl = document.getElementById('infoInventarioRelatorio');
+        if (itensInventarioBase.length > 0) {
+            infoEl.innerHTML = `
+                📂 <b>Inventário Ativo Carregado</b><br>
+                ⏱️ <b>Período / Data da Contagem:</b> ${periodoInventarioAtual}<br>
+                📊 <b>Total de Itens no Escopo:</b> ${itensInventarioBase.length} itens
+            `;
+        } else {
+            infoEl.innerHTML = `⚠️ Nenhum inventário ativo no momento. Carregue um inventário na aba <b>Inventário</b> para gerar os relatórios executivos.`;
+        }
+    }
+
     async function exportarRelatorioDivergencias() {
-        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo.');
+        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo para gerar relatório.');
 
         itensInventarioBase.forEach(item => {
-            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
-                item.contagem1 = 0;
-            }
+            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) item.contagem1 = 0;
         });
         await salvarInventarioNuvem();
 
-        const dadosExportar = itensInventarioBase.map(item => {
-            const c1 = Number(item.contagem1);
-            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && item.contagem2 !== undefined && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
-            const contagemEfetiva = (c2 !== null) ? c2 : c1;
-            const dif = contagemEfetiva - item.base;
-
-            let status = 'OK';
-            if (dif > 0) status = 'SOBRA';
-            if (dif < 0) status = 'FALTA';
-
-            return {
-                "CÓDIGO EFISCO": item.codigo,
-                "PRODUTO": item.produto,
-                "U.M": item.unidade,
-                "ESTOQUE BASE": item.base,
-                "1ª CONTAGEM": c1,
-                "2ª CONTAGEM": c2 !== null ? c2 : '',
-                "DIFERENÇA FINAL": dif,
-                "STATUS": status,
-                "OBSERVAÇÕES / JUSTIFICATIVA": item.obs || ''
-            };
-        });
-
-        const worksheet = XLSX.utils.json_to_sheet(dadosExportar);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio_Divergencias");
-
-        const dataAtual = new Date().toISOString().split('T')[0];
-        XLSX.writeFile(workbook, `Relatorio_Inventario_${dataAtual}.xlsx`);
-    }
-
-    function exportarRelatorioPDF() {
-        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo.');
-
-        itensInventarioBase.forEach(item => {
-            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) {
-                item.contagem1 = 0;
-            }
-        });
-
         const totalItens = itensInventarioBase.length;
-        let totalOk = 0;
-        let totalSobra = 0;
-        let totalFalta = 0;
+        let totalOk = 0, totalSobra = 0, totalFalta = 0;
+        itensInventarioBase.forEach(item => {
+            const c1 = Number(item.contagem1 || 0);
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
+            const dif = (c2 !== null ? c2 : c1) - item.base;
+            if (dif === 0) totalOk++; else if (dif > 0) totalSobra++; else totalFalta++;
+        });
+        const acuracidade = ((totalOk / totalItens) * 100).toFixed(1) + '%';
+        const dataStr = new Date().toLocaleDateString('pt-BR');
+
+        const aoa = [
+            ["ALMOXARIFADO SEFAZ/PE - RELATÓRIO EXECUTIVO DE INVENTÁRIO"],
+            [`Data de Emissão: ${dataStr} | Período de Contagem: ${periodoInventarioAtual}`],
+            [],
+            ["RESUMO EXECUTIVO"],
+            ["Total de Itens Auditados", totalItens, "Itens Conformes (OK)", totalOk],
+            ["Itens com Sobra", totalSobra, "Itens com Falta", totalFalta],
+            ["Acuracidade do Estoque", acuracidade, "", ""],
+            [],
+            ["DETALHAMENTO DO INVENTÁRIO FÍSICO"],
+            ["CÓDIGO EFISCO", "PRODUTO / DESCRIÇÃO", "U.M", "ESTOQUE BASE", "1ª CONTAGEM", "2ª CONTAGEM", "DIFERENÇA FINAL", "STATUS", "OBSERVAÇÕES"]
+        ];
 
         itensInventarioBase.forEach(item => {
             const c1 = Number(item.contagem1 || 0);
             const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
             const efetiva = c2 !== null ? c2 : c1;
             const dif = efetiva - item.base;
-            if (dif === 0) totalOk++;
-            else if (dif > 0) totalSobra++;
-            else totalFalta++;
+            let status = 'OK';
+            if (dif > 0) status = 'SOBRA';
+            if (dif < 0) status = 'FALTA';
+
+            aoa.push([item.codigo, item.produto, item.unidade, item.base, c1, c2 !== null ? c2 : '', dif, status, item.obs || '']);
         });
 
+        const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+        worksheet['!cols'] = [{wch: 16}, {wch: 45}, {wch: 8}, {wch: 14}, {wch: 14}, {wch: 14}, {wch: 16}, {wch: 12}, {wch: 40}];
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio_Executivo");
+        XLSX.writeFile(workbook, `Relatorio_Inventario_Executivo_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+
+    function exportarRelatorioPDF() {
+        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo para gerar relatório.');
+
+        itensInventarioBase.forEach(item => {
+            if (item.contagem1 === '' || item.contagem1 === undefined || item.contagem1 === null || isNaN(item.contagem1)) item.contagem1 = 0;
+        });
+
+        const totalItens = itensInventarioBase.length;
+        let totalOk = 0, totalSobra = 0, totalFalta = 0;
+        itensInventarioBase.forEach(item => {
+            const c1 = Number(item.contagem1 || 0);
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
+            const dif = (c2 !== null ? c2 : c1) - item.base;
+            if (dif === 0) totalOk++; else if (dif > 0) totalSobra++; else totalFalta++;
+        });
         const acuracidade = ((totalOk / totalItens) * 100).toFixed(1);
 
         const elemento = document.createElement('div');
@@ -2178,30 +1963,29 @@
             <div style="border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h2 style="color:#2563eb; font-size: 18px; margin: 0;">RELATÓRIO EXECUTIVO DE INVENTÁRIO</h2>
-                    <p style="font-size: 11px; color:#64748b; margin-top: 2px;">Almoxarifado SEFAZ/PE - Auditoria Física</p>
+                    <p style="font-size: 11px; color:#64748b; margin-top: 2px;">Almoxarifado SEFAZ/PE | Período: ${periodoInventarioAtual}</p>
                 </div>
                 <div style="text-align: right; font-size: 11px; color:#64748b;">
-                    <b>Data:</b> ${new Date().toLocaleDateString('pt-BR')}<br>
-                    <b>Hora:</b> ${new Date().toLocaleTimeString('pt-BR')}
+                    <b>Data de Emissão:</b> ${new Date().toLocaleDateString('pt-BR')}
                 </div>
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 18px;">
                 <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase;">Total Auditado</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #2563eb; margin-top: 4px;">${totalItens}</div>
+                    <div style="font-size: 10px; color: #64748b; font-weight: bold;">TOTAL AUDITADO</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #2563eb;">${totalItens}</div>
                 </div>
                 <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Conformes (OK)</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #10b981; margin-top: 4px;">${totalOk}</div>
+                    <div style="font-size: 10px; color: #166534; font-weight: bold;">CONFORMES (OK)</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #10b981;">${totalOk}</div>
                 </div>
                 <div style="flex: 1; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #92400e; font-weight: bold; text-transform: uppercase;">Sobras / Faltas</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #f59e0b; margin-top: 4px;">${totalSobra} / ${totalFalta}</div>
+                    <div style="font-size: 10px; color: #92400e; font-weight: bold;">SOBRAS / FALTAS</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #f59e0b;">${totalSobra} / ${totalFalta}</div>
                 </div>
                 <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px; text-align: center;">
-                    <div style="font-size: 10px; color: #2563eb; font-weight: bold; text-transform: uppercase;">Acuracidade</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #1d4ed8; margin-top: 4px;">${acuracidade}%</div>
+                    <div style="font-size: 10px; color: #2563eb; font-weight: bold;">ACURACIDADE</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #1d4ed8;">${acuracidade}%</div>
                 </div>
             </div>
 
@@ -2226,15 +2010,12 @@
             const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(item.contagem2)) ? Number(item.contagem2) : null;
             const efetiva = c2 !== null ? c2 : c1;
             const dif = efetiva - item.base;
-            let status = 'OK';
-            let corStatus = '#10b981';
+            let status = 'OK', corStatus = '#10b981';
             if (dif > 0) { status = `+${dif} (SOBRA)`; corStatus = '#d97706'; }
             if (dif < 0) { status = `${dif} (FALTA)`; corStatus = '#dc2626'; }
 
-            const bgLinha = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
-
             htmlConteudo += `
-                <tr style="background: ${bgLinha}; border-bottom:1px solid #e2e8f0;">
+                <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom:1px solid #e2e8f0;">
                     <td style="padding:5px;"><b>${item.codigo}</b></td>
                     <td style="padding:5px;">${item.produto}</td>
                     <td style="padding:5px; text-align:center;">${item.unidade}</td>
@@ -2246,23 +2027,16 @@
                 </tr>
             `;
         });
-
-        htmlConteudo += `
-                </tbody>
-            </table>
-        `;
-
+        htmlConteudo += `</tbody></table>`;
         elemento.innerHTML = htmlConteudo;
 
-        const opcoes = {
-            margin:       10,
-            filename:     `Relatorio_Executivo_Inventario_${new Date().toISOString().split('T')[0]}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
-
-        html2pdf().from(elemento).set(opcoes).save();
+        html2pdf().from(elemento).set({
+            margin: 10,
+            filename: `Relatorio_Executivo_Inventario_${new Date().toISOString().split('T')[0]}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        }).save();
     }
 
     function comprimirImagem(file, maxWidth = 800, quality = 0.75) {
@@ -2274,16 +2048,14 @@
                 img.src = event.target.result;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
+                    let width = img.width, height = img.height;
                     if (width > maxWidth) {
                         height = Math.round((height * maxWidth) / width);
                         width = maxWidth;
                     }
                     canvas.width = width;
                     canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
                     canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
                 };
             };
@@ -2298,33 +2070,18 @@
     async function salvarFotoDireta(event) {
         const file = event.target.files[0];
         if (!file || !itemIdSelecionadoFoto) return;
-
         const itemAlvo = todosItens.find(i => i.id === itemIdSelecionadoFoto);
         if (!itemAlvo) return;
-
         const codigo = String(itemAlvo["CÓDIGO EFISCO"] || 'item').replace(/[^a-zA-Z0-9]/g, '');
 
         try {
             const fotoComprimida = await comprimirImagem(file);
             const nomeArquivo = `${Date.now()}_${codigo}.jpg`;
-
-            const { error: uploadError } = await supabaseClient.storage
-                .from('fotos-bens')
-                .upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
-
+            const { error: uploadError } = await supabaseClient.storage.from('fotos-bens').upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
             if (uploadError) throw uploadError;
+            const { data: urlData } = supabaseClient.storage.from('fotos-bens').getPublicUrl(nomeArquivo);
 
-            const { data: urlData } = supabaseClient.storage
-                .from('fotos-bens')
-                .getPublicUrl(nomeArquivo);
-
-            const fotoUrl = urlData.publicUrl;
-
-            const { error: updateError } = await supabaseClient
-                .from('bens')
-                .update({ "foto_url": fotoUrl })
-                .eq('id', itemIdSelecionadoFoto);
-
+            const { error: updateError } = await supabaseClient.from('bens').update({ "foto_url": urlData.publicUrl }).eq('id', itemIdSelecionadoFoto);
             if (updateError) throw updateError;
 
             alert('Foto anexada com sucesso!');
@@ -2338,11 +2095,9 @@
     }
 
     async function processarArquivoExcel() {
-        if (!usuarioLogado) return alert('Acesso negado.');
+        if (!usuarioLogado) return;
         const inputArquivo = document.getElementById('arquivoExcel');
-        if (!inputArquivo.files || inputArquivo.files.length === 0) {
-            return alert('Selecione o arquivo Excel (.xlsx) do sistema!');
-        }
+        if (!inputArquivo.files || inputArquivo.files.length === 0) return alert('Selecione o arquivo Excel (.xlsx)!');
 
         const arquivo = inputArquivo.files[0];
         const btn = document.getElementById('btnProcessarImport');
@@ -2354,30 +2109,18 @@
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const primeiraAba = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[primeiraAba];
-                
-                const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
 
-                let atualizados = 0;
-                let inseridos = 0;
-
+                let atualizados = 0, inseridos = 0;
                 for (let i = 3; i < linhas.length; i++) {
                     let r = linhas[i];
                     if (!r || !r[0]) continue;
-
                     const codigo = String(r[0]).trim();
                     const produto = String(r[1] || 'Sem descrição').trim();
-                    const categoriaLida = String(r[2] || '').trim();
-                    const categoria = categoriaLida ? categoriaLida : "Outros";
-
-                    const unidadeLida = String(r[3] || '').trim().toUpperCase();
-                    const unidade = unidadeLida ? unidadeLida : "UN";
-
+                    const categoria = String(r[2] || '').trim() || "Outros";
+                    const unidade = String(r[3] || '').trim().toUpperCase() || "UN";
                     let qtdLida = parseFloat(r[5]);
                     const quantidade = !isNaN(qtdLida) ? Math.round(qtdLida) : 0;
-
-                    if (!codigo) continue;
 
                     const itemExistente = todosItens.find(item => 
                         String(item["CÓDIGO EFISCO"]).trim() === codigo && 
@@ -2385,39 +2128,20 @@
                     );
 
                     if (itemExistente) {
-                        const { error } = await supabaseClient
-                            .from('bens')
-                            .update({ 
-                                "PRODUTO": produto, 
-                                "CATEGORIA": categoria, 
-                                "UNIDADE DE MEDIDA": unidade,
-                                "QUANTIDADE": quantidade 
-                            })
-                            .eq('id', itemExistente.id);
-
+                        const { error } = await supabaseClient.from('bens').update({ "PRODUTO": produto, "CATEGORIA": categoria, "UNIDADE DE MEDIDA": unidade, "QUANTIDADE": quantidade }).eq('id', itemExistente.id);
                         if (!error) atualizados++;
                     } else {
-                        const { error } = await supabaseClient
-                            .from('bens')
-                            .insert([{ 
-                                "CÓDIGO EFISCO": codigo, 
-                                "PRODUTO": produto, 
-                                "CATEGORIA": categoria, 
-                                "UNIDADE DE MEDIDA": unidade,
-                                "QUANTIDADE": quantidade,
-                                "validade": null
-                            }]);
-
+                        const { error } = await supabaseClient.from('bens').insert([{ "CÓDIGO EFISCO": codigo, "PRODUTO": produto, "CATEGORIA": categoria, "UNIDADE DE MEDIDA": unidade, "QUANTIDADE": quantidade, "validade": null }]);
                         if (!error) inseridos++;
                     }
                 }
 
-                alert(`Importação do Excel concluída!\n- Itens atualizados: ${atualizados}\n- Novos itens criados: ${inseridos}`);
+                alert(`Importação concluída!\n- Atualizados: ${atualizados}\n- Novos: ${inseridos}`);
                 fecharModalImportar();
                 inputArquivo.value = '';
                 await carregarItens();
             } catch (err) {
-                alert('Erro ao ler o arquivo Excel: ' + err.message);
+                alert('Erro ao ler Excel: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Ler e Sincronizar Estoque';
@@ -2427,7 +2151,7 @@
     }
 
     async function excluirItem(id) {
-        if (!usuarioLogado) return alert('Acesso negado.');
+        if (!usuarioLogado) return;
         if (!confirm('Deseja realmente remover este item?')) return;
         const { error } = await supabaseClient.from('bens').delete().eq('id', id);
         if (error) alert('Erro: ' + error.message);
@@ -2436,7 +2160,6 @@
 
     function filtrarItens() {
         const termo = document.getElementById('busca').value.toLowerCase();
-
         const filtrados = todosItens.filter(item => {
             const cod = String(item["CÓDIGO EFISCO"] || '').toLowerCase();
             const prod = String(item.PRODUTO || '').toLowerCase();
@@ -2445,11 +2168,8 @@
             
             const bateTexto = cod.includes(termo) || prod.includes(termo) || categ.includes(termo);
             const bateCat = !categoriaSelecionadaSidebar || String(item.CATEGORIA || '') === categoriaSelecionadaSidebar;
-            
             let bateStatus = true;
-            if (statusFiltroSidebar === 'esgotados') {
-                bateStatus = qtd === 0;
-            }
+            if (statusFiltroSidebar === 'esgotados') bateStatus = qtd === 0;
 
             return bateTexto && bateCat && bateStatus;
         });
