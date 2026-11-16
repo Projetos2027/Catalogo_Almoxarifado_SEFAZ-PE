@@ -32,9 +32,82 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+        body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; flex-direction: column; }
 
-        /* Sidebar Minimalista */
+        /* Top Bar Principal (Estilo da Referência) */
+        .top-navbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 110;
+        }
+        .top-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+        }
+        .top-brand img, .top-brand span.logo-icon {
+            font-size: 1.2rem;
+        }
+        .top-nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+            align-items: center;
+            height: 100%;
+        }
+        .top-nav-item {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: 0.15s;
+        }
+        .top-nav-item:hover, .top-nav-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+        .top-user-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .user-profile-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        /* Layout Principal com Sidebar e Conteúdo */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            margin-top: 60px;
+        }
+
+        /* Sidebar Minimalista com Acordeons Exatos */
         aside {
             width: 260px;
             background: white;
@@ -42,44 +115,54 @@
             display: flex;
             flex-direction: column;
             position: fixed;
-            top: 0;
+            top: 60px;
             bottom: 0;
             left: 0;
             z-index: 100;
             overflow-y: auto;
         }
-        .sidebar-brand {
-            padding: 20px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--primary);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
         .sidebar-section {
             padding: 16px 20px;
             border-bottom: 1px solid var(--border);
+        }
+        .sidebar-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
         }
         .sidebar-section h3 {
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--muted);
-            margin-bottom: 10px;
             font-weight: 700;
+            margin: 0;
+        }
+        .sidebar-arrow {
+            font-size: 0.75rem;
+            color: var(--muted);
+            transition: transform 0.2s ease;
+        }
+        .sidebar-arrow.collapsed {
+            transform: rotate(-90deg);
         }
         .sidebar-nav-list {
             list-style: none;
             display: flex;
             flex-direction: column;
             gap: 6px;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+        }
+        .sidebar-nav-list.hidden {
+            display: none;
         }
         .sidebar-nav-item {
             padding: 8px 12px;
             border-radius: 6px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             color: var(--text);
             transition: 0.15s;
@@ -93,26 +176,43 @@
             font-weight: 600;
         }
 
+        .btn-filtros-sidebar {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+
         /* Conteúdo Principal */
-        .main-content {
+        .content-wrapper {
             margin-left: 260px;
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            min-height: calc(100vh - 60px);
         }
 
-        header {
+        .sub-header {
             background: white;
             border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
+            padding: 14px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 16px;
             position: sticky;
-            top: 0;
+            top: 60px;
             z-index: 90;
         }
         .search-spotlight {
@@ -164,8 +264,8 @@
         }
         .btn-add { background: var(--success); color: white; display: none; }
         .btn-import { background: #d97706; color: white; display: none; }
-        .btn-import-pdf { background: #0284c7; color: white; display: none; }
-        .btn-import-pdf:hover { background: #0369a1; }
+        .btn-import-pdf { background: var(--primary); color: white; display: none; }
+        .btn-import-pdf:hover { background: var(--primary-light); }
         .btn-inventory { background: #7c3aed; color: white; display: none; }
         .btn-inventory:hover { background: #6d28d9; }
         .btn-primary { background: var(--primary); color: white; width: 100%; }
@@ -320,6 +420,7 @@
             padding: 10px;
             border: 1px solid var(--border);
             border-radius: 6px;
+            background: #fff;
         }
         .form-group small { color: var(--muted); font-size: 0.75rem; display: block; margin-top: 4px; }
 
@@ -385,56 +486,109 @@
         @media (max-width: 768px) {
             aside { transform: translateX(-100%); transition: 0.3s; }
             aside.mobile-open { transform: translateX(0); }
-            .main-content { margin-left: 0; }
+            .content-wrapper { margin-left: 0; }
         }
     </style>
 </head>
 <body>
 
-<!-- Sidebar Minimalista (Opção 3) -->
-<aside id="appSidebar">
-    <div class="sidebar-brand">
-        📦 SEFAZ/PE
+<!-- Top Navigation Bar Exata -->
+<nav class="top-navbar">
+    <div class="top-brand">
+        <span>🛡️</span>
+        <span>Pernambuco</span>
+        <span style="font-weight: 400; color: var(--muted);">|</span>
+        <span style="color: var(--primary);">Almoxarifado SEFAZ/PE</span>
     </div>
-    <div class="sidebar-section">
-        <h3>Categorias</h3>
-        <ul class="sidebar-nav-list" id="sidebarCategoriasList">
-            <li class="sidebar-nav-item active" onclick="selecionarCategoriaSidebar('')">
-                <span>📁 Todas as Categorias</span>
-            </li>
-        </ul>
-    </div>
-    <div class="sidebar-section">
-        <h3>Filtros Rápidos</h3>
-        <ul class="sidebar-nav-list">
-            <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('todos')">
-                <span>📋 Todos os Itens</span>
-            </li>
-            <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('esgotados')">
-                <span>⚠️ Apenas Esgotados</span>
-            </li>
-        </ul>
-    </div>
-</aside>
-
-<div class="main-content">
-    <header>
-        <div class="search-spotlight">
-            <span>🔍</span>
-            <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
+    <ul class="top-nav-links">
+        <li class="top-nav-item active">📦 Catálogo</li>
+        <li class="top-nav-item" onclick="alert('Módulo de Pedidos em desenvolvimento')">🛒 Pedidos</li>
+        <li class="top-nav-item" onclick="abrirModalInventario()">📊 Inventário</li>
+        <li class="top-nav-item" onclick="alert('Relatórios gerais acessíveis pelo módulo de inventário/PDF')">📈 Relatórios</li>
+    </ul>
+    <div class="top-user-area">
+        <span style="cursor:pointer;" title="Notificações">🔔</span>
+        <div class="user-profile-badge" onclick="controlarSessao()">
+            <span>👤</span>
+            <span id="labelUsuarioTopo">Igor Batista</span>
+            <span>▼</span>
         </div>
-        <div class="header-buttons">
-            <button class="btn btn-inventory admin-only" id="btnInventario" onclick="abrirModalInventario()" style="display:none;">📊 Inventário</button>
-            <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 PDF Recebimento</button>
-            <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Excel</button>
-            <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
-            <button class="btn btn-login" id="btnAuth" onclick="controlarSessao()">🔑 Entrar</button>
-        </div>
-    </header>
+    </div>
+</nav>
 
-    <div class="catalog-container">
-        <div class="catalog-grid" id="gridCatalogo">
-            <div class="status-msg">Carregando itens do catálogo...</div>
+<div class="main-layout">
+    <!-- Sidebar Minimalista com Acordeons -->
+    <aside id="appSidebar">
+        <div class="sidebar-section">
+            <button class="btn-filtros-sidebar">
+                <span>⚙️</span> Filtros
+            </button>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-header" onclick="toggleSecaoCategorias()">
+                <h3>Categorias</h3>
+                <span class="sidebar-arrow" id="setaCategorias">▼</span>
+            </div>
+            <ul class="sidebar-nav-list" id="sidebarCategoriasList">
+                <li class="sidebar-nav-item active" onclick="selecionarCategoriaSidebar('')">
+                    <span>📁 Todas as Categorias</span>
+                </li>
+            </ul>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-header" onclick="toggleSecaoMarcas()">
+                <h3>Marcas</h3>
+                <span class="sidebar-arrow" id="setaMarcas">▼</span>
+            </div>
+            <ul class="sidebar-nav-list" id="sidebarMarcasList">
+                <li class="sidebar-nav-item" onclick="selecionarCategoriaSidebar('')"><span>Todas as Marcas</span></li>
+                <li class="sidebar-nav-item"><span>SEFAZ PE</span></li>
+            </ul>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-header" onclick="toggleSecaoUM()">
+                <h3>U.M.</h3>
+                <span class="sidebar-arrow" id="setaUM">▼</span>
+            </div>
+            <ul class="sidebar-nav-list" id="sidebarUMList">
+                <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('todos')"><span>UN (Unidade)</span></li>
+                <li class="sidebar-nav-item"><span>Outras U.M.</span></li>
+            </ul>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-header" onclick="toggleSecaoStatus()">
+                <h3>Status</h3>
+                <span class="sidebar-arrow" id="setaStatus">▼</span>
+            </div>
+            <ul class="sidebar-nav-list" id="sidebarStatusList">
+                <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('todos')">
+                    <span>📋 No Catálogo</span>
+                </li>
+                <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('esgotados')">
+                    <span>⚠️ Apenas Esgotados</span>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <div class="content-wrapper">
+        <div class="sub-header">
+            <div class="search-spotlight">
+                <span>🔍</span>
+                <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
+            </div>
+            <div class="header-buttons">
+                <button class="btn btn-inventory admin-only" id="btnInventario" onclick="abrirModalInventario()" style="display:none;">📊 Inventário</button>
+                <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Novo Recebimento</button>
+                <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Excel</button>
+                <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
+            </div>
+        </div>
+
+        <div class="catalog-container">
+            <div class="catalog-grid" id="gridCatalogo">
+                <div class="status-msg">Carregando itens do catálogo...</div>
+            </div>
         </div>
     </div>
 </div>
@@ -800,6 +954,12 @@
     let itensInventarioBase = [];
     let itensPdfRevisao = [];
 
+    // Estados de recolhimento da sidebar
+    let categoriasRecolhidas = false;
+    let marcasRecolhidas = false;
+    let umRecolhidas = false;
+    let statusRecolhidos = false;
+
     async function iniciarSistema() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         
@@ -822,6 +982,58 @@
 
         await verificarInventarioNuvem();
         await carregarItens();
+    }
+
+    function toggleSecaoCategorias() {
+        categoriasRecolhidas = !categoriasRecolhidas;
+        const lista = document.getElementById('sidebarCategoriasList');
+        const seta = document.getElementById('setaCategorias');
+        if (categoriasRecolhidas) {
+            lista.classList.add('hidden');
+            seta.classList.add('collapsed');
+        } else {
+            lista.classList.remove('hidden');
+            seta.classList.remove('collapsed');
+        }
+    }
+
+    function toggleSecaoMarcas() {
+        marcasRecolhidas = !marcasRecolhidas;
+        const lista = document.getElementById('sidebarMarcasList');
+        const seta = document.getElementById('setaMarcas');
+        if (marcasRecolhidas) {
+            lista.classList.add('hidden');
+            seta.classList.add('collapsed');
+        } else {
+            lista.classList.remove('hidden');
+            seta.classList.remove('collapsed');
+        }
+    }
+
+    function toggleSecaoUM() {
+        umRecolhidas = !umRecolhidas;
+        const lista = document.getElementById('sidebarUMList');
+        const seta = document.getElementById('setaUM');
+        if (umRecolhidas) {
+            lista.classList.add('hidden');
+            seta.classList.add('collapsed');
+        } else {
+            lista.classList.remove('hidden');
+            seta.classList.remove('collapsed');
+        }
+    }
+
+    function toggleSecaoStatus() {
+        statusRecolhidos = !statusRecolhidos;
+        const lista = document.getElementById('sidebarStatusList');
+        const seta = document.getElementById('setaStatus');
+        if (statusRecolhidos) {
+            lista.classList.add('hidden');
+            seta.classList.add('collapsed');
+        } else {
+            lista.classList.remove('hidden');
+            seta.classList.remove('collapsed');
+        }
     }
 
     async function registrarSessaoAtiva(email) {
@@ -860,24 +1072,25 @@
     function atualizarEstadoAuth(user) {
         usuarioLogado = user;
         const botoesAdmin = document.querySelectorAll('.admin-only');
-        const btnAuth = document.getElementById('btnAuth');
+        const labelUsuario = document.getElementById('labelUsuarioTopo');
 
         if (user) {
             botoesAdmin.forEach(el => el.style.display = 'inline-flex');
-            btnAuth.innerText = `🔓 Sair (${user.email.split('@')[0]})`;
-            btnAuth.style.background = '#b91c1c';
+            const nomeAdmin = user.email.split('@')[0];
+            labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
         } else {
             botoesAdmin.forEach(el => el.style.display = 'none');
-            btnAuth.innerText = '🔑 Entrar';
-            btnAuth.style.background = '#334155';
+            labelUsuario.innerText = 'Entrar';
         }
         renderizarGrid(todosItens);
     }
 
     function controlarSessao() {
         if (usuarioLogado) {
-            supabaseClient.auth.signOut();
-            alert('Você saiu do modo administrador.');
+            if (confirm('Deseja sair do modo administrador?')) {
+                supabaseClient.auth.signOut();
+                alert('Você saiu do modo administrador.');
+            }
         } else {
             document.getElementById('modalLogin').classList.add('active');
         }
