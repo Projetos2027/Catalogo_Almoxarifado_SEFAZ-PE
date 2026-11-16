@@ -246,34 +246,40 @@
             align-items: center;
         }
 
-        /* Ajuste Profissional dos Botões do Cabeçote */
+        /* Padrão Executivo Unificado para os Botões do Cabeçote */
         .btn {
-            padding: 10px 14px;
-            border: none;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text);
             border-radius: 8px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             font-size: 0.85rem;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            gap: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .btn:hover {
-            transform: translateY(-1px);
-            filter: brightness(1.05);
+            background: #f8fafc;
+            border-color: var(--muted);
         }
-        .btn-add { background: #10b981; color: white; display: none; } /* + Novo Item */
-        .btn-import { background: #d97706; color: white; display: none; } /* Carregar Catálogo */
-        .btn-import-pdf { background: #2563eb; color: white; display: none; } /* Novo Recebimento */
-        .btn-inventory { background: #7c3aed; color: white; display: none; } /* Inventário */
         
-        .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; }
-        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; display: none; }
-        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.75rem; display: none; }
-        .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.75rem; display: none; }
-        .btn-login { background: #334155; color: white; }
+        /* Botão de destaque principal (+ Novo Item) mantendo identidade limpa */
+        .btn-add { background: var(--primary); color: white; border-color: var(--primary); display: none; }
+        .btn-add:hover { background: var(--primary-light); border-color: var(--primary-light); }
+
+        .btn-import { display: none; }
+        .btn-import-pdf { display: none; }
+        
+        .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; border: none; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
+        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
+        .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
+        .btn-login { background: #334155; color: white; border: none; }
 
         .catalog-container {
             padding: 24px;
@@ -589,7 +595,6 @@
                     <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
                 </div>
                 <div class="header-buttons">
-                    <button class="btn btn-inventory admin-only" id="btnInventario" onclick="mudarAba('inventario')" style="display:none;">📊 Inventário</button>
                     <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Novo Recebimento</button>
                     <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Carregar Catálogo</button>
                     <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
@@ -612,8 +617,8 @@
                         <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos, contagem física e registro de divergências</p>
                     </div>
                     <div id="acoesTopoInventario" style="display: flex; gap: 10px;">
-                        <button class="btn" style="background: #2563eb; color: white;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
-                        <button class="btn" style="background: var(--danger); color: white;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
+                        <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
+                        <button class="btn" style="background: #fee2e2; color: #dc2626; border: none;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
                     </div>
                 </div>
 
@@ -625,8 +630,8 @@
                         </p>
                     </div>
                     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                        <button class="btn" style="background: #7c3aed; color: white; padding: 12px 24px;" onclick="continuarContagemExistenteTela()">▶️ Continuar Contagem</button>
-                        <button class="btn" style="background: #2563eb; color: white; padding: 12px 24px;" onclick="irParaIniciarNovaContagemTela()">🔄 Iniciar Nova Contagem</button>
+                        <button class="btn" style="background: #2563eb; color: white; padding: 12px 24px; border: none;" onclick="continuarContagemExistenteTela()">▶️ Continuar Contagem</button>
+                        <button class="btn" style="background: white; color: var(--text); border: 1px solid var(--border); padding: 12px 24px;" onclick="irParaIniciarNovaContagemTela()">🔄 Iniciar Nova Contagem</button>
                     </div>
                 </div>
 
@@ -695,8 +700,8 @@
                         Carregando informações do inventário ativo...
                     </div>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <button class="btn" style="background: #047857; color: white; padding: 12px 20px;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório Executivo (.xlsx)</button>
-                        <button class="btn" style="background: #dc2626; color: white; padding: 12px 20px;" onclick="exportarRelatorioPDF()">📥 Baixar Relatório Executivo (.pdf)</button>
+                        <button class="btn" style="background: white; color: var(--text); border: 1px solid var(--border); padding: 12px 20px;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório Executivo (.xlsx)</button>
+                        <button class="btn" style="background: white; color: var(--danger); border: 1px solid #fecaca; padding: 12px 20px;" onclick="exportarRelatorioPDF()">📥 Baixar Relatório Executivo (.pdf)</button>
                     </div>
                 </div>
 
@@ -746,10 +751,10 @@
             Escolha o formato de impressão para o item selecionado:
         </p>
         <div style="display: flex; flex-direction: column; gap: 12px;">
-            <button class="btn" style="background: var(--primary); color: white; padding: 14px; justify-content: center; font-size: 1rem;" onclick="gerarEtiquetaPdf('pallet')">
+            <button class="btn" style="background: var(--primary); color: white; padding: 14px; justify-content: center; font-size: 1rem; border: none;" onclick="gerarEtiquetaPdf('pallet')">
                 📦 Etiqueta de Pallet (Tamanho A4)
             </button>
-            <button class="btn" style="background: #0284c7; color: white; padding: 14px; justify-content: center; font-size: 1rem;" onclick="gerarEtiquetaPdf('prateleira')">
+            <button class="btn" style="background: white; color: var(--text); padding: 14px; justify-content: center; font-size: 1rem; border: 1px solid var(--border);" onclick="gerarEtiquetaPdf('prateleira')">
                 📑 Etiqueta de Prateleira (Metade A4)
             </button>
         </div>
@@ -812,8 +817,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                 <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Confirme os dados abaixo antes de atualizar o estoque.</div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn" style="background: #64748b; color: white;" onclick="voltarParaUploadPdf()">Voltar</button>
-                    <button class="btn" style="background: var(--success); color: white;" onclick="confirmarAtualizacaoEstoquePdf()">✅ Confirmar e Atualizar Estoque</button>
+                    <button class="btn" onclick="voltarParaUploadPdf()">Voltar</button>
+                    <button class="btn" style="background: var(--success); color: white; border: none;" onclick="confirmarAtualizacaoEstoquePdf()">✅ Confirmar e Atualizar Estoque</button>
                 </div>
             </div>
 
@@ -1582,7 +1587,7 @@
                 <td style="text-align: center;"><input type="text" class="inv-input-qtd" style="width: 70px;" value="${item.unidade}" onchange="atualizarItemPdfRevisao(${index}, 'unidade', this.value)"></td>
                 <td style="text-align: center;"><input type="number" class="inv-input-qtd" min="0" value="${item.quantidadeRecebida}" onchange="atualizarItemPdfRevisao(${index}, 'quantidadeRecebida', this.value)"></td>
                 <td style="text-align: center;">
-                    <button class="btn" style="background: ${item.empenhoDiferente ? '#10b981' : '#f59e0b'}; color: white; padding: 6px 10px; font-size: 0.8rem;" onclick="abrirModalAjusteEmpenho(${index})">
+                    <button class="btn" style="background: ${item.empenhoDiferente ? '#10b981' : '#f59e0b'}; color: white; padding: 6px 10px; font-size: 0.8rem; border: none;" onclick="abrirModalAjusteEmpenho(${index})">
                         ${item.empenhoDiferente ? '✅ Ajustado' : '⚠️ Dif. Empenho'}
                     </button>
                 </td>
@@ -1835,7 +1840,7 @@
             html += `
                 <tr>
                     <td>
-                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px;" onclick="marcarNaoEncontrado(${index})" title="Não encontrado">❌</button>
+                        <button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border-radius: 4px; border: none;" onclick="marcarNaoEncontrado(${index})" title="Não encontrado">❌</button>
                         <code>${item.codigo}</code>
                     </td>
                     <td><b>${item.produto}</b></td>
