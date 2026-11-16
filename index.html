@@ -414,7 +414,6 @@
         .form-group small { color: var(--muted); font-size: 0.75rem; display: block; margin-top: 4px; }
 
         .preview-upload { width: 100%; max-height: 160px; object-fit: contain; margin-top: 8px; border-radius: 6px; display: none; }
-        .ocr-status-box { margin-top: 8px; padding: 8px 10px; border-radius: 6px; font-size: 0.8rem; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; display: none; }
         .status-msg { text-align: center; padding: 40px; color: var(--muted); grid-column: 1 / -1; }
 
         /* Tabelas de Inventário e Revisão */
@@ -1456,11 +1455,9 @@
 
             const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
             const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
-            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || 'Geral');
-            const categ = String(item.categoria || item.CATEGORIA || '').toLowerCase();
-            const micro = String(item.micro_categoria || item.MICRO_CATEGORIA || '').toLowerCase();
+            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || '');
 
-            const bateTexto = cod.includes(termo) || prod.includes(termo) || categ.includes(termo) || micro.includes(termo);
+            const bateTexto = cod.includes(termo) || prod.includes(termo);
             const bateMacro = !macroSelecionadaSidebar || macro === macroSelecionadaSidebar;
             return bateTexto && bateMacro;
         });
@@ -1480,7 +1477,6 @@
             const eAdmin = !!usuarioLogado;
             const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Materiais Diversos';
             const categ = item.categoria || item.CATEGORIA || 'Geral';
-            const micro = item.micro_categoria || item.MICRO_CATEGORIA || '';
 
             return `
             <div class="item-card ${eAdmin ? 'admin-clicavel' : ''}" ${eAdmin ? `onclick="abrirModalEdicaoItem(${item.id})" title="Clique para editar"` : ''}>
@@ -1524,8 +1520,7 @@
             const emp = String(item.empenho || '').toLowerCase();
             const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || '').toLowerCase();
             const cat = String(item.categoria || item.CATEGORIA || '').toLowerCase();
-            const micro = String(item.micro_categoria || item.MICRO_CATEGORIA || '').toLowerCase();
-            return !termo || cod.includes(termo) || prod.includes(termo) || emp.includes(termo) || macro.includes(termo) || cat.includes(termo) || micro.includes(termo);
+            return !termo || cod.includes(termo) || prod.includes(termo) || emp.includes(termo) || macro.includes(termo) || cat.includes(termo);
         });
 
         document.getElementById('badgeTotalEstoque').innerText = `📦 SKUs Ativos: ${todosItens.length}`;
