@@ -721,7 +721,7 @@
     </div>
 </div>
 
-<!-- Modal de Entrada Manual no Estoque com Empenho -->
+<!-- Modal de Entrada Manual no Estoque com Empenho e Fornecedor por CNPJ -->
 <div class="modal-overlay" id="modalEntradaEstoqueManual">
     <div class="modal">
         <div class="modal-header">
@@ -729,9 +729,18 @@
             <button class="close-btn" onclick="fecharModalEntradaEstoqueManual()">&times;</button>
         </div>
         <form onsubmit="salvarEntradaEstoqueManual(event)">
+            <div class="form-group" style="position: relative;">
+                <label>CNPJ do Fornecedor *</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="manualCnpj" required placeholder="00.000.000/0001-00" oninput="filtrarCnpjs(this.value)" autocomplete="off">
+                    <button type="button" class="btn" id="btnCadastrarCnpj" style="display:none; background:var(--success); color:white; border:none; white-space:nowrap;" onclick="salvarNovoFornecedorModal()">+ Salvar CNPJ</button>
+                </div>
+                <!-- Lista de Sugestões de CNPJ -->
+                <div id="sugestoesCnpj" style="display:none; position:absolute; top: 100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:6px; max-height:150px; overflow-y:auto; z-index:1050; box-shadow:0 4px 6px rgba(0,0,0,0.05);"></div>
+            </div>
             <div class="form-group">
-                <label>Fornecedor / Razão Social</label>
-                <input type="text" id="manualFornecedor" placeholder="Ex: Fornecedor Ltda">
+                <label>Razão Social / Nome da Empresa *</label>
+                <input type="text" id="manualFornecedor" required placeholder="Preenchido automaticamente ou digite para novo">
             </div>
             <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
@@ -773,7 +782,7 @@
             </div>
             <div class="form-group">
                 <label>Observação / Divergência de Empenho</label>
-                <input type="text" id="manualObsEmpenho" placeholder="Ex: Recebido conforme empenho previstos">
+                <input type="text" id="manualObsEmpenho" placeholder="Ex: Recebido conforme empenho previsto">
             </div>
             <button type="submit" class="btn btn-primary">Registrar Entrada no Estoque</button>
         </form>
@@ -988,6 +997,7 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let todosItens = [];
     let listaPedidos = [];
+    let fornecedoresCadastrados = [];
     let usuarioLogado = null;
     let itemIdSelecionadoFoto = null;
     let itemSelecionadoParaEtiqueta = null;
@@ -1039,8 +1049,84 @@
             atualizarEstadoAuth(session ? session.user : null);
         });
 
+        await carregarFornecedores();
         await verificarInventarioNuvem();
         await carregarItens();
+    }
+
+    async function carregarFornecedores() {
+        try {
+            const { data, error } = await supabaseClient.from('fornecedores').select('*');
+            if (!error && data) {
+                fornecedoresCadastrados = data;
+            }
+        } catch (e) {
+            console.log('Tabela fornecedores ainda não criada no Supabase ou vazia:', e);
+            fornecedoresCadastrados = [];
+        }
+    }
+
+    // --- AUTOCOMPLETAR / GESTÃO DE FORNECEDORES POR CNPJ ---
+    function filtrarCnpjs(termo) {
+        const divSugestoes = document.getElementById('sugestoesCnpj');
+        const btnSalvar = document.getElementById('btnCadastrarCnpj');
+        const inputNome = document.getElementById('manualFornecedor');
+        const termoLimpo = termo.trim().toLowerCase();
+
+        if (!termoLimpo) {
+            divSugestoes.style.display = 'none';
+            btnSalvar.style.display = 'none';
+            return;
+        }
+
+        const encontrados = fornecedoresCadastrados.filter(f => f.cnpj.toLowerCase().includes(termoLimpo) || f.razao_social.toLowerCase().includes(termoLimpo));
+
+        // Verifica se o CNPJ exato já está cadastrado
+        const exato = fornecedoresCadastrados.find(f => f.cnpj.toLowerCase() === termoLimpo);
+        if (exato) {
+            inputNome.value = exato.razao_social;
+            btnSalvar.style.display = 'none';
+            divSugestoes.style.display = 'none';
+        } else {
+            btnSalvar.style.display = 'inline-flex';
+        }
+
+        if (encontrados.length > 0) {
+            divSugestoes.innerHTML = encontrados.map(f => `
+                <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 0.85rem;" onclick="selecionarFornecedor('${f.cnpj}', '${f.razao_social}')">
+                    <b>${f.cnpj}</b> - ${f.razao_social}
+                </div>
+            `).join('');
+            divSugestoes.style.display = 'block';
+        } else {
+            divSugestoes.style.display = 'none';
+        }
+    }
+
+    function selecionarFornecedor(cnpj, razao) {
+        document.getElementById('manualCnpj').value = cnpj;
+        document.getElementById('manualFornecedor').value = razao;
+        document.getElementById('sugestoesCnpj').style.display = 'none';
+        document.getElementById('btnCadastrarCnpj').style.display = 'none';
+    }
+
+    async function salvarNovoFornecedorModal() {
+        const cnpj = document.getElementById('manualCnpj').value.trim();
+        const razao = document.getElementById('manualFornecedor').value.trim();
+
+        if (!cnpj) return alert('Informe o CNPJ.');
+        if (!razao) return alert('Informe a Razão Social / Nome da Empresa para cadastrar.');
+
+        try {
+            const { error } = await supabaseClient.from('fornecedores').insert([{ cnpj, razao_social: razao }]);
+            if (error) throw error;
+            
+            await carregarFornecedores();
+            document.getElementById('btnCadastrarCnpj').style.display = 'none';
+            alert('Fornecedor cadastrado e salvo com sucesso!');
+        } catch (err) {
+            alert('Erro ao salvar fornecedor (verifique se já existe na base): ' + err.message);
+        }
     }
 
     function mudarAba(nomeAba) {
@@ -1344,7 +1430,10 @@
     // --- ENTRADA MANUAL NO ESTOQUE ---
     function abrirModalEntradaEstoqueManual() {
         if (!usuarioLogado) return;
+        document.getElementById('manualCnpj').value = '';
         document.getElementById('manualFornecedor').value = '';
+        document.getElementById('btnCadastrarCnpj').style.display = 'none';
+        document.getElementById('sugestoesCnpj').style.display = 'none';
         document.getElementById('manualNF').value = '';
         document.getElementById('manualEmpenho').value = '';
         document.getElementById('manualCodEstoque').value = '';
@@ -1367,6 +1456,7 @@
 
     async function salvarEntradaEstoqueManual(e) {
         e.preventDefault();
+        const cnpj = document.getElementById('manualCnpj').value.trim();
         const fornecedor = document.getElementById('manualFornecedor').value.trim();
         const nf = document.getElementById('manualNF').value.trim();
         const empenho = document.getElementById('manualEmpenho').value.trim();
@@ -1376,7 +1466,6 @@
         const qtdRecebida = parseNumeroBR(document.getElementById('manualQtdEstoque').value);
         const vUnit = parseNumeroBR(document.getElementById('manualValorUnit').value);
         const vTotal = qtdRecebida * vUnit;
-        const obs = document.getElementById('manualObsEmpenho').value.trim();
 
         const itemExistente = todosItens.find(i => 
             String(i["CÓDIGO EFISCO"] || '').trim() === codigo && 
