@@ -624,16 +624,19 @@
         <!-- ABA 2: INVENTÁRIO -->
         <div id="viewInventario" class="app-view" style="padding: 24px;">
             <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; flex: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                     <div>
                         <h2 style="font-size: 1.25rem; color: var(--text);">📊 Módulo de Inventário e Balanço Físico</h2>
                         <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos, contagem física e registro de divergências</p>
                     </div>
-                    <div id="acoesTopoInventario" style="display: flex; gap: 10px;">
+                    <div id="acoesTopoInventario" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;" onclick="abrirSeletorCorrigirBase()" title="Reimporta a planilha corrigindo números com separador de milhar sem perder suas contagens">🔄 Corrigir Base (Excel)</button>
                         <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
                         <button class="btn" style="background: #fee2e2; color: #dc2626; border: none;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
                     </div>
                 </div>
+
+                <input type="file" id="arquivoCorrigirBaseInv" accept=".xlsx, .xls" style="display:none;" onchange="executarCorrecaoBaseInventario(event)">
 
                 <div id="invEtapaSelecaoTela" style="display:none; text-align: center; padding: 40px;">
                     <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 24px; border-radius: 8px; max-width: 600px; margin: 0 auto 20px auto;">
@@ -991,6 +994,32 @@
     let marcasRecolhidas = false;
     let umRecolhidas = false;
     let statusRecolhidos = false;
+
+    // Parser seguro para números do Excel/Sistema brasileiro (ex: "3.127", "3.127,00", 3127)
+    function parseNumeroBR(valor) {
+        if (valor === null || valor === undefined || valor === '') return 0;
+        if (typeof valor === 'number') {
+            return isNaN(valor) ? 0 : Math.round(valor);
+        }
+        let str = String(valor).trim().replace(/\s/g, '');
+        if (!str) return 0;
+
+        // Caso 1: Tem vírgula decimal (padrão BR: "3.127,00" ou "150,50")
+        if (str.includes(',')) {
+            str = str.replace(/\./g, '').replace(',', '.');
+            const num = parseFloat(str);
+            return isNaN(num) ? 0 : Math.round(num);
+        }
+
+        // Caso 2: Só tem ponto(s), sem vírgula (ex: "3.127" ou "1.250.000" como separador de milhar)
+        if (/^\d{1,3}(\.\d{3})+$/.test(str)) {
+            const num = parseInt(str.replace(/\./g, ''), 10);
+            return isNaN(num) ? 0 : num;
+        }
+
+        const num = parseFloat(str);
+        return isNaN(num) ? 0 : Math.round(num);
+    }
 
     async function iniciarSistema() {
         const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1754,7 +1783,6 @@
             const isZeroOrEmpty = (c1Raw === '' || c1Raw === null || c1Raw === undefined || Number(c1Raw) === 0);
             const marcadoNaoEncontrado = item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado fisicamente');
 
-            // Se estava 0 ou vazio e NÃO foi marcado como "não encontrado" (❌), força ficar vazio ('')
             if (isZeroOrEmpty && !marcadoNaoEncontrado) {
                 return { ...item, contagem1: '', naoEncontrado: false };
             }
@@ -1850,6 +1878,102 @@
         document.getElementById('invEtapa2Tela').style.display = 'none';
     }
 
+    // Corrigir apenas os saldos da Base usando a planilha Excel sem apagar nenhuma contagem já lançada
+    function abrirSeletorCorrigirBase() {
+        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo para atualizar a base.');
+        const input = document.getElementById('arquivoCorrigirBaseInv');
+        input.value = '';
+        input.click();
+    }
+
+    function executarCorrecaoBaseInventario(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', raw: false });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+
+                const mapaPlanilha = new Map();
+                for (let i = 3; i < linhas.length; i++) {
+                    const r = linhas[i];
+                    if (!r || !r[0]) continue;
+                    const codigo = String(r[0]).trim();
+                    const unidade = String(r[3] || 'UN').trim();
+                    if (!codigo) continue;
+
+                    const qtdBase = parseNumeroBR(r[5]);
+                    if (qtdBase <= 0) continue;
+
+                    const chave = `${codigo}_${unidade.toLowerCase()}`;
+                    if (!mapaPlanilha.has(chave)) {
+                        mapaPlanilha.set(chave, {
+                            codigo,
+                            produto: String(r[1] || 'Sem descrição').trim(),
+                            unidade,
+                            base: qtdBase
+                        });
+                    }
+                }
+
+                if (mapaPlanilha.size === 0) {
+                    return alert('Nenhum item válido encontrado na planilha selecionada.');
+                }
+
+                let saldosCorrigidos = 0;
+                let novosAdicionados = 0;
+                const chavesJaNoInventario = new Set();
+
+                // 1. Atualiza o campo "base" dos itens existentes mantendo 100% das contagens e observações
+                itensInventarioBase.forEach(item => {
+                    const chave = `${String(item.codigo).trim()}_${String(item.unidade || 'UN').trim().toLowerCase()}`;
+                    chavesJaNoInventario.add(chave);
+
+                    if (mapaPlanilha.has(chave)) {
+                        const novoSaldo = mapaPlanilha.get(chave).base;
+                        if (item.base !== novoSaldo) {
+                            item.base = novoSaldo;
+                            saldosCorrigidos++;
+                        }
+                    }
+                });
+
+                // 2. Caso algum item da planilha tivesse sido ignorado antes por causa do ponto de milhar (ex: 0.500 -> 0), inclui agora
+                mapaPlanilha.forEach((dados, chave) => {
+                    if (!chavesJaNoInventario.has(chave)) {
+                        itensInventarioBase.push({
+                            codigo: dados.codigo,
+                            produto: dados.produto,
+                            unidade: dados.unidade,
+                            base: dados.base,
+                            contagem1: '',
+                            contagem2: '',
+                            naoEncontrado: false,
+                            obs: ''
+                        });
+                        novosAdicionados++;
+                    }
+                });
+
+                await salvarInventarioNuvem();
+                renderizarTabelaInventario();
+                alert(
+                    `Base do inventário corrigida com sucesso!\n\n` +
+                    `• Saldos base atualizados (milhares corrigidos): ${saldosCorrigidos} itens\n` +
+                    `• Itens adicionados da base: ${novosAdicionados} itens\n` +
+                    `• Suas contagens e observações já lançadas foram 100% mantidas.`
+                );
+            } catch (err) {
+                alert('Erro ao corrigir base: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
     async function iniciarContagemInventario() {
         const input = document.getElementById('arquivoBaseInventario');
         if (!input.files || input.files.length === 0) return alert('Selecione o arquivo Excel base!');
@@ -1860,9 +1984,9 @@
         reader.onload = async function(e) {
             try {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, { type: 'array', raw: false });
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
 
                 let novosItens = [];
                 const chavesVistas = new Set();
@@ -1878,8 +2002,7 @@
                     if (chavesVistas.has(chaveUnica)) continue;
                     chavesVistas.add(chaveUnica);
 
-                    let qtdBase = parseFloat(r[5]);
-                    qtdBase = !isNaN(qtdBase) ? Math.round(qtdBase) : 0;
+                    let qtdBase = parseNumeroBR(r[5]);
                     if (qtdBase <= 0) continue;
 
                     novosItens.push({
@@ -2033,7 +2156,6 @@
             } else {
                 const num = parseInt(valor);
                 if (isNaN(num) || num <= 0) {
-                    // Se o usuário digitou 0 manualmente na caixa, só aceita 0 se usar o botão ❌; caso contrário mantém vazio
                     itensInventarioBase[index].contagem1 = '';
                     itensInventarioBase[index].naoEncontrado = false;
                 } else {
@@ -2501,8 +2623,8 @@
         reader.onload = async function(e) {
             try {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+                const workbook = XLSX.read(data, { type: 'array', raw: false });
+                const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: false });
 
                 let atualizados = 0, inseridos = 0;
                 for (let i = 3; i < linhas.length; i++) {
@@ -2512,8 +2634,7 @@
                     const produto = String(r[1] || 'Sem descrição').trim();
                     const categoria = String(r[2] || '').trim() || "Outros";
                     const unidade = String(r[3] || '').trim().toUpperCase() || "UN";
-                    let qtdLida = parseFloat(r[5]);
-                    const quantidade = !isNaN(qtdLida) ? Math.round(qtdLida) : 0;
+                    const quantidade = parseNumeroBR(r[5]);
 
                     const itemExistente = todosItens.find(item => 
                         String(item["CÓDIGO EFISCO"]).trim() === codigo && 
