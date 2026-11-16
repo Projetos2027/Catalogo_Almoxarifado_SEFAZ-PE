@@ -1035,6 +1035,154 @@
     }
     // --- FIM DAS ETIQUETAS ---
 
+    // --- FUNÇÕES DE CADASTRO E EDIÇÃO DE ITENS ---
+    function abrirModalCadastro() {
+        if (!usuarioLogado) return;
+        document.getElementById('tituloModalMaterial').innerText = 'Cadastrar Material';
+        document.getElementById('editandoItemId').value = '';
+        document.getElementById('formBem').reset();
+        document.getElementById('imgPreview').style.display = 'none';
+        document.getElementById('grupoNovaCategoria').style.display = 'none';
+        document.getElementById('grupoNovaUnidade').style.display = 'none';
+        atualizarSelectsCategoriasEUnidades();
+        document.getElementById('modalCadastro').classList.add('active');
+    }
+
+    function abrirModalEdicaoItem(id) {
+        if (!usuarioLogado) return;
+        const item = todosItens.find(i => i.id === id);
+        if (!item) return;
+
+        document.getElementById('tituloModalMaterial').innerText = 'Editar Material';
+        document.getElementById('editandoItemId').value = item.id;
+        document.getElementById('codigo').value = item["CÓDIGO EFISCO"] || '';
+        document.getElementById('produto').value = item.PRODUTO || '';
+        document.getElementById('quantidade').value = item.QUANTIDADE !== undefined ? item.QUANTIDADE : 0;
+        document.getElementById('validade').value = item.validade ? item.validade.split('T')[0] : '';
+        
+        atualizarSelectsCategoriasEUnidades();
+        
+        const selectCat = document.getElementById('categoria');
+        selectCat.value = item.CATEGORIA || 'Outros';
+
+        const selectUn = document.getElementById('unidade');
+        selectUn.value = item["UNIDADE DE MEDIDA"] || 'UN';
+
+        const imgPrev = document.getElementById('imgPreview');
+        if (item.foto_url) {
+            imgPrev.src = item.foto_url;
+            imgPrev.style.display = 'block';
+        } else {
+            imgPrev.style.display = 'none';
+        }
+
+        document.getElementById('grupoNovaCategoria').style.display = 'none';
+        document.getElementById('grupoNovaUnidade').style.display = 'none';
+        document.getElementById('modalCadastro').classList.add('active');
+    }
+
+    function fecharModalCadastro() {
+        document.getElementById('modalCadastro').classList.remove('active');
+    }
+
+    async function salvarItemMaterial(e) {
+        e.preventDefault();
+        if (!usuarioLogado) return alert('Acesso negado.');
+
+        const btn = document.getElementById('btnSalvarMaterial');
+        btn.disabled = true;
+        btn.innerText = 'Salvando...';
+
+        try {
+            const idEditando = document.getElementById('editandoItemId').value;
+            const codigo = document.getElementById('codigo').value.trim();
+            const produto = document.getElementById('produto').value.trim();
+            
+            let categoria = document.getElementById('categoria').value;
+            if (categoria === '__NOVA__') {
+                categoria = document.getElementById('novaCategoriaInput').value.trim();
+                if (!categoria) return alert('Informe o nome da nova categoria!');
+            }
+
+            let unidade = document.getElementById('unidade').value;
+            if (unidade === '__NOVA__') {
+                unidade = document.getElementById('novaUnidadeInput').value.trim().toUpperCase();
+                if (!unidade) return alert('Informe a sigla da nova unidade de medida!');
+            }
+
+            const inputQtd = document.getElementById('quantidade').value;
+            const quantidade = (inputQtd !== '') ? parseInt(inputQtd) : 0;
+            const inputValidade = document.getElementById('validade').value;
+            const validade = inputValidade ? inputValidade : null;
+            const fotoFile = document.getElementById('fotoInput').files[0];
+
+            let fotoUrl = null;
+            if (idEditando) {
+                const itemAntigo = todosItens.find(i => i.id == idEditando);
+                if (itemAntigo) fotoUrl = itemAntigo.foto_url;
+            }
+
+            if (fotoFile) {
+                const fotoComprimida = await comprimirImagem(fotoFile);
+                const nomeArquivo = `${Date.now()}_${codigo.replace(/[^a-zA-Z0-9]/g, '')}.jpg`;
+
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('fotos-bens')
+                    .upload(nomeArquivo, fotoComprimida, { contentType: 'image/jpeg' });
+
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabaseClient.storage
+                    .from('fotos-bens')
+                    .getPublicUrl(nomeArquivo);
+
+                fotoUrl = urlData.publicUrl;
+            }
+
+            if (idEditando) {
+                const { error: updateError } = await supabaseClient
+                    .from('bens')
+                    .update({ 
+                        "CÓDIGO EFISCO": codigo, 
+                        "PRODUTO": produto, 
+                        "CATEGORIA": categoria, 
+                        "UNIDADE DE MEDIDA": unidade, 
+                        "QUANTIDADE": quantidade,
+                        "validade": validade,
+                        "foto_url": fotoUrl 
+                    })
+                    .eq('id', idEditando);
+
+                if (updateError) throw updateError;
+                alert('Item atualizado com sucesso!');
+            } else {
+                const { error: insertError } = await supabaseClient
+                    .from('bens')
+                    .insert([{ 
+                        "CÓDIGO EFISCO": codigo, 
+                        "PRODUTO": produto, 
+                        "CATEGORIA": categoria, 
+                        "UNIDADE DE MEDIDA": unidade, 
+                        "QUANTIDADE": quantidade,
+                        "validade": validade,
+                        "foto_url": fotoUrl 
+                    }]);
+
+                if (insertError) throw insertError;
+                alert('Item cadastrado com sucesso!');
+            }
+
+            fecharModalCadastro();
+            await carregarItens();
+        } catch (err) {
+            alert('Erro ao salvar: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Salvar no Catálogo';
+        }
+    }
+    // --- FIM DO CADASTRO E EDIÇÃO ---
+
     // --- FUNÇÕES DE IMPORTAÇÃO E REVISÃO DE PDF DE RECEBIMENTO (PEINTEGRADO) ---
     function abrirModalImportarPdf() {
         if (!usuarioLogado) return alert('Acesso negado.');
@@ -1965,7 +2113,7 @@
 
     function abrirModalImportar() { document.getElementById('modalImportar').classList.add('active'); }
     function fecharModalImportar() { document.getElementById('modalImportar').classList.remove('active'); }
-    function fecharModalLogin() { document.getElementById('modalLogin').classList.add('active'); }
+    function fecharModalLogin() { document.getElementById('modalLogin').classList.remove('active'); }
     
     function previewImagem(event) {
         const img = document.getElementById('imgPreview');
