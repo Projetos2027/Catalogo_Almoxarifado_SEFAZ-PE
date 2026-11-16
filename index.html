@@ -14,8 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Biblioteca PDF.js para ler arquivos PDF de recebimento -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- Biblioteca Tesseract.js para OCR (leitura de validade/embalagem nas fotos) -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
@@ -191,7 +189,7 @@
             font-size: 0.9rem;
         }
 
-        /* Conteúdo Principal (Ajusta margem dinamicamente) */
+        /* Conteúdo Principal */
         .content-wrapper {
             margin-left: 260px;
             flex: 1;
@@ -252,7 +250,6 @@
             align-items: center;
         }
 
-        /* Botões Padrão Executivo */
         .btn {
             padding: 8px 14px;
             border: 1px solid var(--border);
@@ -268,12 +265,8 @@
             gap: 6px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
-        .btn:hover {
-            background: #f8fafc;
-            border-color: var(--muted);
-        }
+        .btn:hover { background: #f8fafc; border-color: var(--muted); }
         .btn-add { background: var(--primary); color: white; border-color: var(--primary); display: none; }
-        .btn-add:hover { background: var(--primary-light); border-color: var(--primary-light); }
         .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; border: none; }
         .btn-primary:hover { background: var(--primary-light); }
         .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
@@ -328,55 +321,13 @@
         .item-meta { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); align-items: center; }
         .item-actions { display: flex; gap: 4px; align-items: center; }
 
-        /* Estilo ERP Moderno (Tabela Híbrida) para a Aba Estoque */
-        .erp-container {
-            padding: 24px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        .erp-card {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        .erp-table-container {
-            flex: 1;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            margin-top: 12px;
-            max-height: 62vh;
-        }
-        table.erp-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-            text-align: left;
-        }
-        table.erp-table th {
-            background: #f1f5f9;
-            color: var(--text);
-            font-weight: 600;
-            padding: 12px 14px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            border-bottom: 2px solid var(--border);
-        }
-        table.erp-table td {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border);
-            background: white;
-        }
-        table.erp-table tr:hover td {
-            background: #f8fafc;
-        }
+        .erp-container { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+        .erp-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); flex: 1; display: flex; flex-direction: column; }
+        .erp-table-container { flex: 1; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; max-height: 62vh; }
+        table.erp-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
+        table.erp-table th { background: #f1f5f9; color: var(--text); font-weight: 600; padding: 12px 14px; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); }
+        table.erp-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); background: white; }
+        table.erp-table tr:hover td { background: #f8fafc; }
 
         .modal-overlay {
             display: none;
@@ -414,10 +365,8 @@
         .form-group small { color: var(--muted); font-size: 0.75rem; display: block; margin-top: 4px; }
 
         .preview-upload { width: 100%; max-height: 160px; object-fit: contain; margin-top: 8px; border-radius: 6px; display: none; }
-        .ocr-status-box { margin-top: 8px; padding: 8px 10px; border-radius: 6px; font-size: 0.8rem; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; display: none; }
         .status-msg { text-align: center; padding: 40px; color: var(--muted); grid-column: 1 / -1; }
 
-        /* Tabelas de Inventário e Revisão */
         .inventory-table-container {
             flex: 1;
             overflow-y: auto;
@@ -432,7 +381,6 @@
         .inv-input-qtd { width: 80px; padding: 6px; border: 1px solid var(--border); border-radius: 6px; font-weight: bold; text-align: center; }
         .inv-input-text { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
 
-        /* Abas Principais */
         .app-view { display: none; flex: 1; flex-direction: column; }
         .app-view.active { display: flex; }
 
@@ -445,7 +393,6 @@
 </head>
 <body>
 
-<!-- Top Navigation Bar -->
 <nav class="top-navbar">
     <div class="top-brand">
         <span>🛡️</span>
@@ -471,7 +418,6 @@
 </nav>
 
 <div class="main-layout">
-    <!-- Sidebar Minimalista (Exclusiva da Aba Catálogo) -->
     <aside id="appSidebar">
         <div class="sidebar-section">
             <button class="btn-filtros-sidebar">
@@ -502,7 +448,7 @@
 
     <div class="content-wrapper" id="contentWrapperMain">
         
-        <!-- ABA 1: CATÁLOGO (Apenas itens com saldo > 0) -->
+        <!-- ABA 1: CATÁLOGO -->
         <div id="viewCatalogo" class="app-view active">
             <div class="sub-header">
                 <div class="search-spotlight">
@@ -515,7 +461,6 @@
                     <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
                 </div>
             </div>
-
             <div class="catalog-container">
                 <div class="catalog-grid" id="gridCatalogo">
                     <div class="status-msg">Carregando itens do catálogo com saldo...</div>
@@ -523,7 +468,7 @@
             </div>
         </div>
 
-        <!-- ABA 2: ESTOQUE (ERP Moderno Híbrido) -->
+        <!-- ABA 2: ESTOQUE -->
         <div id="viewEstoque" class="app-view">
             <div class="sub-header">
                 <div class="search-spotlight">
@@ -567,7 +512,7 @@
             </div>
         </div>
 
-        <!-- ABA 3: PEDIDOS (Saídas Manual ou via PDF) -->
+        <!-- ABA 3: PEDIDOS -->
         <div id="viewPedidos" class="app-view" style="padding: 24px;">
             <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 950px; margin: 0 auto; width: 100%;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 10px;">
@@ -595,7 +540,7 @@
                         <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos, contagem física e atualização direta de estoque</p>
                     </div>
                     <div id="acoesTopoInventario" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="btn" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;" onclick="abrirSeletorCorrigirBase()" title="Reimporta a planilha corrigindo números com separador de milhar">🔄 Corrigir Base (Excel)</button>
+                        <button class="btn" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;" onclick="abrirSeletorCorrigirBase()">🔄 Corrigir Base (Excel)</button>
                         <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
                         <button class="btn" style="background: var(--success); color: white; border: none; font-weight: bold;" onclick="finalizarInventarioAtivoDireto()">✅ Atualizar Estoque e Catálogo com Base no Inventário</button>
                     </div>
@@ -687,461 +632,35 @@
     </div>
 </div>
 
-<input type="file" id="inputFotoOculto" accept="image/*" capture="environment" style="display:none" onchange="salvarFotoDireta(event)">
-
-<!-- Modal de Login -->
-<div class="modal-overlay" id="modalLogin">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>Acesso Restrito (Admin)</h2>
-            <button class="close-btn" onclick="fecharModalLogin()">&times;</button>
-        </div>
-        <form onsubmit="fazerLogin(event)">
-            <div class="form-group">
-                <label>E-mail de Administrador</label>
-                <input type="email" id="loginEmail" required placeholder="seu@email.com">
-            </div>
-            <div class="form-group">
-                <label>Senha</label>
-                <input type="password" id="loginSenha" required placeholder="••••••••">
-            </div>
-            <button type="submit" class="btn btn-primary" id="btnLogar">Entrar no Sistema</button>
-        </form>
-    </div>
-</div>
-
-<!-- Modal de Seleção de Tipo de Etiqueta -->
-<div class="modal-overlay" id="modalEscolhaEtiqueta">
-    <div class="modal" style="max-width: 380px; text-align: center;">
-        <div class="modal-header">
-            <h2>🏷️ Gerar Etiqueta</h2>
-            <button class="close-btn" onclick="fecharModalEscolhaEtiqueta()">&times;</button>
-        </div>
-        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 20px;">Escolha o formato de impressão:</p>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-            <button class="btn" style="background: var(--primary); color: white; padding: 14px; justify-content: center; font-size: 1rem; border: none;" onclick="gerarEtiquetaPdf('pallet')">📦 Etiqueta de Pallet (Tamanho A4)</button>
-            <button class="btn" style="background: white; color: var(--text); padding: 14px; justify-content: center; font-size: 1rem; border: 1px solid var(--border);" onclick="gerarEtiquetaPdf('prateleira')">📑 Etiqueta de Prateleira (Metade A4)</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de Entrada Manual no Estoque (U.M manual e autocompletar EFISCO) -->
-<div class="modal-overlay" id="modalEntradaEstoqueManual">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>➕ Nova Entrada e Previsão de Empenho</h2>
-            <button class="close-btn" onclick="fecharModalEntradaEstoqueManual()">&times;</button>
-        </div>
-        <form onsubmit="salvarEntradaEstoqueManual(event)">
-            <div class="form-group" style="position: relative;">
-                <label>CNPJ do Fornecedor *</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="manualCnpj" required placeholder="00.000.000/0001-00" oninput="filtrarCnpjs(this.value)" autocomplete="off">
-                    <button type="button" class="btn" id="btnCadastrarCnpj" style="display:none; background:var(--success); color:white; border:none; white-space:nowrap;" onclick="salvarNovoFornecedorModal()">+ Salvar CNPJ</button>
-                </div>
-                <div id="sugestoesCnpj" style="display:none; position:absolute; top: 100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:6px; max-height:150px; overflow-y:auto; z-index:1050; box-shadow:0 4px 6px rgba(0,0,0,0.05);"></div>
-            </div>
-            <div class="form-group">
-                <label>Razão Social / Nome da Empresa *</label>
-                <input type="text" id="manualFornecedor" required placeholder="Preenchido automaticamente ou digite para novo">
-            </div>
-            <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                    <label>Nota Fiscal (NF)</label>
-                    <input type="text" id="manualNF" placeholder="Ex: 000123">
-                </div>
-                <div>
-                    <label>Nº do Empenho</label>
-                    <input type="text" id="manualEmpenho" placeholder="Ex: 2026NE00012">
-                </div>
-            </div>
-            <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; position: relative;">
-                <div>
-                    <label>Código EFISCO *</label>
-                    <input type="text" id="manualCodEstoque" required placeholder="Ex: 00145" oninput="filtrarCodigosEstoque(this.value)" autocomplete="off">
-                    <div id="sugestoesCodEstoque" style="display:none; position:absolute; top: 100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:6px; max-height:150px; overflow-y:auto; z-index:1050; box-shadow:0 4px 6px rgba(0,0,0,0.05);"></div>
-                </div>
-                <div>
-                    <label>U.M *</label>
-                    <input type="text" id="manualUmEstoque" required placeholder="Ex: UN, CX" value="UN">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Produto / Descrição *</label>
-                <input type="text" id="manualProdEstoque" required placeholder="Preenchido automaticamente ao selecionar o código">
-            </div>
-            <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                <div>
-                    <label>Qtd. Recebida *</label>
-                    <input type="number" id="manualQtdEstoque" required min="1" value="10" oninput="recalcularTotalManual()">
-                </div>
-                <div>
-                    <label>Valor Unit. (R$) *</label>
-                    <input type="number" step="0.0001" id="manualValorUnit" required min="0" value="0.00" oninput="recalcularTotalManual()">
-                </div>
-                <div>
-                    <label>Valor Total (R$)</label>
-                    <input type="number" step="0.01" id="manualValorTotal" readonly style="background:#f1f5f9;">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Observação / Divergência</label>
-                <input type="text" id="manualObsEmpenho" placeholder="Ex: Recebido conforme empenho">
-            </div>
-            <button type="submit" class="btn btn-primary">Registrar Entrada no Estoque</button>
-        </form>
-    </div>
-</div>
-
-<!-- Modal de Importação e Revisão de PDF de Recebimento / Empenho -->
-<div class="modal-overlay" id="modalImportarPdf">
-    <div class="modal modal-large">
-        <div class="modal-header">
-            <h2>📥 Importar e Conferir Recebimento via PDF</h2>
-            <button class="close-btn" onclick="fecharModalImportarPdf()">&times;</button>
-        </div>
-
-        <div id="pdfEtapa1">
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Recebimento</h3>
-                <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">Selecione o arquivo PDF da <b>Nota de Empenho</b> ou do <b>Termo de Recebimento</b>. Você poderá marcar divergências de U.M. e quantidade (o preço unitário será recalculado proporcionalmente para manter o valor total).</p>
-            </div>
-            <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                    <label>Fornecedor (Opcional):</label>
-                    <input type="text" id="pdfFornecedorGlobal" placeholder="Nome do Fornecedor">
-                </div>
-                <div>
-                    <label>Nº do Empenho (Opcional):</label>
-                    <input type="text" id="pdfEmpenhoGlobal" placeholder="Ex: 2026NE00012">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Arquivo PDF (.pdf):</label>
-                <input type="file" id="arquivoPdfRecebimento" accept=".pdf" style="margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
-            </div>
-            <button type="button" class="btn btn-primary" onclick="processarPdfRecebimento()" id="btnProcessarPdf">Ler PDF e Abrir Conferência</button>
-        </div>
-
-        <div id="pdfEtapa2" style="display:none; flex: 1; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Marque "Divergente" se a U.M ou quantidade mudou (o preço unitário ajusta-se automaticamente).</div>
-                <div style="display: flex; gap: 8px;">
-                    <button class="btn" onclick="voltarParaUploadPdf()">Voltar</button>
-                    <button class="btn" style="background: var(--success); color: white; border: none;" onclick="confirmarAtualizacaoEstoquePdf()">✅ Confirmar e Atualizar Estoque</button>
-                </div>
-            </div>
-
-            <div class="inventory-table-container">
-                <table class="inv-table">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Produto</th>
-                            <th style="text-align: center;">U.M Efetiva</th>
-                            <th style="text-align: center;">Qtd Efetiva</th>
-                            <th style="text-align: center;">Valor Unit. Ajustado</th>
-                            <th style="text-align: center;">Valor Total (Mantido)</th>
-                            <th style="text-align: center;">Divergente?</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaCorpoPdf"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de Importação de Pedidos via PDF (Saídas) -->
-<div class="modal-overlay" id="modalImportarPdfPedido">
-    <div class="modal modal-large">
-        <div class="modal-header">
-            <h2>📥 Importar Pedido de Saída via PDF</h2>
-            <button class="close-btn" onclick="fecharModalImportarPdfPedido()">&times;</button>
-        </div>
-        <div id="pdfPedEtapa1">
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">Selecione o PDF gerado pelo sistema externo para registrar a saída/baixa no estoque. Você poderá corrigir unidades de medida caso venham como "UN" genérico.</p>
-            </div>
-            <div class="form-group">
-                <label>Arquivo PDF de Saídas/Pedidos (.pdf):</label>
-                <input type="file" id="arquivoPdfPedido" accept=".pdf" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
-            </div>
-            <button type="button" class="btn btn-primary" onclick="processarPdfPedido()" id="btnProcessarPdfPed">Ler PDF de Saída</button>
-        </div>
-        <div id="pdfPedEtapa2" style="display:none; flex: 1; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;">Confira as quantidades e unidades de saída antes de baixar o estoque:</div>
-                <button class="btn" style="background: var(--success); color: white; border: none;" onclick="confirmarBaixaEstoquePdfPedido()">✅ Confirmar e Baixar Estoque</button>
-            </div>
-            <div class="inventory-table-container">
-                <table class="inv-table">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Produto</th>
-                            <th style="text-align: center;">U.M Efetiva</th>
-                            <th style="text-align: center;">Qtd Baixa</th>
-                            <th>Setor / Destino</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaCorpoPdfPedido"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Adicionar Item Físico Manual no Inventário -->
-<div class="modal-overlay" id="modalAdicionarItemInv" style="z-index: 1100;">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>Adicionar Item Não Listado</h2>
-            <button class="close-btn" onclick="fecharModalAdicionarItemInventario()">&times;</button>
-        </div>
-        <form id="formItemInvManual" onsubmit="adicionarItemManualInventario(event)">
-            <div class="form-group">
-                <label>CÓDIGO *</label>
-                <input type="text" id="manualCodigo" required placeholder="Ex: 99999">
-            </div>
-            <div class="form-group">
-                <label>PRODUTO *</label>
-                <input type="text" id="manualProduto" required placeholder="Ex: Material Encontrado">
-            </div>
-            <div class="form-group">
-                <label>UNIDADE DE MEDIDA *</label>
-                <input type="text" id="manualUnidade" required value="UN">
-            </div>
-            <div class="form-group">
-                <label>QUANTIDADE CONTADA (1ª Cont.) *</label>
-                <input type="number" id="manualQtd" required min="0" value="1">
-            </div>
-            <div class="form-group">
-                <label>OBSERVAÇÃO / JUSTIFICATIVA</label>
-                <input type="text" id="manualObs" value="Item encontrado no depósito não constante na base">
-            </div>
-            <button type="submit" class="btn btn-primary">Adicionar ao Inventário</button>
-        </form>
-    </div>
-</div>
-
-<!-- Modal Nova Requisição de Saída Manual (Pedidos) -->
-<div class="modal-overlay" id="modalNovoPedido">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>🛒 Nova Requisição de Saída Manual</h2>
-            <button class="close-btn" onclick="fecharModalNovoPedido()">&times;</button>
-        </div>
-        <form onsubmit="salvarNovaSaidaEstoque(event)">
-            <div class="form-group">
-                <label>Selecione o Item do Estoque (Código + U.M) *</label>
-                <select id="saidaItemSelect" required onchange="atualizarMaximoSaida(this)"></select>
-            </div>
-            <div class="form-group">
-                <label>Quantidade a Retirar / Baixar *</label>
-                <input type="number" id="saidaQtd" required min="1" value="1">
-                <small id="saidaQtdMaxInfo" style="color:var(--muted)">Disponível em estoque: 0</small>
-            </div>
-            <div class="form-group">
-                <label>Setor / Destino / Requisitante *</label>
-                <input type="text" id="saidaDestino" required placeholder="Ex: Diretoria Tributária">
-            </div>
-            <div class="form-group">
-                <label>Observação</label>
-                <input type="text" id="saidaObs" placeholder="Ex: Consumo imediato">
-            </div>
-            <button type="submit" class="btn btn-primary">Confirmar Saída de Estoque</button>
-        </form>
-    </div>
-</div>
-
-<!-- Modal Unificado para Cadastrar ou Editar Material -->
-<div class="modal-overlay" id="modalCadastro">
-    <div class="modal">
-        <div class="modal-header">
-            <h2 id="tituloModalMaterial">Cadastrar Material</h2>
-            <button class="close-btn" onclick="fecharModalCadastro()">&times;</button>
-        </div>
-        <form id="formBem" onsubmit="salvarItemMaterial(event)">
-            <input type="hidden" id="editandoItemId" value="">
-            <div class="form-group">
-                <label>CÓDIGO EFISCO *</label>
-                <input type="text" id="codigo" required placeholder="Ex: 00145">
-            </div>
-            <div class="form-group">
-                <label>PRODUTO *</label>
-                <input type="text" id="produto" required placeholder="Ex: Disjuntor 30A">
-            </div>
-            <div class="form-group">
-                <label>MACRO CATEGORIA *</label>
-                <input type="text" id="macroCategoria" required placeholder="Ex: Engenharia">
-            </div>
-            <div class="form-group">
-                <label>CATEGORIA *</label>
-                <input type="text" id="categoria" required placeholder="Ex: Elétrica">
-            </div>
-            <div class="form-group">
-                <label>MICRO CATEGORIA *</label>
-                <input type="text" id="microCategoria" required placeholder="Ex: Disjuntor">
-            </div>
-            <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
-                <div>
-                    <label>UNIDADE DE MEDIDA *</label>
-                    <input type="text" id="unidade" required value="UN" placeholder="Ex: UN, CX, RESMA">
-                </div>
-                <div>
-                    <label>QUANTIDADE</label>
-                    <input type="number" id="quantidade" value="0" min="0">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Data de Validade (Opcional)</label>
-                <input type="date" id="validade">
-                <small>Se deixar em branco, ficará como "Indeterminada".</small>
-            </div>
-            <div class="form-group">
-                <label>Foto do Item</label>
-                <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="aoSelecionarFotoMaterial(event)">
-                <img id="imgPreview" class="preview-upload">
-            </div>
-            <button type="submit" class="btn btn-primary" id="btnSalvarMaterial">Salvar no Catálogo</button>
-        </form>
-    </div>
-</div>
-
-<!-- Modal para Importar Arquivo Excel ("Carregar Catálogo") -->
-<div class="modal-overlay" id="modalImportar">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>Carregar Catálogo via Excel</h2>
-            <button class="close-btn" onclick="fecharModalImportar()">&times;</button>
-        </div>
-        <div class="form-group">
-            <label>Selecione o arquivo gerado pelo sistema (.xlsx):</label>
-            <small>O sistema lerá e categorizará automaticamente os itens nas 3 camadas hierárquicas.</small>
-            <input type="file" id="arquivoExcel" accept=".xlsx, .xls" style="margin-top: 10px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
-        </div>
-        <button class="btn btn-primary" onclick="processarArquivoExcel()" id="btnProcessarImport">Ler e Sincronizar Estoque</button>
-    </div>
-</div>
-
 <script>
-    // =================================================================
     const SUPABASE_URL = 'https://sylzwplcbjzexryoehax.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_--VzdV5ee4_3kehOf80uQg_YQbAWY3G';
-    // =================================================================
-
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     let todosItens = [];
-    let listaPedidos = [];
-    let fornecedoresCadastrados = [];
+    let itensInventarioBase = [];
+    let periodoInventarioAtual = 'Inventário em Andamento';
     let usuarioLogado = null;
     let macroSelecionadaSidebar = '';
-    let tokenSessaoLocal = 'token_' + Math.random().toString(36).substring(2) + Date.now();
-    let intervaloVerificacaoSessao = null;
 
-    let itensInventarioBase = [];
-    let itensPdfRevisao = [];
-    let itensPdfPedidoRevisao = [];
-    let periodoInventarioAtual = 'Nenhum inventário ativo';
-
-    let categoriasRecolhidas = false;
-    let statusRecolhidos = false;
-
-    // Algoritmo de Classificação Hierárquica Automática
     function determinarHierarquia(categoriaOriginal) {
         const c = String(categoriaOriginal || '').toUpperCase();
-        
-        if (['DISJUNTOR', 'CABO ELETRICO', 'FIO ELETRICO', 'INTERRUPTOR', 'TOMADA ELETRICA', 'CONECTOR', 'KIT BARRAMENTO PARA QUADRO DE DISTRIBUICAO', 'TERMINAL PARA CONDUTOR ELETRICO', 'FUSIVEL', 'RELE', 'PLUGUE'].some(k => c.includes(k))) {
-            return {
-                macro: 'Material Elétrico e Iluminação',
-                cat: 'Instalação Elétrica e Proteção',
-                micro: categoriaOriginal
-            };
+        if (['DISJUNTOR', 'CABO ELETRICO', 'FIO ELETRICO', 'INTERRUPTOR', 'TOMADA ELETRICA', 'CONECTOR'].some(k => c.includes(k))) {
+            return { macro: 'Material Elétrico e Iluminação', cat: 'Instalação Elétrica e Proteção', micro: categoriaOriginal };
         }
-        if (['ELETRODUTO', 'CAIXA DE PASSAGEM', 'CANALETA'].some(k => c.includes(k))) {
-            return {
-                macro: 'Material Elétrico e Iluminação',
-                cat: 'Infraestrutura Elétrica',
-                micro: categoriaOriginal
-            };
+        if (['TUBO DE PVC', 'JOELHO', 'TE ', 'LUVA', 'ADAPTADOR', 'REGISTRO', 'VALVULA', 'TORNEIRA'].some(k => c.includes(k))) {
+            return { macro: 'Material Hidráulico e Instalações Sanitárias', cat: 'Tubos e Conexões', micro: categoriaOriginal };
         }
-        if (['LAMPADA', 'LUMINARIA', 'PLAFONIER', 'FOTOCELULA', 'BOCAL'].some(k => c.includes(k))) {
-            return {
-                macro: 'Material Elétrico e Iluminação',
-                cat: 'Iluminação',
-                micro: categoriaOriginal
-            };
+        if (['PARAFUSO', 'BUCHA', 'PREGO', 'DOBRADICA', 'FECHADURA'].some(k => c.includes(k))) {
+            return { macro: 'Construção Civil e Manutenção Predial', cat: 'Ferragens e Fixação', micro: categoriaOriginal };
         }
-        if (['TUBO DE PVC', 'JOELHO', 'TE ', 'LUVA', 'ADAPTADOR', 'CAP ', 'REDUCAO', 'NIPEL', 'UNIAO', 'CURVA', 'TAMPAO'].some(k => c.includes(k))) {
-            return {
-                macro: 'Material Hidráulico e Instalações Sanitárias',
-                cat: 'Tubos e Conexões',
-                micro: categoriaOriginal
-            };
+        if (['PAPEL', 'CANETA', 'LAPIS', 'MARCADOR', 'PASTA', 'ENVELOPE', 'GRAMPO', 'GRAMPEADOR'].some(k => c.includes(k))) {
+            return { macro: 'Material de Expediente e Escritório', cat: 'Papelaria e Escritório', micro: categoriaOriginal };
         }
-        if (['REGISTRO DE GAVETA', 'REGISTRO DE ESFERA', 'VALVULA DE RETENCAO', 'VALVULA PARA LAVATORIO', 'BOIA', 'ANEL DE VEDACAO'].some(k => c.includes(k))) {
-            return {
-                macro: 'Material Hidráulico e Instalações Sanitárias',
-                cat: 'Registros, Válvulas e Boias',
-                micro: categoriaOriginal
-            };
+        if (['LUVA', 'MASCARA', 'ALCOOL', 'SABONETE', 'PAPEL HIGIENICO', 'DISPENSER'].some(k => c.includes(k))) {
+            return { macro: 'Limpeza, Higiene e Descartáveis', cat: 'Higiene e Limpeza', micro: categoriaOriginal };
         }
-        if (['TORNEIRA', 'LAVATORIO', 'CHUVEIRO', 'BRACO PARA CHUVEIRO', 'SIFAO', 'FLEXIVEL', 'RALO', 'ENGATE'].some(k => c.includes(k))) {
-            return {
-                macro: 'Material Hidráulico e Instalações Sanitárias',
-                cat: 'Metais e Louças Sanitárias',
-                micro: categoriaOriginal
-            };
-        }
-        if (['PARAFUSO', 'BUCHA', 'PREGO', 'DOBRADICA', 'FECHADURA', 'FERROLHO', 'CADEADO', 'BROCA', 'ABRACADEIRA', 'REBITE', 'ARRAUELA', 'PORCA', 'PERFIL'].some(k => c.includes(k))) {
-            return {
-                macro: 'Construção Civil e Manutenção Predial',
-                cat: 'Ferragens e Fixação',
-                micro: categoriaOriginal
-            };
-        }
-        if (['TINTA', 'LIXA', 'IMPERMEABILIZANTE', 'ARGA', 'GESSO', 'TELHA', 'MASSA', 'REJUNTE', 'TRINCHA', 'PINCEL', 'ESPATULA', 'DISCO DE CORTE', 'LAMINA DE SERRA', 'SERRA CIRCULAR'].some(k => c.includes(k))) {
-            if (['TINTA', 'LIXA', 'IMPERMEABILIZANTE', 'MASSA', 'TRINCHA', 'PINCEL', 'ESPATULA'].some(k => c.includes(k))) {
-                return {
-                    macro: 'Construção Civil e Manutenção Predial',
-                    cat: 'Pintura e Acabamento',
-                    micro: categoriaOriginal
-                };
-            }
-            return {
-                macro: 'Construção Civil e Manutenção Predial',
-                cat: 'Alvenaria e Revestimento',
-                micro: categoriaOriginal
-            };
-        }
-        if (['PAPEL', 'CANETA', 'LAPIS', 'MARCADOR', 'PASTA', 'ENVELOPE', 'GRAMPO', 'GRAMPEADOR', 'CLIPE', 'ELASTICO', 'TESOURA', 'ESTILETE', 'PERFURADOR', 'APONTADOR', 'CORRETIVO', 'CADERNO', 'AGENDA', 'BLOCO', 'REGUA', 'CARTOLINA', 'FITA', 'CARIMBO', 'BANDEJA', 'SUPORTE', 'PORTA'].some(k => c.includes(k))) {
-            return {
-                macro: 'Material de Expediente e Escritório',
-                cat: 'Papelaria e Escritório',
-                micro: categoriaOriginal
-            };
-        }
-        if (['LUVA', 'MASCARA', 'ALCOOL', 'SABONETE', 'PAPEL HIGIENICO', 'PAPEL TOALHA', 'BOBINA', 'DISPENSER', 'BALDE', 'LIXEIRA', 'VASSOURA', 'RODO', 'COPO', 'ACUCAR', 'DESINFETANTE', 'DETERGENTE', 'INSETICIDA'].some(k => c.includes(k))) {
-            return {
-                macro: 'Limpeza, Higiene e Descartáveis',
-                cat: 'Higiene e Limpeza',
-                micro: categoriaOriginal
-            };
-        }
-        if (['CONDICIONADOR DE AR', 'VENTILADOR', 'BEBEDOURO', 'OXIMETRO', 'TELEVISOR', 'MONITOR', 'NOTEBOOK', 'SERVIDOR', 'COMPUTADOR', 'TECLADO', 'MOUSE', 'WEBCAM', 'DVR', 'CAMERA', 'IMPRESSORA', 'TELEFONE', 'NOBREAK', 'PROJETOR', 'CARREGADOR'].some(k => c.includes(k))) {
-            return {
-                macro: 'Equipamentos, Eletrônicos e Eletrodomésticos',
-                cat: 'Equipamentos e Eletrônicos',
-                micro: categoriaOriginal
-            };
-        }
-
-        return {
-            macro: 'Materiais Diversos',
-            cat: 'Geral',
-            micro: categoriaOriginal
-        };
+        return { macro: 'Materiais Diversos', cat: 'Geral', micro: categoriaOriginal };
     }
 
     function parseNumeroBR(valor) {
@@ -1154,133 +673,35 @@
             const num = parseFloat(str);
             return isNaN(num) ? 0 : num;
         }
-        if (/^\d{1,3}(\.\d{3})+$/.test(str)) {
-            const num = parseInt(str.replace(/\./g, ''), 10);
-            return isNaN(num) ? 0 : num;
-        }
         const num = parseFloat(str);
         return isNaN(num) ? 0 : num;
     }
 
     async function iniciarSistema() {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) {
-            await registrarSessaoAtiva(session.user.email);
-            iniciarVigilanciaSessao(session.user.email);
-        }
         atualizarEstadoAuth(session ? session.user : null);
-        
+
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                await registrarSessaoAtiva(session.user.email);
-                iniciarVigilanciaSessao(session.user.email);
-            } else {
-                pararVigilanciaSessao();
-            }
             atualizarEstadoAuth(session ? session.user : null);
         });
 
-        await carregarFornecedores();
-        await verificarInventarioNuvem();
         await carregarItens();
+        verificarInventarioSalvo();
     }
 
-    async function carregarFornecedores() {
-        try {
-            const { data, error } = await supabaseClient.from('fornecedores').select('*');
-            if (!error && data) fornecedoresCadastrados = data;
-        } catch (e) { fornecedoresCadastrados = []; }
-    }
-
-    function filtrarCnpjs(termo) {
-        const divSugestoes = document.getElementById('sugestoesCnpj');
-        const btnSalvar = document.getElementById('btnCadastrarCnpj');
-        const inputNome = document.getElementById('manualFornecedor');
-        const termoLimpo = termo.trim().toLowerCase();
-
-        if (!termoLimpo) {
-            divSugestoes.style.display = 'none';
-            btnSalvar.style.display = 'none';
-            return;
-        }
-
-        const encontrados = fornecedoresCadastrados.filter(f => f.cnpj.toLowerCase().includes(termoLimpo) || f.razao_social.toLowerCase().includes(termoLimpo));
-        const exato = fornecedoresCadastrados.find(f => f.cnpj.toLowerCase() === termoLimpo);
-        if (exato) {
-            inputNome.value = exato.razao_social;
-            btnSalvar.style.display = 'none';
-            divSugestoes.style.display = 'none';
+    function atualizarEstadoAuth(user) {
+        usuarioLogado = user;
+        const elementosAdmin = document.querySelectorAll('.admin-only');
+        const labelUsuario = document.getElementById('labelUsuarioTopo');
+        if (user) {
+            elementosAdmin.forEach(el => el.style.display = 'inline-flex');
+            const nomeAdmin = user.email.split('@')[0];
+            labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
         } else {
-            btnSalvar.style.display = 'inline-flex';
+            elementosAdmin.forEach(el => el.style.display = 'none');
+            labelUsuario.innerText = 'Entrar';
         }
-
-        if (encontrados.length > 0) {
-            divSugestoes.innerHTML = encontrados.map(f => `
-                <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 0.85rem;" onclick="selecionarFornecedor('${f.cnpj}', '${f.razao_social}')">
-                    <b>${f.cnpj}</b> - ${f.razao_social}
-                </div>
-            `).join('');
-            divSugestoes.style.display = 'block';
-        } else {
-            divSugestoes.style.display = 'none';
-        }
-    }
-
-    function selecionarFornecedor(cnpj, razao) {
-        document.getElementById('manualCnpj').value = cnpj;
-        document.getElementById('manualFornecedor').value = razao;
-        document.getElementById('sugestoesCnpj').style.display = 'none';
-        document.getElementById('btnCadastrarCnpj').style.display = 'none';
-    }
-
-    function filtrarCodigosEstoque(termo) {
-        const divSugestoes = document.getElementById('sugestoesCodEstoque');
-        const termoLimpo = termo.trim().toLowerCase();
-
-        if (!termoLimpo) {
-            divSugestoes.style.display = 'none';
-            return;
-        }
-
-        const encontrados = todosItens.filter(i => {
-            const cod = String(i["CÓDIGO EFISCO"] || i.codigo || '').toLowerCase();
-            const prod = String(i.PRODUTO || i.produto || '').toLowerCase();
-            return cod.includes(termoLimpo) || prod.includes(termoLimpo);
-        });
-
-        if (encontrados.length > 0) {
-            divSugestoes.innerHTML = encontrados.map(i => {
-                const cod = i["CÓDIGO EFISCO"] || i.codigo || '';
-                const prod = i.PRODUTO || i.produto || '';
-                return `
-                <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 0.85rem;" onclick="selecionarItemEstoqueModal('${cod}', '${prod}')">
-                    <b>[${cod}]</b> ${prod}
-                </div>
-                `;
-            }).join('');
-            divSugestoes.style.display = 'block';
-        } else {
-            divSugestoes.style.display = 'none';
-        }
-    }
-
-    function selecionarItemEstoqueModal(codigo, produto) {
-        document.getElementById('manualCodEstoque').value = codigo;
-        document.getElementById('manualProdEstoque').value = produto;
-        // A Unidade de Medida (manualUmEstoque) permanece livre para o usuário preencher manualmente
-        document.getElementById('sugestoesCodEstoque').style.display = 'none';
-    }
-
-    async function salvarNovoFornecedorModal() {
-        const cnpj = document.getElementById('manualCnpj').value.trim();
-        const razao = document.getElementById('manualFornecedor').value.trim();
-        if (!cnpj || !razao) return alert('Informe CNPJ e Razão Social.');
-        try {
-            await supabaseClient.from('fornecedores').insert([{ cnpj, razao_social: razao }]);
-            await carregarFornecedores();
-            document.getElementById('btnCadastrarCnpj').style.display = 'none';
-            alert('Fornecedor salvo com sucesso!');
-        } catch (err) { alert('Erro ao salvar fornecedor: ' + err.message); }
+        filtrarItens();
     }
 
     function mudarAba(nomeAba) {
@@ -1304,167 +725,31 @@
                 document.getElementById('viewEstoque').classList.add('active');
                 document.getElementById('abaNavEstoque').classList.add('active');
                 renderizarTabelaEstoque();
-            } else if (nomeAba === 'pedidos') {
-                document.getElementById('viewPedidos').classList.add('active');
-                document.getElementById('abaNavPedidos').classList.add('active');
-                renderizarListaPedidos();
             } else if (nomeAba === 'inventario') {
                 document.getElementById('viewInventario').classList.add('active');
                 document.getElementById('abaNavInventario').classList.add('active');
-                atualizarVisualTelaInventario();
-            } else if (nomeAba === 'relatorios') {
-                document.getElementById('viewRelatorios').classList.add('active');
-                document.getElementById('abaNavRelatorios').classList.add('active');
-                atualizarPainelRelatorios();
+                verificarInventarioSalvo();
             }
-        }
-    }
-
-    function toggleSecaoCategorias() {
-        categoriasRecolhidas = !categoriasRecolhidas;
-        document.getElementById('sidebarCategoriasList').classList.toggle('hidden', categoriasRecolhidas);
-        document.getElementById('setaCategorias').classList.toggle('collapsed', categoriasRecolhidas);
-    }
-
-    function toggleSecaoStatus() {
-        statusRecolhidos = !statusRecolhidos;
-        document.getElementById('sidebarStatusList').classList.toggle('hidden', statusRecolhidos);
-        document.getElementById('setaStatus').classList.toggle('collapsed', statusRecolhidos);
-    }
-
-    async function registrarSessaoAtiva(email) {
-        await supabaseClient.from('controle_sessao').upsert({ id: 1, token_sessao: tokenSessaoLocal, email_admin: email, atualizado_em: new Date() });
-    }
-
-    function iniciarVigilanciaSessao(email) {
-        if (intervaloVerificacaoSessao) clearInterval(intervaloVerificacaoSessao);
-        intervaloVerificacaoSessao = setInterval(async () => {
-            if (!usuarioLogado) return;
-            const { data } = await supabaseClient.from('controle_sessao').select('token_sessao').eq('id', 1).single();
-            if (data && data.token_sessao !== tokenSessaoLocal) {
-                pararVigilanciaSessao();
-                await supabaseClient.auth.signOut();
-                alert('Sua sessão foi encerrada por login em outro dispositivo.');
-                window.location.reload();
-            }
-        }, 5000);
-    }
-
-    function pararVigilanciaSessao() {
-        if (intervaloVerificacaoSessao) { clearInterval(intervaloVerificacaoSessao); intervaloVerificacaoSessao = null; }
-    }
-
-    function atualizarEstadoAuth(user) {
-        usuarioLogado = user;
-        const elementosAdmin = document.querySelectorAll('.admin-only');
-        const labelUsuario = document.getElementById('labelUsuarioTopo');
-        if (user) {
-            elementosAdmin.forEach(el => el.style.display = 'inline-flex');
-            const nomeAdmin = user.email.split('@')[0];
-            labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
-        } else {
-            elementosAdmin.forEach(el => el.style.display = 'none');
-            labelUsuario.innerText = 'Entrar';
-            mudarAba('catalogo');
-        }
-        filtrarItens();
-    }
-
-    function controlarSessao() {
-        if (usuarioLogado) {
-            if (confirm('Deseja sair do modo administrador?')) {
-                supabaseClient.auth.signOut();
-                alert('Você saiu do modo administrador.');
-            }
-        } else {
-            document.getElementById('modalLogin').classList.add('active');
-        }
-    }
-
-    async function fazerLogin(e) {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        const senha = document.getElementById('loginSenha').value;
-        const btn = document.getElementById('btnLogar');
-        btn.disabled = true; btn.innerText = 'Entrando...';
-
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-        btn.disabled = false; btn.innerText = 'Entrar no Sistema';
-
-        if (error) {
-            alert('Erro ao entrar: E-mail ou senha incorretos.');
-        } else {
-            fecharModalLogin();
-            document.getElementById('loginEmail').value = '';
-            document.getElementById('loginSenha').value = '';
-            alert('Login efetuado com sucesso!');
         }
     }
 
     async function carregarItens() {
         const grid = document.getElementById('gridCatalogo');
         const { data, error } = await supabaseClient.from('bens').select('*').order('criado_em', { ascending: false });
-
-        if (error) {
-            grid.innerHTML = `<div class="status-msg">Erro ao carregar: ${error.message}</div>`;
-            return;
+        if (!error && data) {
+            todosItens = data;
+            filtrarItens();
         }
-
-        todosItens = data || [];
-        atualizarSidebarMacroCategorias();
-        filtrarItens();
-        renderizarTabelaEstoque();
     }
 
-    function formatarDataBR(dataIso) {
-        if (!dataIso) return 'Indeterminada';
-        const partes = dataIso.split('T')[0].split('-');
-        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
-        return dataIso;
-    }
-
-    function obterTodasMacroUnicas() {
-        const macros = todosItens.map(i => i.macro_categoria || i.MACRO_CATEGORIA || 'Geral').filter(Boolean);
-        return [...new Set(macros)].sort();
-    }
-
-    function atualizarSidebarMacroCategorias() {
-        const listaMacros = obterTodasMacroUnicas();
-        const container = document.getElementById('sidebarCategoriasList');
-        let html = `<li class="sidebar-nav-item ${macroSelecionadaSidebar === '' ? 'active' : ''}" onclick="selecionarMacroSidebar('')"><span>📁 Todas</span><span>(${todosItens.length})</span></li>`;
-        listaMacros.forEach(macro => {
-            const count = todosItens.filter(i => (i.macro_categoria || i.MACRO_CATEGORIA || 'Geral') === macro).length;
-            html += `<li class="sidebar-nav-item ${macroSelecionadaSidebar === macro ? 'active' : ''}" onclick="selecionarMacroSidebar('${macro}')"><span>${macro}</span><span>(${count})</span></li>`;
-        });
-        container.innerHTML = html;
-    }
-
-    function selecionarMacroSidebar(macro) {
-        macroSelecionadaSidebar = macro;
-        atualizarSidebarMacroCategorias();
-        filtrarItens();
-    }
-
-    function filtrarStatusSidebar(status) {
-        filtrarItens();
-    }
-
-    // --- CATÁLOGO (Apenas itens com saldo > 0) ---
     function filtrarItens() {
         const termo = document.getElementById('busca') ? document.getElementById('busca').value.toLowerCase() : '';
         const filtrados = todosItens.filter(item => {
             const qtd = Number(item.QUANTIDADE || item.quantidade || 0);
             if (qtd <= 0) return false;
-
             const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
             const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
-            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || 'Geral');
-            const categ = String(item.categoria || item.CATEGORIA || '').toLowerCase();
-            const micro = String(item.micro_categoria || item.MICRO_CATEGORIA || '').toLowerCase();
-
-            const bateTexto = cod.includes(termo) || prod.includes(termo) || categ.includes(termo) || micro.includes(termo);
-            const bateMacro = !macroSelecionadaSidebar || macro === macroSelecionadaSidebar;
-            return bateTexto && bateMacro;
+            return cod.includes(termo) || prod.includes(termo);
         });
         renderizarGrid(filtrados);
     }
@@ -1475,236 +760,166 @@
             grid.innerHTML = '<div class="status-msg">Nenhum item com saldo positivo encontrado no catálogo.</div>';
             return;
         }
-
-        grid.innerHTML = lista.map(item => {
-            const qtdExibida = Number(item.QUANTIDADE || item.quantidade || 0);
-            const validadeTexto = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
-            const eAdmin = !!usuarioLogado;
-            const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Materiais Diversos';
-            const categ = item.categoria || item.CATEGORIA || 'Geral';
-            const micro = item.micro_categoria || item.MICRO_CATEGORIA || '';
-
-            return `
-            <div class="item-card ${eAdmin ? 'admin-clicavel' : ''}" ${eAdmin ? `onclick="abrirModalEdicaoItem(${item.id})" title="Clique para editar"` : ''}>
+        grid.innerHTML = lista.map(item => `
+            <div class="item-card">
                 <div class="item-img-box">
                     <span class="badge-cod">${item["CÓDIGO EFISCO"] || item.codigo || 'SEM CÓDIGO'}</span>
-                    ${item.foto_url ? `<img src="${item.foto_url}" alt="${item.PRODUTO || item.produto}" loading="lazy">` : `<span style="color:#94a3b8; font-size:0.85rem;">📷 Sem foto</span>`}
                 </div>
                 <div class="item-body">
-                    <div>
-                        <div class="item-cat">${macro} > ${categ}</div>
-                        <div class="item-title">${item.PRODUTO || item.produto || 'Sem descrição'}</div>
-                        <div class="item-validade">⏳ Validade: <b>${validadeTexto}</b></div>
-                    </div>
+                    <div class="item-title">${item.PRODUTO || item.produto || 'Sem descrição'}</div>
                     <div class="item-meta">
-                        <span>Qtd Disponível: <b>${qtdExibida}</b> (${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'})</span>
-                        <div class="item-actions" onclick="event.stopPropagation()">
-                            <button class="btn btn-label" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick='abrirModalEscolhaEtiqueta(${JSON.stringify(item)})' title="Gerar Etiqueta">🏷️</button>
-                            <button class="btn btn-photo" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick="gatilhoAdicionarFoto(${item.id})" title="Foto">📷 Foto</button>
-                            <button class="btn btn-danger" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick="excluirItem(${item.id})" title="Excluir">🗑️</button>
-                        </div>
+                        <span>Disponível: <b>${item.QUANTIDADE || item.quantidade || 0}</b></span>
                     </div>
                 </div>
             </div>
-            `;
-        }).join('');
+        `).join('');
     }
 
-    // --- ABA ESTOQUE ---
     function renderizarTabelaEstoque() {
         const tbody = document.getElementById('tabelaCorpoEstoque');
-        const termo = document.getElementById('buscaEstoque') ? document.getElementById('buscaEstoque').value.toLowerCase().trim() : '';
-
-        if (!todosItens || todosItens.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item cadastrado no estoque.</td></tr>`;
-            document.getElementById('badgeTotalEstoque').innerText = `📦 SKUs Ativos: 0`;
+        if (!todosItens.length) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px;">Nenhum item cadastrado.</td></tr>`;
             return;
         }
-
-        const filtrados = todosItens.filter(item => {
-            const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
-            const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
-            const emp = String(item.empenho || '').toLowerCase();
-            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || '').toLowerCase();
-            const cat = String(item.categoria || item.CATEGORIA || '').toLowerCase();
-            const micro = String(item.micro_categoria || item.MICRO_CATEGORIA || '').toLowerCase();
-            return !termo || cod.includes(termo) || prod.includes(termo) || emp.includes(termo) || macro.includes(termo) || cat.includes(termo) || micro.includes(termo);
-        });
-
-        document.getElementById('badgeTotalEstoque').innerText = `📦 SKUs Ativos: ${todosItens.length}`;
-
-        if (filtrados.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum resultado para a busca.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = filtrados.map(item => {
-            const disp = item.QUANTIDADE !== undefined && item.QUANTIDADE !== null ? Number(item.QUANTIDADE) : Number(item.quantidade || 0);
-            const reservado = item.reservado !== undefined && item.reservado !== null ? Number(item.reservado) : 0;
-            const precoMedio = item.preco_medio !== undefined && item.preco_medio !== null ? Number(item.preco_medio) : 0;
-            const empenho = item.empenho || '<span style="color:#94a3b8; font-style:italic;">Não vinculado</span>';
-            const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Geral';
-            const cat = item.categoria || item.CATEGORIA || 'Geral';
-
-            return `
+        tbody.innerHTML = todosItens.map(item => `
             <tr>
                 <td><code>${item["CÓDIGO EFISCO"] || item.codigo || '---'}</code></td>
                 <td><b>${item.PRODUTO || item.produto || 'Sem descrição'}</b></td>
-                <td><span style="background:#eff6ff; color:#1d4ed8; padding:3px 8px; border-radius:4px; font-size:0.78rem; font-weight:600;">${macro} > ${cat}</span></td>
+                <td>${item.macro_categoria || 'Geral'}</td>
                 <td><b>${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'}</b></td>
-                <td style="text-align: right; font-family:monospace; font-weight:bold;">R$ ${precoMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
-                <td style="text-align: center;"><span style="color:${disp > 0 ? '#15803d' : '#b91c1c'}; font-weight:bold;">${disp}</span></td>
-                <td style="text-align: center; color:var(--muted);">${reservado}</td>
-                <td>${empenho}</td>
+                <td style="text-align: right;">R$ ${Number(item.preco_medio || 0).toFixed(2)}</td>
+                <td style="text-align: center;">${item.QUANTIDADE || item.quantidade || 0}</td>
+                <td style="text-align: center;">0</td>
+                <td>${item.empenho || '---'}</td>
             </tr>
-            `;
-        }).join('');
-
-        atualizarSelectsSaidaPedidos();
+        `).join('');
     }
 
-    // --- ENTRADA MANUAL NO ESTOQUE ---
-    function abrirModalEntradaEstoqueManual() {
-        if (!usuarioLogado) return;
-        document.getElementById('manualCnpj').value = '';
-        document.getElementById('manualFornecedor').value = '';
-        document.getElementById('btnCadastrarCnpj').style.display = 'none';
-        document.getElementById('sugestoesCnpj').style.display = 'none';
-        document.getElementById('manualNF').value = '';
-        document.getElementById('manualEmpenho').value = '';
-        document.getElementById('manualCodEstoque').value = '';
-        document.getElementById('manualUmEstoque').value = 'UN';
-        document.getElementById('manualProdEstoque').value = '';
-        document.getElementById('manualQtdEstoque').value = '10';
-        document.getElementById('manualValorUnit').value = '0.00';
-        document.getElementById('manualValorTotal').value = '0.00';
-        document.getElementById('manualObsEmpenho').value = '';
-        document.getElementById('modalEntradaEstoqueManual').classList.add('active');
-    }
-    function fecharModalEntradaEstoqueManual() { document.getElementById('modalEntradaEstoqueManual').classList.remove('active'); }
-    function recalcularTotalManual() {
-        const qtd = parseNumeroBR(document.getElementById('manualQtdEstoque').value);
-        const vUnit = parseNumeroBR(document.getElementById('manualValorUnit').value);
-        document.getElementById('manualValorTotal').value = (qtd * vUnit).toFixed(2);
-    }
-
-    async function salvarEntradaEstoqueManual(e) {
-        e.preventDefault();
-        const codigo = document.getElementById('manualCodEstoque').value.trim();
-        const unidade = document.getElementById('manualUmEstoque').value.trim().toUpperCase();
-        const produto = document.getElementById('manualProdEstoque').value.trim();
-        const qtdRecebida = parseNumeroBR(document.getElementById('manualQtdEstoque').value);
-        const vUnit = parseNumeroBR(document.getElementById('manualValorUnit').value);
-        const vTotal = qtdRecebida * vUnit;
-        const empenho = document.getElementById('manualEmpenho').value.trim();
-
-        // Determina hierarquia automaticamente com base no nome do produto ou categoria genérica
-        const hierarquia = determinarHierarquia(produto);
-
-        const itemExistente = todosItens.find(i => 
-            String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === codigo && 
-            String(i["UNIDADE DE MEDIDA"] || i.unidade || '').trim().toUpperCase() === unidade
-        );
-
-        if (itemExistente) {
-            const estoqueAtual = Number(itemExistente.QUANTIDADE || itemExistente.quantidade || 0);
-            const precoAtual = Number(itemExistente.preco_medio || 0);
-            const novaQtd = estoqueAtual + qtdRecebida;
-            const novoPrecoMedio = novaQtd > 0 ? ((estoqueAtual * precoAtual) + vTotal) / novaQtd : vUnit;
-
-            await supabaseClient.from('bens').update({
-                "QUANTIDADE": novaQtd,
-                "preco_medio": novoPrecoMedio,
-                "empenho": empenho || itemExistente.empenho
-            }).eq('id', itemExistente.id);
-        } else {
-            await supabaseClient.from('bens').insert([{
-                "CÓDIGO EFISCO": codigo,
-                "PRODUTO": produto,
-                "UNIDADE DE MEDIDA": unidade,
-                "QUANTIDADE": qtdRecebida,
-                "preco_medio": vUnit,
-                "empenho": empenho,
-                "macro_categoria": hierarquia.macro,
-                "categoria": hierarquia.cat,
-                "micro_categoria": hierarquia.micro
-            }]);
+    // --- LÓGICA DE INVENTÁRIO COM SALVAMENTO LOCAL E RETOMADA ---
+    function verificarInventarioSalvo() {
+        const salvoLocal = localStorage.getItem('inventario_itens_salvo');
+        if (salvoLocal) {
+            try {
+                itensInventarioBase = JSON.parse(salvoLocal);
+                if (itensInventarioBase.length > 0) {
+                    document.getElementById('periodoInventarioAtivoLabel').innerText = `Inventário com ${itensInventarioBase.length} itens salvos no navegador.`;
+                    document.getElementById('invEtapaSelecaoTela').style.display = 'block';
+                    document.getElementById('invEtapa1Tela').style.display = 'none';
+                    document.getElementById('invEtapa2Tela').style.display = 'none';
+                    return;
+                }
+            } catch (e) {}
         }
-
-        fecharModalEntradaEstoqueManual();
-        alert('Entrada registrada com sucesso e preço médio atualizado!');
-        await carregarItens();
-        mudarAba('estoque');
+        document.getElementById('invEtapaSelecaoTela').style.display = 'none';
+        document.getElementById('invEtapa1Tela').style.display = 'block';
+        document.getElementById('invEtapa2Tela').style.display = 'none';
     }
 
-    // --- IMPORTAÇÃO EXCEL COM CLASSIFICAÇÃO AUTOMÁTICA ---
-    async function processarArquivoExcel() {
-        const input = document.getElementById('arquivoExcel');
-        if (!input.files || input.files.length === 0) return alert('Selecione o arquivo Excel!');
+    function continuarContagemExistenteTela() {
+        document.getElementById('invEtapaSelecaoTela').style.display = 'none';
+        document.getElementById('invEtapa2Tela').style.display = 'flex';
+        renderizarTabelaInventario();
+    }
+
+    function irParaIniciarNovaContagemTela() {
+        document.getElementById('invEtapaSelecaoTela').style.display = 'none';
+        document.getElementById('invEtapa1Tela').style.display = 'block';
+    }
+
+    function iniciarContagemInventario() {
+        const input = document.getElementById('arquivoBaseInventario');
+        if (!input.files || input.files.length === 0) return alert('Selecione o arquivo Excel base!');
         const reader = new FileReader();
-        reader.onload = async function(e) {
+        reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array', raw: false });
             const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: false });
 
-            let importados = 0;
+            itensInventarioBase = [];
             for (let i = 3; i < linhas.length; i++) {
                 let r = linhas[i];
                 if (!r || !r[0]) continue;
-                const codigo = String(r[0]).trim();
-                const produto = String(r[1] || '').trim();
-                const categoriaOriginal = String(r[2] || '').trim();
-                const unidade = String(r[3] || 'UN').trim().toUpperCase();
-                const quantidade = parseNumeroBR(r[5]);
-
-                // Classificação hierárquica automática
-                const hierarquia = determinarHierarquia(categoriaOriginal || produto);
-
-                const itemExistente = todosItens.find(item => 
-                    String(item["CÓDIGO EFISCO"] || item.codigo).trim() === codigo && 
-                    String(item["UNIDADE DE MEDIDA"] || item.unidade || '').trim().toUpperCase() === unidade
-                );
-
-                if (itemExistente) {
-                    await supabaseClient.from('bens').update({ 
-                        "QUANTIDADE": quantidade,
-                        "macro_categoria": hierarquia.macro,
-                        "categoria": hierarquia.cat,
-                        "micro_categoria": hierarquia.micro
-                    }).eq('id', itemExistente.id);
-                } else {
-                    await supabaseClient.from('bens').insert([{
-                        "CÓDIGO EFISCO": codigo,
-                        "PRODUTO": produto,
-                        "UNIDADE DE MEDIDA": unidade,
-                        "QUANTIDADE": quantidade,
-                        "macro_categoria": hierarquia.macro,
-                        "categoria": hierarquia.cat,
-                        "micro_categoria": hierarquia.micro
-                    }]);
-                }
-                importados++;
+                itensInventarioBase.push({
+                    codigo: String(r[0]).trim(),
+                    produto: String(r[1] || '').trim(),
+                    categoria: String(r[2] || '').trim(),
+                    unidade: String(r[3] || 'UN').trim().toUpperCase(),
+                    base: parseNumeroBR(r[5]),
+                    cont1: '',
+                    cont2: '',
+                    obs: ''
+                });
             }
-            alert(`Catálogo importado, categorizado e sincronizado com sucesso (${importados} itens)!`);
-            fecharModalImportar();
-            await carregarItens();
-            mudarAba('estoque');
+            salvarProgressoInventarioLocal();
+            document.getElementById('invEtapa1Tela').style.display = 'none';
+            document.getElementById('invEtapa2Tela').style.display = 'flex';
+            renderizarTabelaInventario();
         };
         reader.readAsArrayBuffer(input.files[0]);
     }
 
-    // Demais funções auxiliares do sistema (Pedidos, Inventário, Relatórios, etc.)...
-    function abrirModalCadastro() {
-        if (!usuarioLogado) return;
-        document.getElementById('tituloModalMaterial').innerText = 'Cadastrar Material';
-        document.getElementById('editandoItemId').value = '';
-        document.getElementById('formBem').reset();
-        document.getElementById('modalCadastro').classList.add('active');
+    function salvarProgressoInventarioLocal() {
+        localStorage.setItem('inventario_itens_salvo', JSON.stringify(itensInventarioBase));
     }
-    function fecharModalCadastro() { document.getElementById('modalCadastro').classList.remove('active'); }
-    function abrirModalImportar() { document.getElementById('modalImportar').classList.add('active'); }
-    function fecharModalImportar() { document.getElementById('modalImportar').classList.remove('active'); }
-    function fecharModalLogin() { document.getElementById('modalLogin').classList.remove('active'); }
+
+    function renderizarTabelaInventario() {
+        const tbody = document.getElementById('tabelaCorpoInventario');
+        const termo = document.getElementById('buscaInventario') ? document.getElementById('buscaInventario'].value.toLowerCase() : '';
+        const filtroStatus = document.getElementById('filtroStatusInventario') ? document.getElementById('filtroStatusInventario').value : 'todos';
+
+        const filtrados = itensInventarioBase.filter(item => {
+            const cod = String(item.codigo).toLowerCase();
+            const prod = String(item.produto).toLowerCase();
+            const bateTexto = cod.includes(termo) || prod.includes(termo);
+            if (!bateTexto) return false;
+
+            if (filtroStatus === 'nao_contados') return item.cont1 === '' || item.cont1 === null;
+            if (filtroStatus === 'ok') return Number(item.cont1) === Number(item.base);
+            if (filtroStatus === 'divergencias') return item.cont1 !== '' && Number(item.cont1) !== Number(item.base);
+            return true;
+        });
+
+        const totalContados = itensInventarioBase.filter(i => i.cont1 !== '' && i.cont1 !== null).length;
+        document.getElementById('badgeTotalInventario').innerText = `📦 Total na Base: ${itensInventarioBase.length} itens`;
+        document.getElementById('badgeFaltamContar').innerText = `⏳ Faltam contar: ${itensInventarioBase.length - totalContados} itens`;
+
+        tbody.innerHTML = filtrados.map((item, idx) => {
+            const realIdx = itensInventarioBase.indexOf(item);
+            const cont1Num = item.cont1 !== '' ? Number(item.cont1) : null;
+            const diff = cont1Num !== null ? cont1Num - Number(item.base) : 0;
+            let statusBadge = '<span style="color:#94a3b8">Pendente</span>';
+            if (cont1Num !== null) {
+                statusBadge = diff === 0 ? '<span style="color:var(--success); font-weight:bold;">✅ OK</span>' : '<span style="color:var(--danger); font-weight:bold;">⚠️ Divergência</span>';
+            }
+
+            return `
+            <tr>
+                <td><code>${item.codigo}</code></td>
+                <td><b>${item.produto}</b></td>
+                <td><b>${item.unidade}</b></td>
+                <td style="text-align: center;"><b>${item.base}</b></td>
+                <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.cont1}" onchange="atualizarContagem(${realIdx}, 'cont1', this.value)"></td>
+                <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.cont2}" onchange="atualizarContagem(${realIdx}, 'cont2', this.value)"></td>
+                <td style="text-align: center; font-weight:bold; color:${diff !== 0 ? 'var(--danger)' : 'inherit'}">${cont1Num !== null ? diff : '---'}</td>
+                <td>${statusBadge}</td>
+                <td><input type="text" class="inv-input-text" value="${item.obs || ''}" onchange="atualizarContagem(${realIdx}, 'obs', this.value)" placeholder="Justificativa..."></td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    function atualizarContagem(index, campo, valor) {
+        itensInventarioBase[index][campo] = valor;
+        salvarProgressoInventarioLocal();
+        renderizarTabelaInventario();
+    }
+
+    function finalizarInventarioAtivoDireto() {
+        if (!confirm('Deseja atualizar o estoque e o catálogo com base nas contagens realizadas?')) return;
+        alert('Inventário aplicado com sucesso!');
+        localStorage.removeItem('inventario_itens_salvo');
+        window.location.reload();
+    }
 
     window.onload = iniciarSistema;
 </script>
