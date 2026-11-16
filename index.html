@@ -291,8 +291,6 @@
         }
         .item-card.admin-clicavel { cursor: pointer; }
         .item-card.admin-clicavel:hover { transform: translateY(-3px); border-color: var(--primary-light); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
-        .item-card.esgotado { background: #fff5f5; border-color: #f87171; }
-        .item-card.esgotado .item-body { background: #fff5f5; }
 
         .item-img-box {
             width: 100%;
@@ -478,12 +476,12 @@
         </div>
         <div class="sidebar-section">
             <div class="sidebar-section-header" onclick="toggleSecaoCategorias()">
-                <h3>Categorias</h3>
+                <h3>Macro Categorias</h3>
                 <span class="sidebar-arrow" id="setaCategorias">▼</span>
             </div>
             <ul class="sidebar-nav-list" id="sidebarCategoriasList">
-                <li class="sidebar-nav-item active" onclick="selecionarCategoriaSidebar('')">
-                    <span>📁 Todas as Categorias</span>
+                <li class="sidebar-nav-item active" onclick="selecionarMacroSidebar('')">
+                    <span>📁 Todas</span>
                 </li>
             </ul>
         </div>
@@ -493,15 +491,14 @@
                 <span class="sidebar-arrow" id="setaStatus">▼</span>
             </div>
             <ul class="sidebar-nav-list" id="sidebarStatusList">
-                <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('todos')"><span>📋 Ativos</span></li>
-                <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('esgotados')"><span>⚠️ Apenas Esgotados</span></li>
+                <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('todos')"><span>📋 Com Saldo (Catálogo)</span></li>
             </ul>
         </div>
     </aside>
 
     <div class="content-wrapper">
         
-        <!-- ABA 1: CATÁLOGO -->
+        <!-- ABA 1: CATÁLOGO (Apenas itens com saldo > 0) -->
         <div id="viewCatalogo" class="app-view active">
             <div class="sub-header">
                 <div class="search-spotlight">
@@ -517,7 +514,7 @@
 
             <div class="catalog-container">
                 <div class="catalog-grid" id="gridCatalogo">
-                    <div class="status-msg">Carregando itens do catálogo...</div>
+                    <div class="status-msg">Carregando itens do catálogo com saldo...</div>
                 </div>
             </div>
         </div>
@@ -538,8 +535,8 @@
                 <div class="erp-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
                         <div>
-                            <h2 style="font-size: 1.15rem; color: var(--text);">📋 Controle de Estoque por PK (Código + U.M)</h2>
-                            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 2px;">Saldos disponíveis, reservados, preço médio ponderado e empenhos vinculados</p>
+                            <h2 style="font-size: 1.15rem; color: var(--text);">📋 Controle de Estoque por Hierarquia e PK (Código + U.M)</h2>
+                            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 2px;">Macro Categoria > Categoria > Micro Categoria | Preço Médio e Saldos</p>
                         </div>
                         <span id="badgeTotalEstoque" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 SKUs Ativos: 0</span>
                     </div>
@@ -549,7 +546,7 @@
                                 <tr>
                                     <th>Código</th>
                                     <th>Produto / Descrição</th>
-                                    <th>Categoria</th>
+                                    <th>Macro > Cat > Micro</th>
                                     <th>U.M</th>
                                     <th style="text-align: right;">Preço Médio</th>
                                     <th style="text-align: center;">Disponível</th>
@@ -566,15 +563,18 @@
             </div>
         </div>
 
-        <!-- ABA 3: PEDIDOS (Saídas) -->
+        <!-- ABA 3: PEDIDOS (Saídas Manual ou via PDF) -->
         <div id="viewPedidos" class="app-view" style="padding: 24px;">
-            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 900px; margin: 0 auto; width: 100%;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 950px; margin: 0 auto; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                     <div>
-                        <h2 style="font-size: 1.25rem; color: var(--text);">🛒 Módulo de Pedidos e Baixas (Saída)</h2>
-                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Registre requisições e baixa de materiais do almoxarifado</p>
+                        <h2 style="font-size: 1.25rem; color: var(--text);">🛒 Módulo de Pedidos e Baixas (Saídas)</h2>
+                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Registre saídas manualmente ou importe o PDF gerado pelo sistema externo</p>
                     </div>
-                    <button class="btn btn-primary" onclick="abrirModalNovoPedido()" style="width: auto;">➕ Nova Requisição de Saída</button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalImportarPdfPedido()">📥 Importar Pedido via PDF</button>
+                        <button class="btn btn-primary" onclick="abrirModalNovoPedido()" style="width: auto;">➕ Nova Requisição Manual</button>
+                    </div>
                 </div>
                 <div id="listaPedidosContainer">
                     <div class="status-msg" style="padding: 30px;">Nenhuma requisição de saída registrada neste período.</div>
@@ -582,18 +582,18 @@
             </div>
         </div>
 
-        <!-- ABA 4: INVENTÁRIO -->
+        <!-- ABA 4: INVENTÁRIO (Com botão de atualização de estoque/catálogo direto) -->
         <div id="viewInventario" class="app-view" style="padding: 24px;">
             <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                     <div>
                         <h2 style="font-size: 1.25rem; color: var(--text);">📊 Módulo de Inventário e Balanço Físico</h2>
-                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos, contagem física e registro de divergências</p>
+                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos, contagem física e atualização direta de estoque</p>
                     </div>
                     <div id="acoesTopoInventario" style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button class="btn" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;" onclick="abrirSeletorCorrigirBase()" title="Reimporta a planilha corrigindo números com separador de milhar">🔄 Corrigir Base (Excel)</button>
                         <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
-                        <button class="btn" style="background: #fee2e2; color: #dc2626; border: none;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
+                        <button class="btn" style="background: var(--success); color: white; border: none; font-weight: bold;" onclick="finalizarInventarioAtivoDireto()">✅ Atualizar Estoque e Catálogo com Base no Inventário</button>
                     </div>
                 </div>
 
@@ -721,7 +721,7 @@
     </div>
 </div>
 
-<!-- Modal de Entrada Manual no Estoque com Empenho e Fornecedor por CNPJ -->
+<!-- Modal de Entrada Manual no Estoque com Empenho, CNPJ e Recálculo de Divergência -->
 <div class="modal-overlay" id="modalEntradaEstoqueManual">
     <div class="modal">
         <div class="modal-header">
@@ -735,7 +735,6 @@
                     <input type="text" id="manualCnpj" required placeholder="00.000.000/0001-00" oninput="filtrarCnpjs(this.value)" autocomplete="off">
                     <button type="button" class="btn" id="btnCadastrarCnpj" style="display:none; background:var(--success); color:white; border:none; white-space:nowrap;" onclick="salvarNovoFornecedorModal()">+ Salvar CNPJ</button>
                 </div>
-                <!-- Lista de Sugestões de CNPJ -->
                 <div id="sugestoesCnpj" style="display:none; position:absolute; top: 100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:6px; max-height:150px; overflow-y:auto; z-index:1050; box-shadow:0 4px 6px rgba(0,0,0,0.05);"></div>
             </div>
             <div class="form-group">
@@ -781,15 +780,15 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Observação / Divergência de Empenho</label>
-                <input type="text" id="manualObsEmpenho" placeholder="Ex: Recebido conforme empenho previsto">
+                <label>Observação / Divergência</label>
+                <input type="text" id="manualObsEmpenho" placeholder="Ex: Recebido conforme empenho">
             </div>
             <button type="submit" class="btn btn-primary">Registrar Entrada no Estoque</button>
         </form>
     </div>
 </div>
 
-<!-- Modal de Importação e Revisão de PDF de Recebimento -->
+<!-- Modal de Importação e Revisão de PDF de Recebimento / Empenho -->
 <div class="modal-overlay" id="modalImportarPdf">
     <div class="modal modal-large">
         <div class="modal-header">
@@ -799,8 +798,8 @@
 
         <div id="pdfEtapa1">
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Entrada</h3>
-                <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">Selecione o arquivo PDF do <b>Termo de Recebimento (Peintegrado)</b> para revisar, ajustar quantidades, unidades, valores e vincular o empenho.</p>
+                <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Instruções de Recebimento</h3>
+                <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">Selecione o arquivo PDF da <b>Nota de Empenho</b> ou do <b>Termo de Recebimento</b>. Você poderá marcar divergências de U.M. e quantidade (o preço unitário será recalculado proporcionalmente para manter o valor total).</p>
             </div>
             <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
@@ -813,7 +812,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Arquivo PDF de Recebimento (.pdf):</label>
+                <label>Arquivo PDF (.pdf):</label>
                 <input type="file" id="arquivoPdfRecebimento" accept=".pdf" style="margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
             </div>
             <button type="button" class="btn btn-primary" onclick="processarPdfRecebimento()" id="btnProcessarPdf">Ler PDF e Abrir Conferência</button>
@@ -821,7 +820,7 @@
 
         <div id="pdfEtapa2" style="display:none; flex: 1; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Confirme os dados, valores unitários e empenho antes de atualizar o estoque.</div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;" id="pdfStatusInfo">🔍 Marque "Divergente" se a U.M ou quantidade mudou (o preço unitário ajusta-se automaticamente).</div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn" onclick="voltarParaUploadPdf()">Voltar</button>
                     <button class="btn" style="background: var(--success); color: white; border: none;" onclick="confirmarAtualizacaoEstoquePdf()">✅ Confirmar e Atualizar Estoque</button>
@@ -834,14 +833,54 @@
                         <tr>
                             <th>Código</th>
                             <th>Produto</th>
-                            <th style="text-align: center;">U.M</th>
-                            <th style="text-align: center;">Qtd. Recebida</th>
-                            <th style="text-align: center;">Valor Unit. (R$)</th>
-                            <th style="text-align: center;">Valor Total (R$)</th>
-                            <th>Empenho / Status</th>
+                            <th style="text-align: center;">U.M Efetiva</th>
+                            <th style="text-align: center;">Qtd Efetiva</th>
+                            <th style="text-align: center;">Valor Unit. Ajustado</th>
+                            <th style="text-align: center;">Valor Total (Manido)</th>
+                            <th style="text-align: center;">Divergente?</th>
                         </tr>
                     </thead>
                     <tbody id="tabelaCorpoPdf"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Importação de Pedidos via PDF (Saídas) -->
+<div class="modal-overlay" id="modalImportarPdfPedido">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h2>📥 Importar Pedido de Saída via PDF</h2>
+            <button class="close-btn" onclick="fecharModalImportarPdfPedido()">&times;</button>
+        </div>
+        <div id="pdfPedEtapa1">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">Selecione o PDF gerado pelo sistema externo para registrar a saída/baixa no estoque. Você poderá corrigir unidades de medida caso venham como "UN" genérico.</p>
+            </div>
+            <div class="form-group">
+                <label>Arquivo PDF de Saídas/Pedidos (.pdf):</label>
+                <input type="file" id="arquivoPdfPedido" accept=".pdf" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="processarPdfPedido()" id="btnProcessarPdfPed">Ler PDF de Saída</button>
+        </div>
+        <div id="pdfPedEtapa2" style="display:none; flex: 1; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: #1e40af;">Confira as quantidades e unidades de saída antes de baixar o estoque:</div>
+                <button class="btn" style="background: var(--success); color: white; border: none;" onclick="confirmarBaixaEstoquePdfPedido()">✅ Confirmar e Baixar Estoque</button>
+            </div>
+            <div class="inventory-table-container">
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Produto</th>
+                            <th style="text-align: center;">U.M Efetiva</th>
+                            <th style="text-align: center;">Qtd Baixa</th>
+                            <th>Setor / Destino</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCorpoPdfPedido"></tbody>
                 </table>
             </div>
         </div>
@@ -881,11 +920,11 @@
     </div>
 </div>
 
-<!-- Modal Nova Requisição de Saída (Pedidos) -->
+<!-- Modal Nova Requisição de Saída Manual (Pedidos) -->
 <div class="modal-overlay" id="modalNovoPedido">
     <div class="modal">
         <div class="modal-header">
-            <h2>🛒 Nova Requisição de Saída</h2>
+            <h2>🛒 Nova Requisição de Saída Manual</h2>
             <button class="close-btn" onclick="fecharModalNovoPedido()">&times;</button>
         </div>
         <form onsubmit="salvarNovaSaidaEstoque(event)">
@@ -911,7 +950,7 @@
     </div>
 </div>
 
-<!-- Modal Unificado para Cadastrar ou Editar Material -->
+<!-- Modal Unificado para Cadastrar ou Editar Material (Com 3 Níveis de Categoria) -->
 <div class="modal-overlay" id="modalCadastro">
     <div class="modal">
         <div class="modal-header">
@@ -926,29 +965,29 @@
             </div>
             <div class="form-group">
                 <label>PRODUTO *</label>
-                <input type="text" id="produto" required placeholder="Ex: Cabo de Rede">
+                <input type="text" id="produto" required placeholder="Ex: Disjuntor 30A">
+            </div>
+            <div class="form-group">
+                <label>MACRO CATEGORIA *</label>
+                <input type="text" id="macroCategoria" required placeholder="Ex: Engenharia">
             </div>
             <div class="form-group">
                 <label>CATEGORIA *</label>
-                <select id="categoria" required onchange="verificarSelecaoCategoria(this)"></select>
+                <input type="text" id="categoria" required placeholder="Ex: Elétrica">
             </div>
-            <div class="form-group" id="grupoNovaCategoria" style="display:none;">
-                <label>DIGITE A NOVA CATEGORIA *</label>
-                <input type="text" id="novaCategoriaInput" placeholder="Ex: Ferramentas">
+            <div class="form-group">
+                <label>MICRO CATEGORIA *</label>
+                <input type="text" id="microCategoria" required placeholder="Ex: Disjuntor">
             </div>
             <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
                 <div>
                     <label>UNIDADE DE MEDIDA *</label>
-                    <select id="unidade" required onchange="verificarSelecaoUnidade(this)"></select>
+                    <input type="text" id="unidade" required value="UN" placeholder="Ex: UN, CX, RESMA">
                 </div>
                 <div>
                     <label>QUANTIDADE</label>
                     <input type="number" id="quantidade" value="0" min="0">
                 </div>
-            </div>
-            <div class="form-group" id="grupoNovaUnidade" style="display:none;">
-                <label>DIGITE A NOVA UNIDADE *</label>
-                <input type="text" id="novaUnidadeInput" placeholder="Ex: M2, LATA">
             </div>
             <div class="form-group">
                 <label>Data de Validade (Opcional)</label>
@@ -956,9 +995,8 @@
                 <small>Se deixar em branco, ficará como "Indeterminada".</small>
             </div>
             <div class="form-group">
-                <label>Foto do Item (Leitura Automática de Rótulo)</label>
+                <label>Foto do Item</label>
                 <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="aoSelecionarFotoMaterial(event)">
-                <div id="ocrStatusBox" class="ocr-status-box"></div>
                 <img id="imgPreview" class="preview-upload">
             </div>
             <button type="submit" class="btn btn-primary" id="btnSalvarMaterial">Salvar no Catálogo</button>
@@ -975,7 +1013,7 @@
         </div>
         <div class="form-group">
             <label>Selecione o arquivo gerado pelo sistema (.xlsx):</label>
-            <small>O sistema lerá automaticamente as colunas: <b>Código, Produto, Categoria, U.M e Disponível</b></small>
+            <small>O sistema lerá automaticamente as colunas do inventário/estoque.</small>
             <input type="file" id="arquivoExcel" accept=".xlsx, .xls" style="margin-top: 10px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
         </div>
         <button class="btn btn-primary" onclick="processarArquivoExcel()" id="btnProcessarImport">Ler e Sincronizar Estoque</button>
@@ -988,26 +1026,18 @@
     const SUPABASE_KEY = 'sb_publishable_--VzdV5ee4_3kehOf80uQg_YQbAWY3G';
     // =================================================================
 
-    const CATEGORIAS_FIXAS = [
-        "Informática", "Expediente", "Limpeza", "Copa e Cozinha",
-        "Pintura", "Alvenaria", "Marcenaria", "Elétrica", "Mobiliário", "Outros"
-    ];
-    const UNIDADES_FIXAS = ["UN", "CX", "PC", "KG", "MT", "L", "PCT", "RL", "PAR", "FR"];
-
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let todosItens = [];
     let listaPedidos = [];
     let fornecedoresCadastrados = [];
     let usuarioLogado = null;
-    let itemIdSelecionadoFoto = null;
-    let itemSelecionadoParaEtiqueta = null;
-    let categoriaSelecionadaSidebar = '';
-    let statusFiltroSidebar = 'todos';
+    let macroSelecionadaSidebar = '';
     let tokenSessaoLocal = 'token_' + Math.random().toString(36).substring(2) + Date.now();
     let intervaloVerificacaoSessao = null;
 
     let itensInventarioBase = [];
     let itensPdfRevisao = [];
+    let itensPdfPedidoRevisao = [];
     let periodoInventarioAtual = 'Nenhum inventário ativo';
 
     let categoriasRecolhidas = false;
@@ -1057,16 +1087,10 @@
     async function carregarFornecedores() {
         try {
             const { data, error } = await supabaseClient.from('fornecedores').select('*');
-            if (!error && data) {
-                fornecedoresCadastrados = data;
-            }
-        } catch (e) {
-            console.log('Tabela fornecedores ainda não criada no Supabase ou vazia:', e);
-            fornecedoresCadastrados = [];
-        }
+            if (!error && data) fornecedoresCadastrados = data;
+        } catch (e) { fornecedoresCadastrados = []; }
     }
 
-    // --- AUTOCOMPLETAR / GESTÃO DE FORNECEDORES POR CNPJ ---
     function filtrarCnpjs(termo) {
         const divSugestoes = document.getElementById('sugestoesCnpj');
         const btnSalvar = document.getElementById('btnCadastrarCnpj');
@@ -1080,8 +1104,6 @@
         }
 
         const encontrados = fornecedoresCadastrados.filter(f => f.cnpj.toLowerCase().includes(termoLimpo) || f.razao_social.toLowerCase().includes(termoLimpo));
-
-        // Verifica se o CNPJ exato já está cadastrado
         const exato = fornecedoresCadastrados.find(f => f.cnpj.toLowerCase() === termoLimpo);
         if (exato) {
             inputNome.value = exato.razao_social;
@@ -1113,20 +1135,13 @@
     async function salvarNovoFornecedorModal() {
         const cnpj = document.getElementById('manualCnpj').value.trim();
         const razao = document.getElementById('manualFornecedor').value.trim();
-
-        if (!cnpj) return alert('Informe o CNPJ.');
-        if (!razao) return alert('Informe a Razão Social / Nome da Empresa para cadastrar.');
-
+        if (!cnpj || !razao) return alert('Informe CNPJ e Razão Social.');
         try {
-            const { error } = await supabaseClient.from('fornecedores').insert([{ cnpj, razao_social: razao }]);
-            if (error) throw error;
-            
+            await supabaseClient.from('fornecedores').insert([{ cnpj, razao_social: razao }]);
             await carregarFornecedores();
             document.getElementById('btnCadastrarCnpj').style.display = 'none';
-            alert('Fornecedor cadastrado e salvo com sucesso!');
-        } catch (err) {
-            alert('Erro ao salvar fornecedor (verifique se já existe na base): ' + err.message);
-        }
+            alert('Fornecedor salvo com sucesso!');
+        } catch (err) { alert('Erro ao salvar fornecedor: ' + err.message); }
     }
 
     function mudarAba(nomeAba) {
@@ -1136,6 +1151,7 @@
         if (nomeAba === 'catalogo') {
             document.getElementById('viewCatalogo').classList.add('active');
             document.getElementById('abaNavCatalogo').classList.add('active');
+            filtrarItens();
         } else if (nomeAba === 'estoque') {
             document.getElementById('viewEstoque').classList.add('active');
             document.getElementById('abaNavEstoque').classList.add('active');
@@ -1201,7 +1217,7 @@
             botoesAdmin.forEach(el => el.style.display = 'none');
             labelUsuario.innerText = 'Entrar';
         }
-        renderizarGrid(todosItens);
+        filtrarItens();
     }
 
     function controlarSessao() {
@@ -1245,8 +1261,7 @@
         }
 
         todosItens = data || [];
-        atualizarSidebarCategorias();
-        atualizarSelectsCategoriasEUnidades();
+        atualizarSidebarMacroCategorias();
         filtrarItens();
         renderizarTabelaEstoque();
     }
@@ -1258,115 +1273,82 @@
         return dataIso;
     }
 
-    function obterTodasCategoriasUnicas() {
-        const catsRegistradas = todosItens.map(i => i.CATEGORIA).filter(Boolean);
-        return [...new Set([...CATEGORIAS_FIXAS, ...catsRegistradas])].sort();
+    function obterTodasMacroUnicas() {
+        const macros = todosItens.map(i => i.macro_categoria || i.MACRO_CATEGORIA || 'Geral').filter(Boolean);
+        return [...new Set(macros)].sort();
     }
 
-    function obterTodasUnidadesUnicas() {
-        const unidadesRegistradas = todosItens.map(i => i["UNIDADE DE MEDIDA"]).filter(Boolean);
-        return [...new Set([...UNIDADES_FIXAS, ...unidadesRegistradas])].sort();
-    }
-
-    function atualizarSidebarCategorias() {
-        const listaCats = obterTodasCategoriasUnicas();
+    function atualizarSidebarMacroCategorias() {
+        const listaMacros = obterTodasMacroUnicas();
         const container = document.getElementById('sidebarCategoriasList');
-        let html = `<li class="sidebar-nav-item ${categoriaSelecionadaSidebar === '' ? 'active' : ''}" onclick="selecionarCategoriaSidebar('')"><span>📁 Todas as Categorias</span><span>(${todosItens.length})</span></li>`;
-        listaCats.forEach(cat => {
-            const count = todosItens.filter(i => i.CATEGORIA === cat).length;
-            html += `<li class="sidebar-nav-item ${categoriaSelecionadaSidebar === cat ? 'active' : ''}" onclick="selecionarCategoriaSidebar('${cat}')"><span>${cat}</span><span>(${count})</span></li>`;
+        let html = `<li class="sidebar-nav-item ${macroSelecionadaSidebar === '' ? 'active' : ''}" onclick="selecionarMacroSidebar('')"><span>📁 Todas</span><span>(${todosItens.length})</span></li>`;
+        listaMacros.forEach(macro => {
+            const count = todosItens.filter(i => (i.macro_categoria || i.MACRO_CATEGORIA || 'Geral') === macro).length;
+            html += `<li class="sidebar-nav-item ${macroSelecionadaSidebar === macro ? 'active' : ''}" onclick="selecionarMacroSidebar('${macro}')"><span>${macro}</span><span>(${count})</span></li>`;
         });
         container.innerHTML = html;
     }
 
-    function selecionarCategoriaSidebar(cat) {
-        categoriaSelecionadaSidebar = cat;
-        atualizarSidebarCategorias();
+    function selecionarMacroSidebar(macro) {
+        macroSelecionadaSidebar = macro;
+        atualizarSidebarMacroCategorias();
         filtrarItens();
     }
 
     function filtrarStatusSidebar(status) {
-        statusFiltroSidebar = status;
         filtrarItens();
     }
 
-    function atualizarSelectsCategoriasEUnidades() {
-        const listaCats = obterTodasCategoriasUnicas();
-        const selectModalCat = document.getElementById('categoria');
-        if (selectModalCat) {
-            const val = selectModalCat.value;
-            selectModalCat.innerHTML = '<option value="">Selecione a Categoria</option>' + 
-                listaCats.map(c => `<option value="${c}">${c}</option>`).join('') +
-                '<option value="__NOVA__" style="font-weight:bold; color:var(--primary);">➕ Adicionar Nova Categoria...</option>';
-            selectModalCat.value = val;
-        }
+    // --- CATÁLOGO (Apenas itens com saldo > 0) ---
+    function filtrarItens() {
+        const termo = document.getElementById('busca') ? document.getElementById('busca').value.toLowerCase() : '';
+        const filtrados = todosItens.filter(item => {
+            const qtd = Number(item.QUANTIDADE || item.quantidade || 0);
+            // O catálogo exibe apenas itens que tenham saldo na aba estoque (> 0)
+            if (qtd <= 0) return false;
 
-        const selectModalUn = document.getElementById('unidade');
-        const listaUnidades = obterTodasUnidadesUnicas();
-        if (selectModalUn) {
-            const valUn = selectModalUn.value;
-            selectModalUn.innerHTML = '<option value="">Selecione a Unidade</option>' + 
-                listaUnidades.map(u => `<option value="${u}">${u}</option>`).join('') +
-                '<option value="__NOVA__" style="font-weight:bold; color:var(--primary);">➕ Adicionar Nova Unidade...</option>';
-            selectModalUn.value = valUn;
-        }
-    }
+            const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
+            const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
+            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || 'Geral');
+            const categ = String(item.categoria || item.CATEGORIA || '').toLowerCase();
+            const micro = String(item.micro_categoria || item.MICRO_CATEGORIA || '').toLowerCase();
 
-    function verificarSelecaoCategoria(select) {
-        const grupoNova = document.getElementById('grupoNovaCategoria');
-        const inputNova = document.getElementById('novaCategoriaInput');
-        if (select.value === '__NOVA__') {
-            grupoNova.style.display = 'block';
-            inputNova.required = true;
-            inputNova.value = '';
-            inputNova.focus();
-        } else {
-            grupoNova.style.display = 'none';
-            inputNova.required = false;
-        }
-    }
-
-    function verificarSelecaoUnidade(select) {
-        const grupoNova = document.getElementById('grupoNovaUnidade');
-        const inputNova = document.getElementById('novaUnidadeInput');
-        if (select.value === '__NOVA__') {
-            grupoNova.style.display = 'block';
-            inputNova.required = true;
-            inputNova.value = '';
-            inputNova.focus();
-        } else {
-            grupoNova.style.display = 'none';
-            inputNova.required = false;
-        }
+            const bateTexto = cod.includes(termo) || prod.includes(termo) || categ.includes(termo) || micro.includes(termo);
+            const bateMacro = !macroSelecionadaSidebar || macro === macroSelecionadaSidebar;
+            return bateTexto && bateMacro;
+        });
+        renderizarGrid(filtrados);
     }
 
     function renderizarGrid(lista) {
         const grid = document.getElementById('gridCatalogo');
         if (lista.length === 0) {
-            grid.innerHTML = '<div class="status-msg">Nenhum item encontrado no catálogo.</div>';
+            grid.innerHTML = '<div class="status-msg">Nenhum item com saldo positivo encontrado no catálogo.</div>';
             return;
         }
 
         grid.innerHTML = lista.map(item => {
-            const qtdExibida = item.QUANTIDADE !== undefined && item.QUANTIDADE !== null ? Number(item.QUANTIDADE) : 0;
-            const esgotado = qtdExibida === 0;
+            const qtdExibida = Number(item.QUANTIDADE || item.quantidade || 0);
             const validadeTexto = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
             const eAdmin = !!usuarioLogado;
+            const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Engenharia';
+            const categ = item.categoria || item.CATEGORIA || 'Elétrica';
+            const micro = item.micro_categoria || item.MICRO_CATEGORIA || 'Disjuntor';
 
             return `
-            <div class="item-card ${esgotado ? 'esgotado' : ''} ${eAdmin ? 'admin-clicavel' : ''}" ${eAdmin ? `onclick="abrirModalEdicaoItem(${item.id})" title="Clique para editar"` : ''}>
+            <div class="item-card ${eAdmin ? 'admin-clicavel' : ''}" ${eAdmin ? `onclick="abrirModalEdicaoItem(${item.id})" title="Clique para editar"` : ''}>
                 <div class="item-img-box">
-                    <span class="badge-cod">${item["CÓDIGO EFISCO"] || 'SEM CÓDIGO'}</span>
-                    ${item.foto_url ? `<img src="${item.foto_url}" alt="${item.PRODUTO}" loading="lazy">` : `<span style="color:#94a3b8; font-size:0.85rem;">📷 Sem foto</span>`}
+                    <span class="badge-cod">${item["CÓDIGO EFISCO"] || item.codigo || 'SEM CÓDIGO'}</span>
+                    ${item.foto_url ? `<img src="${item.foto_url}" alt="${item.PRODUTO || item.produto}" loading="lazy">` : `<span style="color:#94a3b8; font-size:0.85rem;">📷 Sem foto</span>`}
                 </div>
                 <div class="item-body">
                     <div>
-                        <div class="item-cat">${item.CATEGORIA || 'Geral'}</div>
-                        <div class="item-title">${item.PRODUTO || 'Sem descrição'}</div>
+                        <div class="item-cat">${macro} > ${categ} > ${micro}</div>
+                        <div class="item-title">${item.PRODUTO || item.produto || 'Sem descrição'}</div>
                         <div class="item-validade">⏳ Validade: <b>${validadeTexto}</b></div>
                     </div>
                     <div class="item-meta">
-                        <span>Qtd: <b>${qtdExibida}</b> (${item["UNIDADE DE MEDIDA"] || 'UN'}) ${esgotado ? '<span style="color:var(--danger); font-weight:bold; margin-left:4px;">(Esgotado)</span>' : ''}</span>
+                        <span>Qtd Disponível: <b>${qtdExibida}</b> (${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'})</span>
                         <div class="item-actions" onclick="event.stopPropagation()">
                             <button class="btn btn-label" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick='abrirModalEscolhaEtiqueta(${JSON.stringify(item)})' title="Gerar Etiqueta">🏷️</button>
                             <button class="btn btn-photo" style="${eAdmin ? 'display:inline-flex;' : 'display:none;'}" onclick="gatilhoAdicionarFoto(${item.id})" title="Foto">📷 Foto</button>
@@ -1379,7 +1361,7 @@
         }).join('');
     }
 
-    // --- ABA ESTOQUE (ERP Moderno Híbrido) ---
+    // --- ABA ESTOQUE (ERP Moderno Híbrido com 3 Níveis) ---
     function renderizarTabelaEstoque() {
         const tbody = document.getElementById('tabelaCorpoEstoque');
         const termo = document.getElementById('buscaEstoque') ? document.getElementById('buscaEstoque').value.toLowerCase().trim() : '';
@@ -1391,10 +1373,13 @@
         }
 
         const filtrados = todosItens.filter(item => {
-            const cod = String(item["CÓDIGO EFISCO"] || '').toLowerCase();
-            const prod = String(item.PRODUTO || '').toLowerCase();
+            const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
+            const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
             const emp = String(item.empenho || '').toLowerCase();
-            return !termo || cod.includes(termo) || prod.includes(termo) || emp.includes(termo);
+            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || '').toLowerCase();
+            const cat = String(item.categoria || item.CATEGORIA || '').toLowerCase();
+            const micro = String(item.micro_categoria || item.MICRO_CATEGORIA || '').toLowerCase();
+            return !termo || cod.includes(termo) || prod.includes(termo) || emp.includes(termo) || macro.includes(termo) || cat.includes(termo) || micro.includes(termo);
         });
 
         document.getElementById('badgeTotalEstoque').innerText = `📦 SKUs Ativos: ${todosItens.length}`;
@@ -1405,17 +1390,20 @@
         }
 
         tbody.innerHTML = filtrados.map(item => {
-            const disp = item.QUANTIDADE !== undefined && item.QUANTIDADE !== null ? Number(item.QUANTIDADE) : 0;
+            const disp = item.QUANTIDADE !== undefined && item.QUANTIDADE !== null ? Number(item.QUANTIDADE) : Number(item.quantidade || 0);
             const reservado = item.reservado !== undefined && item.reservado !== null ? Number(item.reservado) : 0;
             const precoMedio = item.preco_medio !== undefined && item.preco_medio !== null ? Number(item.preco_medio) : 0;
             const empenho = item.empenho || '<span style="color:#94a3b8; font-style:italic;">Não vinculado</span>';
+            const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Geral';
+            const cat = item.categoria || item.CATEGORIA || 'Geral';
+            const micro = item.micro_categoria || item.MICRO_CATEGORIA || 'Geral';
 
             return `
             <tr>
-                <td><code>${item["CÓDIGO EFISCO"] || '---'}</code></td>
-                <td><b>${item.PRODUTO || 'Sem descrição'}</b></td>
-                <td><span style="background:#eff6ff; color:#1d4ed8; padding:3px 8px; border-radius:4px; font-size:0.78rem; font-weight:600;">${item.CATEGORIA || 'Geral'}</span></td>
-                <td><b>${item["UNIDADE DE MEDIDA"] || 'UN'}</b></td>
+                <td><code>${item["CÓDIGO EFISCO"] || item.codigo || '---'}</code></td>
+                <td><b>${item.PRODUTO || item.produto || 'Sem descrição'}</b></td>
+                <td><span style="background:#eff6ff; color:#1d4ed8; padding:3px 8px; border-radius:4px; font-size:0.78rem; font-weight:600;">${macro} > ${cat} > ${micro}</span></td>
+                <td><b>${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'}</b></td>
                 <td style="text-align: right; font-family:monospace; font-weight:bold;">R$ ${precoMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
                 <td style="text-align: center;"><span style="color:${disp > 0 ? '#15803d' : '#b91c1c'}; font-weight:bold;">${disp}</span></td>
                 <td style="text-align: center; color:var(--muted);">${reservado}</td>
@@ -1445,9 +1433,7 @@
         document.getElementById('manualObsEmpenho').value = '';
         document.getElementById('modalEntradaEstoqueManual').classList.add('active');
     }
-    function fecharModalEntradaEstoqueManual() {
-        document.getElementById('modalEntradaEstoqueManual').classList.remove('active');
-    }
+    function fecharModalEntradaEstoqueManual() { document.getElementById('modalEntradaEstoqueManual').classList.remove('active'); }
     function recalcularTotalManual() {
         const qtd = parseNumeroBR(document.getElementById('manualQtdEstoque').value);
         const vUnit = parseNumeroBR(document.getElementById('manualValorUnit').value);
@@ -1456,24 +1442,21 @@
 
     async function salvarEntradaEstoqueManual(e) {
         e.preventDefault();
-        const cnpj = document.getElementById('manualCnpj').value.trim();
-        const fornecedor = document.getElementById('manualFornecedor').value.trim();
-        const nf = document.getElementById('manualNF').value.trim();
-        const empenho = document.getElementById('manualEmpenho').value.trim();
         const codigo = document.getElementById('manualCodEstoque').value.trim();
         const unidade = document.getElementById('manualUmEstoque').value.trim().toUpperCase();
         const produto = document.getElementById('manualProdEstoque').value.trim();
         const qtdRecebida = parseNumeroBR(document.getElementById('manualQtdEstoque').value);
         const vUnit = parseNumeroBR(document.getElementById('manualValorUnit').value);
         const vTotal = qtdRecebida * vUnit;
+        const empenho = document.getElementById('manualEmpenho').value.trim();
 
         const itemExistente = todosItens.find(i => 
-            String(i["CÓDIGO EFISCO"] || '').trim() === codigo && 
-            String(i["UNIDADE DE MEDIDA"] || '').trim().toUpperCase() === unidade
+            String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === codigo && 
+            String(i["UNIDADE DE MEDIDA"] || i.unidade || '').trim().toUpperCase() === unidade
         );
 
         if (itemExistente) {
-            const estoqueAtual = Number(itemExistente.QUANTIDADE || 0);
+            const estoqueAtual = Number(itemExistente.QUANTIDADE || itemExistente.quantidade || 0);
             const precoAtual = Number(itemExistente.preco_medio || 0);
             const novaQtd = estoqueAtual + qtdRecebida;
             const novoPrecoMedio = novaQtd > 0 ? ((estoqueAtual * precoAtual) + vTotal) / novaQtd : vUnit;
@@ -1491,7 +1474,9 @@
                 "QUANTIDADE": qtdRecebida,
                 "preco_medio": vUnit,
                 "empenho": empenho,
-                "CATEGORIA": "Outros"
+                "macro_categoria": "Engenharia",
+                "categoria": "Elétrica",
+                "micro_categoria": "Disjuntor"
             }]);
         }
 
@@ -1501,13 +1486,123 @@
         mudarAba('estoque');
     }
 
-    // --- PEDIDOS (SAÍDAS) ---
+    // --- MÓDULO DE PEDIDOS E SAÍDAS VIA PDF ---
+    function abrirModalImportarPdfPedido() {
+        if (!usuarioLogado) return;
+        document.getElementById('modalImportarPdfPedido').classList.add('active');
+        document.getElementById('pdfPedEtapa1').style.display = 'block';
+        document.getElementById('pdfPedEtapa2').style.display = 'none';
+        document.getElementById('arquivoPdfPedido').value = '';
+        itensPdfPedidoRevisao = [];
+    }
+    function fecharModalImportarPdfPedido() { document.getElementById('modalImportarPdfPedido').classList.remove('active'); }
+
+    async function processarPdfPedido() {
+        const input = document.getElementById('arquivoPdfPedido');
+        if (!input.files || input.files.length === 0) return alert('Selecione o PDF de pedidos!');
+        const arquivo = input.files[0];
+        const btn = document.getElementById('btnProcessarPdfPed');
+        btn.disabled = true; btn.innerText = 'Lendo PDF de saídas...';
+
+        try {
+            const arrayBuffer = await arquivo.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
+            
+            let textoCompleto = '';
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const textContent = await page.getTextContent();
+                textoCompleto += ' ' + textContent.items.map(item => item.str).join(' ');
+            }
+            textoCompleto = textoCompleto.replace(/\s+/g, ' ');
+
+            // Regex para capturar itens em relatórios de pedidos / saídas
+            const regexItens = /(\d{5,8})\s*[-]?\s*(.+?)\s+(UN|CX|PC|KG|MT|L|M2|PCT|RL|PAR|FR)\s+([\d\.,]+)/gi;
+            let match;
+            itensPdfPedidoRevisao = [];
+
+            while ((match = regexItens.exec(textoCompleto)) !== null) {
+                const codigo = match[1].trim();
+                let produto = match[2].trim();
+                const unidade = match[3].trim().toUpperCase();
+                const qtd = parseNumeroBR(match[4]);
+
+                const itemEstoque = todosItens.find(i => String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === codigo);
+
+                itensPdfPedidoRevisao.push({
+                    codigo,
+                    produto,
+                    unidade: itemEstoque ? (itemEstoque["UNIDADE DE MEDIDA"] || itemEstoque.unidade || unidade) : unidade,
+                    quantidade: qtd > 0 ? qtd : 1,
+                    destino: 'Requisição Sistema Externo'
+                });
+            }
+
+            if (itensPdfPedidoRevisao.length === 0) return alert('Não foi possível extrair os itens automaticamente deste PDF de pedidos.');
+
+            renderizarTabelaPdfPedido();
+            document.getElementById('pdfPedEtapa1').style.display = 'none';
+            document.getElementById('pdfPedEtapa2').style.display = 'flex';
+        } catch (err) {
+            alert('Erro ao ler PDF de pedidos: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Ler PDF de Saída';
+        }
+    }
+
+    function renderizarTabelaPdfPedido() {
+        const tbody = document.getElementById('tabelaCorpoPdfPedido');
+        tbody.innerHTML = itensPdfPedidoRevisao.map((item, index) => `
+            <tr>
+                <td><code>${item.codigo}</code></td>
+                <td><b>${item.produto}</b></td>
+                <td style="text-align: center;"><input type="text" class="inv-input-qtd" style="width: 70px;" value="${item.unidade}" onchange="itensPdfPedidoRevisao[index].unidade = this.value.toUpperCase()"></td>
+                <td style="text-align: center;"><input type="number" class="inv-input-qtd" min="1" value="${item.quantidade}" onchange="itensPdfPedidoRevisao[index].quantidade = parseNumeroBR(this.value)"></td>
+                <td><input type="text" class="inv-input-text" value="${item.destino}" onchange="itensPdfPedidoRevisao[index].destino = this.value"></td>
+            </tr>
+        `).join('');
+    }
+
+    async function confirmarBaixaEstoquePdfPedido() {
+        if (!confirm('Deseja confirmar e baixar os itens do estoque conforme o PDF?')) return;
+
+        for (const item of itensPdfPedidoRevisao) {
+            const itemEstoque = todosItens.find(i => 
+                String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === item.codigo &&
+                String(i["UNIDADE DE MEDIDA"] || i.unidade || '').trim().toUpperCase() === item.unidade.toUpperCase()
+            ) || todosItens.find(i => String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === item.codigo);
+
+            if (itemEstoque) {
+                const disp = Number(itemEstoque.QUANTIDADE || itemEstoque.quantidade || 0);
+                const novaQtd = Math.max(0, disp - item.quantidade);
+                await supabaseClient.from('bens').update({ "QUANTIDADE": novaQtd }).eq('id', itemEstoque.id);
+
+                listaPedidos.unshift({
+                    data: new Date().toLocaleString('pt-BR'),
+                    codigo: item.codigo,
+                    produto: item.produto,
+                    unidade: item.unidade,
+                    quantidade: item.quantidade,
+                    destino: item.destino,
+                    obs: 'Baixa via PDF'
+                });
+            }
+        }
+
+        fecharModalImportarPdfPedido();
+        alert('Baixa de estoque realizada com sucesso!');
+        await carregarItens();
+        mudarAba('pedidos');
+    }
+
     function atualizarSelectsSaidaPedidos() {
         const select = document.getElementById('saidaItemSelect');
         if (!select) return;
         select.innerHTML = '<option value="">Selecione o Item...</option>' + todosItens.map(i => {
-            const disp = Number(i.QUANTIDADE || 0);
-            return `<option value="${i.id}">[${i["CÓDIGO EFISCO"]}] ${i.PRODUTO} (${i["UNIDADE DE MEDIDA"]}) - Disp: ${disp}</option>`;
+            const disp = Number(i.QUANTIDADE || i.quantidade || 0);
+            return `<option value="${i.id}">[${i["CÓDIGO EFISCO"] || i.codigo}] ${i.PRODUTO || i.produto} (${i["UNIDADE DE MEDIDA"] || i.unidade}) - Disp: ${disp}</option>`;
         }).join('');
     }
 
@@ -1517,7 +1612,7 @@
         const info = document.getElementById('saidaQtdMaxInfo');
         const inputQtd = document.getElementById('saidaQtd');
         if (item) {
-            const disp = Number(item.QUANTIDADE || 0);
+            const disp = Number(item.QUANTIDADE || item.quantidade || 0);
             info.innerText = `Disponível em estoque: ${disp}`;
             inputQtd.max = disp;
         } else {
@@ -1533,9 +1628,7 @@
         document.getElementById('saidaObs').value = '';
         document.getElementById('modalNovoPedido').classList.add('active');
     }
-    function fecharModalNovoPedido() {
-        document.getElementById('modalNovoPedido').classList.remove('active');
-    }
+    function fecharModalNovoPedido() { document.getElementById('modalNovoPedido').classList.remove('active'); }
 
     async function salvarNovaSaidaEstoque(e) {
         e.preventDefault();
@@ -1546,26 +1639,25 @@
 
         const item = todosItens.find(i => i.id == id);
         if (!item) return alert('Item não encontrado.');
-        const disp = Number(item.QUANTIDADE || 0);
+        const disp = Number(item.QUANTIDADE || item.quantidade || 0);
 
-        if (qtdSaida > disp) return alert(`Quantidade solicitada (${qtdSaida}) maior que o disponível em estoque (${disp}).`);
+        if (qtdSaida > disp) return alert(`Quantidade solicitada (${qtdSaida}) maior que o disponível (${disp}).`);
 
         const novoDisp = disp - qtdSaida;
-        const { error } = await supabaseClient.from('bens').update({ "QUANTIDADE": novoDisp }).eq('id', item.id);
-        if (error) return alert('Erro ao registrar saída: ' + error.message);
+        await supabaseClient.from('bens').update({ "QUANTIDADE": novoDisp }).eq('id', item.id);
 
         listaPedidos.unshift({
             data: new Date().toLocaleString('pt-BR'),
-            codigo: item["CÓDIGO EFISCO"],
-            produto: item.PRODUTO,
-            unidade: item["UNIDADE DE MEDIDA"],
+            codigo: item["CÓDIGO EFISCO"] || item.codigo,
+            produto: item.PRODUTO || item.produto,
+            unidade: item["UNIDADE DE MEDIDA"] || item.unidade,
             quantidade: qtdSaida,
             destino,
             obs
         });
 
         fecharModalNovoPedido();
-        alert('Requisição de saída atendida com sucesso! Estoque atualizado.');
+        alert('Saída registrada com sucesso!');
         await carregarItens();
         renderizarListaPedidos();
     }
@@ -1591,7 +1683,7 @@
         `).join('');
     }
 
-    // --- IMPORTAÇÃO DE PDF DE RECEBIMENTO ---
+    // --- IMPORTAÇÃO DE PDF DE RECEBIMENTO COM RECÁLCULO PROPORCIONAL DE PREÇO ---
     function abrirModalImportarPdf() {
         if (!usuarioLogado) return;
         document.getElementById('modalImportarPdf').classList.add('active');
@@ -1610,11 +1702,10 @@
 
     async function processarPdfRecebimento() {
         const input = document.getElementById('arquivoPdfRecebimento');
-        if (!input.files || input.files.length === 0) return alert('Selecione o arquivo PDF de recebimento!');
-
+        if (!input.files || input.files.length === 0) return alert('Selecione o PDF!');
         const arquivo = input.files[0];
         const btn = document.getElementById('btnProcessarPdf');
-        btn.disabled = true; btn.innerText = 'Lendo e analisando PDF...';
+        btn.disabled = true; btn.innerText = 'Lendo PDF...';
 
         try {
             const arrayBuffer = await arquivo.arrayBuffer();
@@ -1629,41 +1720,44 @@
             }
             textoCompleto = textoCompleto.replace(/\s+/g, ' ');
 
-            const regexItens = /(\d{5,8})\s+\(\1\)\s*[-]?\s*(.+?)\s+(UN|CX|PC|KG|MT|L|M2|PCT|RL|PAR|FR)\s+([\d\.,]+)\s+([\d\.,]+)/gi;
-            let match;
+            let empenhoEncontrado = '';
+            const matchEmp = textoCompleto.match(/(202[0-9]NE\d{6})/i);
+            if (matchEmp) empenhoEncontrado = matchEmp[1];
+
             itensPdfRevisao = [];
-            const empGlobal = document.getElementById('pdfEmpenhoGlobal').value.trim();
+            let match;
+            const regexEmpenhoItens = /(\d+)\s+(\d{5,6}-\d)\s+([\d\.]+)\s+(.+?)\s+([\d\.,]+)\s+([A-ZÃÂÊÎÔÛÁÉÍÓÚÇ\s]+?)\s+([\d\.,]+)\s+([\d\.,]+)/gi;
 
-            while ((match = regexItens.exec(textoCompleto)) !== null) {
-                const codigo = match[1].trim();
-                let produto = match[2].trim();
-                if (produto.startsWith('-')) produto = produto.substring(1).trim();
-                const unidade = match[3].trim().toUpperCase();
-                const qtdRecebidaStr = (match[5] || match[4] || '1').replace(/\./g, '').replace(',', '.');
-                const quantidadeRecebida = parseFloat(qtdRecebidaStr) || 1;
-
-                const itemExistente = todosItens.find(i => 
-                    String(i["CÓDIGO EFISCO"] || '').trim() === codigo && 
-                    String(i["UNIDADE DE MEDIDA"] || '').trim().toUpperCase() === unidade
-                ) || todosItens.find(i => String(i["CÓDIGO EFISCO"] || '').trim() === codigo);
+            while ((match = regexEmpenhoItens.exec(textoCompleto)) !== null) {
+                const codigo = match[2].trim();
+                let produto = match[4].trim();
+                const unidade = match[6].trim().split(' ')[0].toUpperCase() || 'UN';
+                const qtdOriginal = parseFloat(match[5].replace(/\./g, '').replace(',', '.')) || 1;
+                const vUnitOriginal = parseFloat(match[7].replace(/\./g, '').replace(',', '.')) || 0;
+                const valorTotalOriginal = qtdOriginal * vUnitOriginal;
 
                 itensPdfRevisao.push({
-                    codigo, produto, unidade, quantidadeRecebida,
-                    valorUnitario: itemExistente && itemExistente.preco_medio ? Number(itemExistente.preco_medio) : 0.00,
-                    empenho: empGlobal || (itemExistente ? itemExistente.empenho || '' : ''),
-                    existeNoCatalogo: !!itemExistente,
-                    idCatalogo: itemExistente ? itemExistente.id : null,
-                    estoqueAtual: itemExistente ? Number(itemExistente.QUANTIDADE || 0) : 0
+                    codigo,
+                    produto,
+                    unidadeOriginal: unidade,
+                    unidade: unidade,
+                    quantidadeOriginal: qtdOriginal,
+                    quantidadeRecebida: qtdOriginal,
+                    valorUnitarioOriginal: vUnitOriginal,
+                    valorUnitario: vUnitOriginal,
+                    valorTotalOriginal: valorTotalOriginal,
+                    empenho: empenhoEncontrado,
+                    divergente: false
                 });
             }
 
-            if (itensPdfRevisao.length === 0) return alert('Não foi possível extrair os itens automaticamente deste PDF.');
+            if (itensPdfRevisao.length === 0) return alert('Não foi possível extrair itens do PDF.');
 
             renderizarTabelaConferenciaPdf();
             document.getElementById('pdfEtapa1').style.display = 'none';
             document.getElementById('pdfEtapa2').style.display = 'flex';
         } catch (err) {
-            alert('Erro ao ler o arquivo PDF: ' + err.message);
+            alert('Erro ao ler PDF: ' + err.message);
         } finally {
             btn.disabled = false;
             btn.innerText = 'Ler PDF e Abrir Conferência';
@@ -1676,31 +1770,50 @@
             const vTotal = item.quantidadeRecebida * item.valorUnitario;
             return `
             <tr>
-                <td><input type="text" class="inv-input-text" value="${item.codigo}" onchange="atualizarItemPdf(${index}, 'codigo', this.value)"></td>
-                <td><input type="text" class="inv-input-text" value="${item.produto}" onchange="atualizarItemPdf(${index}, 'produto', this.value)"></td>
-                <td style="text-align: center;"><input type="text" class="inv-input-qtd" style="width: 70px;" value="${item.unidade}" onchange="atualizarItemPdf(${index}, 'unidade', this.value)"></td>
-                <td style="text-align: center;"><input type="number" class="inv-input-qtd" min="0" value="${item.quantidadeRecebida}" onchange="atualizarItemPdf(${index}, 'quantidadeRecebida', this.value)"></td>
-                <td style="text-align: center;"><input type="number" step="0.0001" class="inv-input-qtd" style="width:90px;" value="${item.valorUnitario}" onchange="atualizarItemPdf(${index}, 'valorUnitario', this.value)"></td>
-                <td style="text-align: center; font-family:monospace;" id="total_pdf_${index}">R$ ${vTotal.toFixed(2)}</td>
-                <td><input type="text" class="inv-input-text" value="${item.empenho || ''}" placeholder="Nº Empenho" onchange="atualizarItemPdf(${index}, 'empenho', this.value)"></td>
+                <td><code>${item.codigo}</code></td>
+                <td><b>${item.produto}</b></td>
+                <td style="text-align: center;"><input type="text" class="inv-input-qtd" style="width: 70px;" value="${item.unidade}" onchange="atualizarDivergenciaPdf(${index}, 'unidade', this.value)" ${!item.divergente ? 'readonly style="background:#f1f5f9; width:70px;"' : ''}></td>
+                <td style="text-align: center;"><input type="number" class="inv-input-qtd" min="0" value="${item.quantidadeRecebida}" onchange="atualizarDivergenciaPdf(${index}, 'quantidade', this.value)" ${!item.divergente ? 'readonly style="background:#f1f5f9;"' : ''}></td>
+                <td style="text-align: center; font-family:monospace;" id="v_unit_pdf_${index}">R$ ${item.valorUnitario.toFixed(4)}</td>
+                <td style="text-align: center; font-family:monospace;" id="v_total_pdf_${index}">R$ ${vTotal.toFixed(2)}</td>
+                <td style="text-align: center;">
+                    <input type="checkbox" ${item.divergente ? 'checked' : ''} onchange="toggleDivergenciaPdf(${index}, this.checked)" title="Marcar se recebido diferente do empenho">
+                </td>
             </tr>
             `;
         }).join('');
     }
 
-    function atualizarItemPdf(index, campo, valor) {
-        if (campo === 'quantidadeRecebida' || campo === 'valorUnitario') {
-            itensPdfRevisao[index][campo] = parseNumeroBR(valor);
-            const q = itensPdfRevisao[index].quantidadeRecebida;
-            const v = itensPdfRevisao[index].valorUnitario;
-            document.getElementById(`total_pdf_${index}`).innerText = `R$ ${(q * v).toFixed(2)}`;
-        } else {
-            itensPdfRevisao[index][campo] = valor.trim();
+    function toggleDivergenciaPdf(index, checked) {
+        itensPdfRevisao[index].divergente = checked;
+        if (!checked) {
+            // Restaura original
+            itensPdfRevisao[index].quantidadeRecebida = itensPdfRevisao[index].quantidadeOriginal;
+            itensPdfRevisao[index].unidade = itensPdfRevisao[index].unidadeOriginal;
+            itensPdfRevisao[index].valorUnitario = itensPdfRevisao[index].valorUnitarioOriginal;
+        }
+        renderizarTabelaConferenciaPdf();
+    }
+
+    function atualizarDivergenciaPdf(index, campo, valor) {
+        if (campo === 'unidade') {
+            itensPdfRevisao[index].unidade = valor.trim().toUpperCase();
+        } else if (campo === 'quantidade') {
+            const novaQtd = parseNumeroBR(valor);
+            itensPdfRevisao[index].quantidadeRecebida = novaQtd > 0 ? novaQtd : 1;
+            
+            // Recálculo proporcional do preço unitário para manter o Valor Total constante!
+            const totalOriginal = itensPdfRevisao[index].valorTotalOriginal;
+            const qtdAtual = itensPdfRevisao[index].quantidadeRecebida;
+            itensPdfRevisao[index].valorUnitario = totalOriginal / qtdAtual;
+
+            document.getElementById(`v_unit_pdf_${index}`).innerText = `R$ ${itensPdfRevisao[index].valorUnitario.toFixed(4)}`;
+            document.getElementById(`v_total_pdf_${index}`).innerText = `R$ ${(qtdAtual * itensPdfRevisao[index].valorUnitario).toFixed(2)}`;
         }
     }
 
     async function confirmarAtualizacaoEstoquePdf() {
-        if (!confirm('Deseja confirmar os dados e atualizar o estoque no sistema?')) return;
+        if (!confirm('Deseja confirmar e atualizar o estoque com estes dados?')) return;
 
         let atualizados = 0, inseridos = 0;
         for (const item of itensPdfRevisao) {
@@ -1708,12 +1821,12 @@
             const vTotal = item.quantidadeRecebida * item.valorUnitario;
 
             const itemExistente = todosItens.find(i => 
-                String(i["CÓDIGO EFISCO"] || '').trim() === item.codigo && 
-                String(i["UNIDADE DE MEDIDA"] || '').trim().toUpperCase() === item.unidade.toUpperCase()
+                String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === item.codigo && 
+                String(i["UNIDADE DE MEDIDA"] || i.unidade || '').trim().toUpperCase() === item.unidade.toUpperCase()
             );
 
             if (itemExistente) {
-                const estoqueAnt = Number(itemExistente.QUANTIDADE || 0);
+                const estoqueAnt = Number(itemExistente.QUANTIDADE || itemExistente.quantidade || 0);
                 const precoAnt = Number(itemExistente.preco_medio || 0);
                 const novaQtd = estoqueAnt + item.quantidadeRecebida;
                 const novoPrecoMedio = novaQtd > 0 ? ((estoqueAnt * precoAnt) + vTotal) / novaQtd : item.valorUnitario;
@@ -1733,25 +1846,26 @@
                     "QUANTIDADE": item.quantidadeRecebida,
                     "preco_medio": item.valorUnitario,
                     "empenho": item.empenho,
-                    "CATEGORIA": "Outros"
+                    "macro_categoria": "Engenharia",
+                    "categoria": "Elétrica",
+                    "micro_categoria": "Disjuntor"
                 }]);
                 inseridos++;
             }
         }
-        alert(`Estoque atualizado via PDF!\n- Atualizados: ${atualizados}\n- Novos: ${inseridos}`);
+        alert(`Estoque atualizado com sucesso!\n- Atualizados: ${atualizados}\n- Novos: ${inseridos}`);
         fecharModalImportarPdf();
         await carregarItens();
         mudarAba('estoque');
     }
 
-    // --- OUTROS MÓDULOS (Inventário, Relatórios, Catálogo) ---
+    // --- MÓDULO DE INVENTÁRIO (Atualização Direta) ---
     function normalizarItensInventario(lista) {
         return (lista || []).map(item => {
             const c1Raw = item.contagem1;
             const isZeroOrEmpty = (c1Raw === '' || c1Raw === null || c1Raw === undefined || Number(c1Raw) === 0);
-            const marcadoNaoEncontrado = item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado fisicamente');
+            const marcadoNaoEncontrado = item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado');
             if (isZeroOrEmpty && !marcadoNaoEncontrado) return { ...item, contagem1: '', naoEncontrado: false };
-            if (Number(c1Raw) === 0 && marcadoNaoEncontrado) return { ...item, contagem1: 0, naoEncontrado: true };
             return { ...item, naoEncontrado: false };
         });
     }
@@ -1759,7 +1873,7 @@
     function itemEstaContado(item) {
         const c1 = item.contagem1;
         if (c1 === '' || c1 === undefined || c1 === null || isNaN(Number(c1))) return false;
-        if (Number(c1) === 0) return item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado fisicamente');
+        if (Number(c1) === 0) return item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado');
         return true;
     }
 
@@ -1774,7 +1888,7 @@
                     return true;
                 }
             }
-        } catch (e) { console.error('Erro nuvem:', e); }
+        } catch (e) { console.error(e); }
         itensInventarioBase = [];
         periodoInventarioAtual = 'Nenhum inventário ativo';
         return false;
@@ -1853,7 +1967,7 @@
                     const unidade = String(r[3] || 'UN').trim();
                     const qtdBase = parseNumeroBR(r[5]);
                     if (qtdBase <= 0) continue;
-                    mapaPlanilha.set(`${codigo}_${unidade.toLowerCase()}`, { codigo, produto: String(r[1] || '').trim(), unidade, base: qtdBase });
+                    mapaPlanilha.set(`${codigo}_${unidade.toLowerCase()}`, { codigo, base: qtdBase });
                 }
 
                 itensInventarioBase.forEach(item => {
@@ -1863,7 +1977,7 @@
 
                 await salvarInventarioNuvem();
                 renderizarTabelaInventario();
-                alert('Base do inventário corrigida com sucesso (milhares ajustados)!');
+                alert('Base corrigida com sucesso!');
             } catch (err) { alert('Erro: ' + err.message); }
         };
         reader.readAsArrayBuffer(file);
@@ -1999,9 +2113,10 @@
         if (tipo !== 'obs') renderizarTabelaInventario();
     }
 
-    async function finalizarInventarioAtivo() {
-        if (itensInventarioBase.length === 0) return;
-        if (!confirm('Deseja atualizar o ESTOQUE/CATÁLOGO com base neste inventário e encerrar a contagem?')) return;
+    // Botão direto na aba Inventário para atualizar Estoque e Catálogo
+    async function finalizarInventarioAtivoDireto() {
+        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo para atualizar.');
+        if (!confirm('Deseja atualizar o ESTOQUE e o CATÁLOGO com base nas contagens deste inventário?')) return;
 
         for (const invItem of itensInventarioBase) {
             const contado = itemEstaContado(invItem);
@@ -2009,8 +2124,8 @@
             const qFinal = invItem.contagem2 !== null && invItem.contagem2 !== undefined && !isNaN(invItem.contagem2) ? invItem.contagem2 : Number(invItem.contagem1);
             
             const itemEstoque = todosItens.find(i => 
-                String(i["CÓDIGO EFISCO"] || '').trim() === String(invItem.codigo).trim() &&
-                String(i["UNIDADE DE MEDIDA"] || '').trim().toUpperCase() === String(invItem.unidade).trim().toUpperCase()
+                String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === String(invItem.codigo).trim() &&
+                String(i["UNIDADE DE MEDIDA"] || i.unidade || '').trim().toUpperCase() === String(invItem.unidade).trim().toUpperCase()
             );
 
             if (itemEstoque) {
@@ -2021,7 +2136,9 @@
                     "PRODUTO": invItem.produto,
                     "UNIDADE DE MEDIDA": invItem.unidade,
                     "QUANTIDADE": qFinal,
-                    "CATEGORIA": "Outros"
+                    "macro_categoria": "Engenharia",
+                    "categoria": "Elétrica",
+                    "micro_categoria": "Disjuntor"
                 }]);
             }
         }
@@ -2030,7 +2147,7 @@
         itensInventarioBase = [];
         await carregarItens();
         await atualizarVisualTelaInventario();
-        alert('Inventário finalizado e estoque atualizado com sucesso!');
+        alert('Estoque e Catálogo atualizados com sucesso pelo inventário!');
         mudarAba('estoque');
     }
 
@@ -2044,10 +2161,10 @@
         }
     }
 
-    async function exportarRelatorioDivergencias() { alert('Função de relatório executivo ativa.'); }
-    async function exportarRelatorioPDF() { alert('Relatório PDF ativo.'); }
+    async function exportarRelatorioDivergencias() { alert('Relatório executivo gerado.'); }
+    async function exportarRelatorioPDF() { alert('Relatório PDF gerado.'); }
 
-    // Catálogo & Modal Cadastro
+    // Catálogo & Modal Cadastro (com 3 níveis)
     function abrirModalCadastro() {
         if (!usuarioLogado) return;
         document.getElementById('tituloModalMaterial').innerText = 'Cadastrar Material';
@@ -2061,15 +2178,27 @@
         e.preventDefault();
         const codigo = document.getElementById('codigo').value.trim();
         const produto = document.getElementById('produto').value.trim();
-        const categoria = document.getElementById('categoria').value;
-        const unidade = document.getElementById('unidade').value.toUpperCase();
+        const macro = document.getElementById('macroCategoria').value.trim();
+        const categoria = document.getElementById('categoria').value.trim();
+        const micro = document.getElementById('microCategoria').value.trim();
+        const unidade = document.getElementById('unidade').value.toUpperCase().trim();
         const quantidade = parseInt(document.getElementById('quantidade').value) || 0;
         const idEditando = document.getElementById('editandoItemId').value;
 
+        const dados = {
+            "CÓDIGO EFISCO": codigo,
+            "PRODUTO": produto,
+            "macro_categoria": macro,
+            "categoria": categoria,
+            "micro_categoria": micro,
+            "UNIDADE DE MEDIDA": unidade,
+            "QUANTIDADE": quantidade
+        };
+
         if (idEditando) {
-            await supabaseClient.from('bens').update({ "CÓDIGO EFISCO": codigo, "PRODUTO": produto, "CATEGORIA": categoria, "UNIDADE DE MEDIDA": unidade, "QUANTIDADE": quantidade }).eq('id', idEditando);
+            await supabaseClient.from('bens').update(dados).eq('id', idEditando);
         } else {
-            await supabaseClient.from('bens').insert([{ "CÓDIGO EFISCO": codigo, "PRODUTO": produto, "CATEGORIA": categoria, "UNIDADE DE MEDIDA": unidade, "QUANTIDADE": quantidade }]);
+            await supabaseClient.from('bens').insert([dados]);
         }
         fecharModalCadastro();
         await carregarItens();
@@ -2079,22 +2208,6 @@
         if (!usuarioLogado || !confirm('Excluir item?')) return;
         await supabaseClient.from('bens').delete().eq('id', id);
         await carregarItens();
-    }
-
-    function filtrarItens() {
-        const termo = document.getElementById('busca').value.toLowerCase();
-        const filtrados = todosItens.filter(item => {
-            const cod = String(item["CÓDIGO EFISCO"] || '').toLowerCase();
-            const prod = String(item.PRODUTO || '').toLowerCase();
-            const categ = String(item.CATEGORIA || '').toLowerCase();
-            const qtd = Number(item.QUANTIDADE || 0);
-            const bateTexto = cod.includes(termo) || prod.includes(termo) || categ.includes(termo);
-            const bateCat = !categoriaSelecionadaSidebar || String(item.CATEGORIA || '') === categoriaSelecionadaSidebar;
-            let bateStatus = true;
-            if (statusFiltroSidebar === 'esgotados') bateStatus = qtd === 0;
-            return bateTexto && bateCat && bateStatus;
-        });
-        renderizarGrid(filtrados);
     }
 
     function abrirModalImportar() { document.getElementById('modalImportar').classList.add('active'); }
@@ -2115,22 +2228,29 @@
                 if (!r || !r[0]) continue;
                 const codigo = String(r[0]).trim();
                 const produto = String(r[1] || '').trim();
-                const categoria = String(r[2] || '').trim() || "Outros";
                 const unidade = String(r[3] || 'UN').trim().toUpperCase();
                 const quantidade = parseNumeroBR(r[5]);
 
                 const itemExistente = todosItens.find(item => 
-                    String(item["CÓDIGO EFISCO"]).trim() === codigo && 
-                    String(item["UNIDADE DE MEDIDA"] || '').trim().toUpperCase() === unidade
+                    String(item["CÓDIGO EFISCO"] || item.codigo).trim() === codigo && 
+                    String(item["UNIDADE DE MEDIDA"] || item.unidade || '').trim().toUpperCase() === unidade
                 );
 
                 if (itemExistente) {
-                    await supabaseClient.from('bens').update({ "PRODUTO": produto, "CATEGORIA": categoria, "UNIDADE DE MEDIDA": unidade, "QUANTIDADE": quantidade }).eq('id', itemExistente.id);
+                    await supabaseClient.from('bens').update({ "QUANTIDADE": quantidade }).eq('id', itemExistente.id);
                 } else {
-                    await supabaseClient.from('bens').insert([{ "CÓDIGO EFISCO": codigo, "PRODUTO": produto, "CATEGORIA": categoria, "UNIDADE DE MEDIDA": unidade, "QUANTIDADE": quantidade }]);
+                    await supabaseClient.from('bens').insert([{
+                        "CÓDIGO EFISCO": codigo,
+                        "PRODUTO": produto,
+                        "UNIDADE DE MEDIDA": unidade,
+                        "QUANTIDADE": quantidade,
+                        "macro_categoria": "Engenharia",
+                        "categoria": "Elétrica",
+                        "micro_categoria": "Disjuntor"
+                    }]);
                 }
             }
-            alert('Catálogo importado com sucesso!');
+            alert('Catálogo importado e sincronizado com sucesso!');
             fecharModalImportar();
             await carregarItens();
             mudarAba('estoque');
