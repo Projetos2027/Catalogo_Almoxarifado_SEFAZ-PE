@@ -14,6 +14,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Biblioteca PDF.js para ler arquivos PDF de recebimento -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Biblioteca Tesseract.js para OCR nas fotos -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
@@ -398,6 +400,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tabelaCorpoEstoque">
+                                <tr><td colspan="6" style="text-align: center; padding: 30px;">Carregando estoque...</td></tr>
                                 <tr><td colspan="7" style="text-align: center; padding: 30px;">Carregando estoque...</td></tr>
                             </tbody>
                         </table>
@@ -406,45 +409,10 @@
             </div>
         </div>
 
-        <!-- ABA 3: INVENTÁRIO (Com a tabela de inventário em andamento restaurada) -->
-        <div id="viewInventario" class="app-view">
-            <div class="erp-container">
-                <div class="erp-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h2>📊 Inventário Físico em Andamento</h2>
-                        <button class="btn btn-primary" style="width: auto; margin:0;" onclick="carregarInventarioAndamento()">🔄 Atualizar Contagem</button>
-                    </div>
-                    <div class="erp-table-container">
-                        <table class="erp-table">
-                            <thead>
-                                <tr>
-                                    <th>Código</th>
-                                    <th>Produto / Descrição</th>
-                                    <th style="text-align: center;">Qtd Sistema</th>
-                                    <th style="text-align: center;">Qtd Contada</th>
-                                    <th style="text-align: center;">Divergência</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaCorpoInventario">
-                                <tr><td colspan="5" style="text-align: center; padding: 30px;">Carregando inventário em andamento...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ABA 4: RELATÓRIOS -->
-        <div id="viewRelatorios" class="app-view" style="padding: 24px;">
-            <div style="background:white; padding:24px; border-radius:12px; border:1px solid var(--border);">
-                <h2>📈 Relatórios e Documentos</h2>
-                <p style="color:var(--muted); margin: 8px 0 16px 0;">Gere relatórios gerenciais do almoxarifado.</p>
-                <button class="btn btn-primary" style="width: auto;" onclick="gerarRelatoriosGerais()">📄 Gerar Relatórios</button>
-            </div>
-        </div>
-
-        <!-- PEDIDOS -->
+        <!-- OUTRAS ABAS -->
         <div id="viewPedidos" class="app-view" style="padding: 24px;"><div style="background:white; padding:24px; border-radius:12px;"><h2>Pedidos</h2></div></div>
+        <div id="viewInventario" class="app-view" style="padding: 24px;"><div style="background:white; padding:24px; border-radius:12px;"><h2>Inventário</h2></div></div>
+        <div id="viewRelatorios" class="app-view" style="padding: 24px;"><div style="background:white; padding:24px; border-radius:12px;"><h2>Relatórios</h2></div></div>
     </div>
 </div>
 
@@ -627,6 +595,7 @@
         const catNome = document.getElementById('filtroCategoria').value;
         const selMicro = document.getElementById('filtroMicro');
 
+        selMicro.innerHTML = '<option value="">📄 Toutes as Micro Categorias</option>';
         selMicro.innerHTML = '<option value="">📄 Todas as Micro Categorias</option>';
 
         if (!catNome) {
@@ -724,46 +693,6 @@
         `).join('');
     }
 
-    // --- CARREGAR INVENTÁRIO EM ANDAMENTO ---
-    async function carregarInventarioAndamento() {
-        const tbody = document.getElementById('tabelaCorpoInventario');
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px;">Carregando itens do inventário...</td></tr>`;
-
-        try {
-            const { data, error } = await supabaseClient.from('inventario_andamento').select('*').order('criado_em', { ascending: false });
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item encontrado no inventário em andamento.</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = data.map(item => {
-                const qtdSistema = Number(item.quantidade_sistema || item.qtd_sistema || 0);
-                const qtdContada = Number(item.quantidade_contada || item.qtd_contada || 0);
-                const divergencia = qtdContada - qtdSistema;
-                const corDiv = divergencia === 0 ? 'var(--success)' : 'var(--danger)';
-
-                return `
-                    <tr>
-                        <td><code>${item["CÓDIGO EFISCO"] || item.codigo || '---'}</code></td>
-                        <td><b>${item.PRODUTO || item.produto || 'Sem descrição'}</b></td>
-                        <td style="text-align: center;">${qtdSistema}</td>
-                        <td style="text-align: center;"><b>${qtdContada}</b></td>
-                        <td style="text-align: center; color: ${corDiv}; font-weight: bold;">${divergencia > 0 ? '+' + divergencia : divergencia}</td>
-                    </tr>
-                `;
-            }).join('');
-        } catch (err) {
-            console.error('Erro ao carregar inventario_andamento:', err);
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--danger);">Erro ao carregar dados do inventário.</td></tr>`;
-        }
-    }
-
-    function gerarRelatoriosGerais() {
-        alert('Gerando relatórios...');
-    }
-
     // --- FUNÇÕES DE EDIÇÃO POR DUPLO CLIQUE ---
     function abrirModalEdicaoItem(id) {
         if (!usuarioLogado) return;
@@ -773,7 +702,7 @@
         document.getElementById('editItemId').value = item.id;
         document.getElementById('editItemTitulo').value = `[${item["CÓDIGO EFISCO"] || item.codigo}] ${item.PRODUTO || item.produto}`;
         document.getElementById('editValidade').value = item.validade ? item.validade.split('T')[0] : '';
-        
+
         fotoBase64Editando = item.foto_url || '';
         const preview = document.getElementById('editImgPreview');
         if (fotoBase64Editando) {
@@ -895,13 +824,6 @@
                 document.getElementById('viewEstoque').classList.add('active');
                 document.getElementById('abaNavEstoque').classList.add('active');
                 renderizarTabelaEstoque();
-            } else if (nomeAba === 'inventario') {
-                document.getElementById('viewInventario').classList.add('active');
-                document.getElementById('abaNavInventario').classList.add('active');
-                carregarInventarioAndamento();
-            } else if (nomeAba === 'relatorios') {
-                document.getElementById('viewRelatorios').classList.add('active');
-                document.getElementById('abaNavRelatorios').classList.add('active');
             }
         }
     }
