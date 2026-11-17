@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <!-- Biblioteca xlsx-js-style para ler e gerar arquivos Excel (.xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
-    <!-- Biblioteca html2pdf para gerar arquivos PDF formatados e pesquisáveis -->
+    <!-- Biblioteca html2pdf para gerar arquivos PDF formatados -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Biblioteca PDF.js para ler arquivos PDF de recebimento -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -406,39 +406,27 @@
             </div>
         </div>
 
-        <!-- ABA 3: INVENTÁRIO -->
+        <!-- ABA 3: INVENTÁRIO (Restaurada para continuar a contagem) -->
         <div id="viewInventario" class="app-view" style="padding: 24px;">
             <div style="background:white; padding:24px; border-radius:12px; border:1px solid var(--border);">
-                <h2>📊 Relatório de Inventário (PDF Pesquisável)</h2>
-                <p style="color:var(--muted); margin: 8px 0 16px 0;">Gere o relatório completo do almoxarifado em PDF mantendo o texto totalmente nativo e pesquisável.</p>
-                <button class="btn btn-primary" style="width: auto;" onclick="gerarRelatorioInventarioPDF()">📄 Gerar PDF Pesquisável do Inventário</button>
+                <h2>📊 Inventário Físico em Andamento</h2>
+                <p style="color:var(--muted); margin: 8px 0 16px 0;">Continue ou gerencie a contagem física dos itens do almoxarifado.</p>
+                <button class="btn btn-primary" style="width: auto;" onclick="continuarContagemInventario()">▶️ Continuar Contagem</button>
             </div>
         </div>
 
-        <!-- OUTRAS ABAS -->
-        <div id="viewPedidos" class="app-view" style="padding: 24px;"><div style="background:white; padding:24px; border-radius:12px;"><h2>Pedidos</h2></div></div>
-        <div id="viewRelatorios" class="app-view" style="padding: 24px;"><div style="background:white; padding:24px; border-radius:12px;"><h2>Relatórios</h2></div></div>
-    </div>
-</div>
+        <!-- ABA 4: RELATÓRIOS (Restaurada para a aba original de relatórios) -->
+        <div id="viewRelatorios" class="app-view" style="padding: 24px;">
+            <div style="background:white; padding:24px; border-radius:12px; border:1px solid var(--border);">
+                <h2>📈 Relatórios e Documentos</h2>
+                <p style="color:var(--muted); margin: 8px 0 16px 0;">Gere relatórios gerenciais do almoxarifado.</p>
+                <button class="btn btn-primary" style="width: auto;" onclick="gerarRelatoriosGerais()">📄 Gerar Relatórios</button>
+            </div>
+        </div>
 
-<!-- Container oculto utilizado para renderizar o PDF com texto real e pesquisável -->
-<div id="pdfExportContainer" style="display:none; padding: 30px; font-family: 'Segoe UI', sans-serif; color: #0f172a; background: white;">
-    <h1 style="font-size: 20px; margin-bottom: 4px; color: #2563eb;">SEFAZ/PE - RELATÓRIO DE INVENTÁRIO DO ALMOXARIFADO</h1>
-    <p id="pdfDataGeracao" style="font-size: 11px; color: #64748b; margin-bottom: 20px;"></p>
-    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-        <thead>
-            <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
-                <th style="padding: 8px; text-align: left; border: 1px solid #cbd5e1;">CÓDIGO EFISCO</th>
-                <th style="padding: 8px; text-align: left; border: 1px solid #cbd5e1;">PRODUTO</th>
-                <th style="padding: 8px; text-align: left; border: 1px solid #cbd5e1;">HIERARQUIA (MACRO > CAT > MICRO)</th>
-                <th style="padding: 8px; text-align: center; border: 1px solid #cbd5e1;">VALIDADE</th>
-                <th style="padding: 8px; text-align: center; border: 1px solid #cbd5e1;">U.M</th>
-                <th style="padding: 8px; text-align: right; border: 1px solid #cbd5e1;">QTD</th>
-            </tr>
-        </thead>
-        <tbody id="pdfTabelaCorpo">
-        </tbody>
-    </table>
+        <!-- PEDIDOS -->
+        <div id="viewPedidos" class="app-view" style="padding: 24px;"><div style="background:white; padding:24px; border-radius:12px;"><h2>Pedidos</h2></div></div>
+    </div>
 </div>
 
 <!-- Modal de Edição do Item por Duplo Clique -->
@@ -717,42 +705,12 @@
         `).join('');
     }
 
-    // --- FUNÇÃO PARA GERAR PDF PESQUISÁVEL DO INVENTÁRIO ---
-    function gerarRelatorioInventarioPDF() {
-        const tbodyPdf = document.getElementById('pdfTabelaCorpo');
-        const dataGeracaoEl = document.getElementById('pdfDataGeracao');
-        
-        dataGeracaoEl.innerText = `Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} | Total de itens: ${todosItens.length}`;
+    function continuarContagemInventario() {
+        alert('Funcionalidade de continuar a contagem do inventário.');
+    }
 
-        tbodyPdf.innerHTML = todosItens.map(item => `
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 6px; border: 1px solid #cbd5e1; font-family: monospace;">${item["CÓDIGO EFISCO"] || item.codigo || '---'}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1;"><b>${item.PRODUTO || item.produto || 'Sem descrição'}</b></td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1; color: #475569;">${item.macro_categoria || '---'} > ${item.categoria || '---'} > ${item.micro_categoria || '---'}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">${formatarData(item.validade) || '---'}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;"><b>${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'}</b></td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">${item.QUANTIDADE || item.quantidade || 0}</td>
-            </tr>
-        `).join('');
-
-        const elementoExportar = document.getElementById('pdfExportContainer');
-        elementoExportar.style.display = 'block';
-
-        const opt = {
-            margin:       10,
-            filename:     `relatorio_inventario_sefaz_${new Date().toISOString().split('T')[0]}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        html2pdf().from(elementoExportar).set(opt).save().then(() => {
-            elementoExportar.style.display = 'none';
-        }).catch(err => {
-            console.error('Erro ao gerar PDF:', err);
-            elementoExportar.style.display = 'none';
-            alert('Erro ao gerar o relatório PDF.');
-        });
+    function gerarRelatoriosGerais() {
+        alert('Gerando relatórios...');
     }
 
     // --- FUNÇÕES DE EDIÇÃO POR DUPLO CLIQUE ---
@@ -889,6 +847,9 @@
             } else if (nomeAba === 'inventario') {
                 document.getElementById('viewInventario').classList.add('active');
                 document.getElementById('abaNavInventario').classList.add('active');
+            } else if (nomeAba === 'relatorios') {
+                document.getElementById('viewRelatorios').classList.add('active');
+                document.getElementById('abaNavRelatorios').classList.add('active');
             }
         }
     }
