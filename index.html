@@ -197,6 +197,13 @@
             color: var(--muted);
         }
 
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
         .btn {
             padding: 8px 14px;
             border: 1px solid var(--border);
@@ -216,6 +223,8 @@
             margin-bottom: 8px;
         }
         .btn:hover { background: #f8fafc; border-color: var(--muted); }
+        .btn-add { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; border: none; }
         .btn-primary { background: var(--primary); color: white; border: none; }
         .btn-primary:hover { background: var(--primary-light); }
 
@@ -261,7 +270,6 @@
 
         .item-body { padding: 14px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .item-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
-        .item-validade { font-size: 0.8rem; color: var(--warning); font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
         .item-meta { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); align-items: center; }
 
         .erp-container { padding: 24px; flex: 1; display: flex; flex-direction: column; }
@@ -331,6 +339,7 @@
 </nav>
 
 <div class="main-layout">
+    <!-- Sidebar em Cascata para Filtros -->
     <!-- Sidebar em Cascata -->
     <aside id="appSidebar">
         <div class="sidebar-section">
@@ -367,6 +376,10 @@
                     <span>🔍</span>
                     <input type="text" id="busca" placeholder="Buscar por código EFISCO ou produto..." oninput="filtrarItens()">
                 </div>
+                <div class="header-buttons">
+                    <button class="btn btn-add" onclick="abrirModalGerenciarMicro()">⚙️ Gerenciar Microcategorias</button>
+                    <button class="btn btn-add" onclick="abrirModalImportar()">📥 Carregar Catálogo</button>
+                </div>
             </div>
             <div class="catalog-container">
                 <div class="catalog-grid" id="gridCatalogo">
@@ -393,7 +406,6 @@
                                     <th>Código</th>
                                     <th>Produto / Descrição</th>
                                     <th>Macro > Cat > Micro</th>
-                                    <th>Validade</th>
                                     <th>U.M</th>
                                     <th style="text-align: right;">Preço Médio</th>
                                     <th style="text-align: center;">Disponível</th>
@@ -401,7 +413,6 @@
                             </thead>
                             <tbody id="tabelaCorpoEstoque">
                                 <tr><td colspan="6" style="text-align: center; padding: 30px;">Carregando estoque...</td></tr>
-                                <tr><td colspan="7" style="text-align: center; padding: 30px;">Carregando estoque...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -416,6 +427,7 @@
     </div>
 </div>
 
+<!-- Modal Gerenciar Microcategorias (Incluir / Excluir com Restrição) -->
 <!-- Modal de Edição do Item por Duplo Clique -->
 <div class="modal-overlay" id="modalEdicaoItem">
     <div class="modal">
@@ -474,6 +486,7 @@
             <label>Nova Microcategoria:</label>
             <div style="display:flex; gap:8px;">
                 <input type="text" id="novaMicroNome" placeholder="Nome da microcategoria">
+                <button class="btn btn-add" onclick="salvarNovaMicro()">Adicionar</button>
                 <button class="btn btn-primary" style="width:auto; margin:0;" onclick="salvarNovaMicro()">Adicionar</button>
             </div>
         </div>
@@ -595,8 +608,8 @@
         const catNome = document.getElementById('filtroCategoria').value;
         const selMicro = document.getElementById('filtroMicro');
 
-        selMicro.innerHTML = '<option value="">📄 Toutes as Micro Categorias</option>';
         selMicro.innerHTML = '<option value="">📄 Todas as Micro Categorias</option>';
+        selMicro.innerHTML = '<option value="">📄 Toutes as Micro Categorias</option>';
 
         if (!catNome) {
             selMicro.disabled = true;
@@ -658,13 +671,6 @@
         renderizarGrid(filtrados);
     }
 
-    function formatarData(dataStr) {
-        if (!dataStr) return '';
-        const partes = dataStr.split('T')[0].split('-');
-        if (partes.length !== 3) return dataStr;
-        return `${partes[2]}/${partes[1]}/${partes[0]}`;
-    }
-
     function renderizarGrid(lista) {
         const grid = document.getElementById('gridCatalogo');
         if (lista.length === 0) {
@@ -675,6 +681,7 @@
         const eAdmin = !!usuarioLogado;
 
         grid.innerHTML = lista.map(item => `
+            <div class="item-card">
             <div class="item-card ${eAdmin ? 'admin-clicavel' : ''}" ${eAdmin ? `ondblclick="abrirModalEdicaoItem(${item.id})" title="Duplo clique para editar"` : ''}>
                 <div class="item-img-box">
                     <span class="badge-cod">${item["CÓDIGO EFISCO"] || item.codigo || 'SEM CÓDIGO'}</span>
@@ -683,7 +690,6 @@
                 <div class="item-body">
                     <div>
                         <div class="item-title">${item.PRODUTO || item.produto || 'Sem descrição'}</div>
-                        ${item.validade ? `<div class="item-validade">⏳ Validade: ${formatarData(item.validade)}</div>` : ''}
                     </div>
                     <div class="item-meta">
                         <span>Disponível: <b>${item.QUANTIDADE || item.quantidade || 0}</b> (${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'})</span>
@@ -702,7 +708,7 @@
         document.getElementById('editItemId').value = item.id;
         document.getElementById('editItemTitulo').value = `[${item["CÓDIGO EFISCO"] || item.codigo}] ${item.PRODUTO || item.produto}`;
         document.getElementById('editValidade').value = item.validade ? item.validade.split('T')[0] : '';
-
+        
         fotoBase64Editando = item.foto_url || '';
         const preview = document.getElementById('editImgPreview');
         if (fotoBase64Editando) {
@@ -796,7 +802,6 @@
                 <td><code>${item["CÓDIGO EFISCO"] || item.codigo || '---'}</code></td>
                 <td><b>${item.PRODUTO || item.produto || 'Sem descrição'}</b></td>
                 <td>${item.macro_categoria || '---'} > ${item.categoria || '---'} > ${item.micro_categoria || '---'}</td>
-                <td>${formatarData(item.validade) || 'Indeterminada'}</td>
                 <td><b>${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'}</b></td>
                 <td style="text-align: right;">R$ ${Number(item.preco_medio || 0).toFixed(2)}</td>
                 <td style="text-align: center;">${item.QUANTIDADE || item.quantidade || 0}</td>
@@ -830,6 +835,7 @@
 
     function atualizarEstadoAuth(user) {
         usuarioLogado = user;
+        document.getElementById('labelUsuarioTopo').innerText = user ? user.email.split('@')[0] : 'Entrar';
         const elementosAdmin = document.querySelectorAll('.admin-only');
         const labelUsuario = document.getElementById('labelUsuarioTopo');
         if (user) {
@@ -883,6 +889,7 @@
         container.innerHTML = micros.map(mc => `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid var(--border);">
                 <span>${mc.nome}</span>
+                <button class="btn" style="background:var(--danger); color:white; padding:2px 6px; font-size:0.75rem;" onclick="excluirMicro(${mc.id}, '${mc.nome}')">Excluir</button>
                 <button class="btn" style="background:var(--danger); color:white; padding:2px 6px; font-size:0.75rem; width:auto; margin:0;" onclick="excluirMicro(${mc.id}, '${mc.nome}')">Excluir</button>
             </div>
         `).join('') || '<span style="color:var(--muted)">Nenhuma microcategoria cadastrada.</span>';
