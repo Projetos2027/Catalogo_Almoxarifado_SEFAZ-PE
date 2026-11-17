@@ -261,6 +261,7 @@
 
         .item-body { padding: 14px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .item-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+        .item-validade { font-size: 0.8rem; color: var(--warning); font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
         .item-meta { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); align-items: center; }
 
         .erp-container { padding: 24px; flex: 1; display: flex; flex-direction: column; }
@@ -392,13 +393,14 @@
                                     <th>Código</th>
                                     <th>Produto / Descrição</th>
                                     <th>Macro > Cat > Micro</th>
+                                    <th>Validade</th>
                                     <th>U.M</th>
                                     <th style="text-align: right;">Preço Médio</th>
                                     <th style="text-align: center;">Disponível</th>
                                 </tr>
                             </thead>
                             <tbody id="tabelaCorpoEstoque">
-                                <tr><td colspan="6" style="text-align: center; padding: 30px;">Carregando estoque...</td></tr>
+                                <tr><td colspan="7" style="text-align: center; padding: 30px;">Carregando estoque...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -592,7 +594,7 @@
         const catNome = document.getElementById('filtroCategoria').value;
         const selMicro = document.getElementById('filtroMicro');
 
-        selMicro.innerHTML = '<option value="">📄 Toutes as Micro Categorias</option>';
+        selMicro.innerHTML = '<option value="">📄 Todas as Micro Categorias</option>';
 
         if (!catNome) {
             selMicro.disabled = true;
@@ -654,6 +656,13 @@
         renderizarGrid(filtrados);
     }
 
+    function formatarData(dataStr) {
+        if (!dataStr) return '';
+        const partes = dataStr.split('T')[0].split('-');
+        if (partes.length !== 3) return dataStr;
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+
     function renderizarGrid(lista) {
         const grid = document.getElementById('gridCatalogo');
         if (lista.length === 0) {
@@ -672,6 +681,7 @@
                 <div class="item-body">
                     <div>
                         <div class="item-title">${item.PRODUTO || item.produto || 'Sem descrição'}</div>
+                        ${item.validade ? `<div class="item-validade">⏳ Validade: ${formatarData(item.validade)}</div>` : ''}
                     </div>
                     <div class="item-meta">
                         <span>Disponível: <b>${item.QUANTIDADE || item.quantidade || 0}</b> (${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'})</span>
@@ -784,6 +794,7 @@
                 <td><code>${item["CÓDIGO EFISCO"] || item.codigo || '---'}</code></td>
                 <td><b>${item.PRODUTO || item.produto || 'Sem descrição'}</b></td>
                 <td>${item.macro_categoria || '---'} > ${item.categoria || '---'} > ${item.micro_categoria || '---'}</td>
+                <td>${formatarData(item.validade) || 'Indeterminada'}</td>
                 <td><b>${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'}</b></td>
                 <td style="text-align: right;">R$ ${Number(item.preco_medio || 0).toFixed(2)}</td>
                 <td style="text-align: center;">${item.QUANTIDADE || item.quantidade || 0}</td>
