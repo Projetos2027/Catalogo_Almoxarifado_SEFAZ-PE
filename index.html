@@ -406,13 +406,13 @@
             </div>
         </div>
 
-        <!-- ABA 3: INVENTÁRIO (Lendo de itens_json) -->
+        <!-- ABA 3: INVENTÁRIO (Com inputs editáveis para continuar contagem) -->
         <div id="viewInventario" class="app-view">
             <div class="erp-container">
                 <div class="erp-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h2>📊 Inventário Físico em Andamento</h2>
-                        <button class="btn btn-primary" style="width: auto; margin:0;" onclick="carregarInventarioAndamento()">🔄 Atualizar Contagem</button>
+                        <button class="btn btn-primary" style="width: auto; margin:0;" onclick="salvarContagemInventario()">💾 Salvar Contagem</button>
                     </div>
                     <div class="erp-table-container">
                         <table class="erp-table">
@@ -421,12 +421,12 @@
                                     <th>Código</th>
                                     <th>Produto / Descrição</th>
                                     <th style="text-align: center;">Qtd Sistema</th>
-                                    <th style="text-align: center;">Qtd Contada</th>
+                                    <th style="text-align: center; width: 150px;">Qtd Contada</th>
                                     <th style="text-align: center;">Divergência</th>
                                 </tr>
                             </thead>
                             <tbody id="tabelaCorpoInventario">
-                                <tr><td colspan="5" style="text-align: center; padding: 30px;">Carregando inventário em andamento...</td></tr>
+                                <tr><td colspan="5" style="text-align: center; padding: 30px;">Carregando itens para contagem...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -604,7 +604,7 @@
         const selMicro = document.getElementById('filtroMicro');
 
         selCat.innerHTML = '<option value="">📂 Todas as Categorias</option>';
-        selMicro.innerHTML = '<option value="">📄 Toutes as Micro Categorias</option>';
+        selMicro.innerHTML = '<option value="">📄 Todas as Micro Categorias</option>';
         selMicro.disabled = true;
 
         if (!macroNome) {
@@ -724,59 +724,89 @@
         `).join('');
     }
 
-    // --- CARREGAR INVENTÁRIO CORRIGIDO (LENDO itens_json) ---
+    // --- CARREGAR E SALVAR INVENTÁRIO COM INPUTS EDITÁVEIS ---
     async function carregarInventarioAndamento() {
         const tbody = document.getElementById('tabelaCorpoInventario');
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px;">Carregando itens do inventário...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px;">Carregando itens para contagem...</td></tr>`;
+
+        // Se já temos a lista de bens carregada, podemos montar a tabela de contagem baseada nela ou no banco de inventario
+        if (todosItens.length === 0) {
+            await carregarItens();
+        }
+
+        if (todosItens.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item disponível no catálogo para contagem.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = todosItens.map((item, index) => {
+            const cod = item["CÓDIGO EFISCO"] || item.codigo || '---';
+            const prod = item.PRODUTO || item.produto || 'Sem descrição';
+            const qtdSistema = Number(item.QUANTIDADE || item.quantidade || 0);
+            const qtdContada = item.quantidade_contada !== undefined ? item.quantidade_contada : qtdSistema;
+
+            return `
+                <tr data-id="${item.id}" data-codigo="${cod}">
+                    <td><code>${cod}</code></td>
+                    <td><b>${prod}</b></td>
+                    <td style="text-align: center;" class="qtd-sistema">${qtdSistema}</td>
+                    <td style="text-align: center;">
+                        <input type="number" class="sidebar-select input-contada" value="${qtdContada}" style="text-align: center; margin:0; font-weight:bold;" oninput="atualizarDivergencia(this, ${qtdSistema})">
+                    </td>
+                    <td style="text-align: center; font-weight: bold;" class="col-divergencia">0</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Atualizar divergências iniciais
+        document.querySelectorAll('.input-contada').forEach(input => {
+            const sistema = Number(input.closest('tr').querySelector('.qtd-sistema').innerText);
+            atualizarDivergencia(input, sistema);
+        });
+    }
+
+    function atualizarDivergencia(input, qtdSistema) {
+        const tr = input.closest('tr');
+        const contada = Number(input.value) || 0;
+        const divergencia = contada - qtdSistema;
+        const tdDiv = tr.querySelector('.col-divergencia');
+        
+        tdDiv.innerText = divergencia > 0 ? '+' + divergencia : divergencia;
+        tdDiv.style.color = divergencia === 0 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    async function salvarContagemInventario() {
+        const linhas = document.querySelectorAll('#tabelaCorpoInventario tr');
+        if (linhas.length === 0) return alert('Nenhum item para salvar.');
+
+        let itensContados = [];
+        linhas.forEach(tr => {
+            const cod = tr.getAttribute('data-codigo');
+            const prod = tr.querySelector('b')?.innerText || '';
+            const qtdSistema = Number(tr.querySelector('.qtd-sistema')?.innerText || 0);
+            const qtdContada = Number(tr.querySelector('.input-contada')?.value || 0);
+
+            itensContados.push({
+                codigo: cod,
+                produto: prod,
+                quantidade_sistema: qtdSistema,
+                quantidade_contada: qtdContada
+            });
+        });
 
         try {
-            const { data, error } = await supabaseClient.from('inventario_andamento').select('*');
+            // Salva na tabela inventario_andamento serializado em itens_json
+            const { error } = await supabaseClient.from('inventario_andamento').upsert({
+                id: 1, // Mantém um registro centralizador ou atualiza o andamento atual
+                itens_json: JSON.stringify(itensContados),
+                atualizado_em: new Date()
+            }, { onConflict: 'id' });
+
             if (error) throw error;
-
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum registro encontrado no inventário.</td></tr>`;
-                return;
-            }
-
-            let linhasHtml = '';
-            data.forEach(reg => {
-                let itensArray = [];
-                try {
-                    if (typeof reg.itens_json === 'string') {
-                        itensArray = JSON.parse(reg.itens_json);
-                    } else if (Array.isArray(reg.itens_json)) {
-                        itensArray = reg.itens_json;
-                    }
-                } catch (e) {
-                    console.error('Erro ao fazer parse de itens_json:', e);
-                }
-
-                if (!Array.isArray(itensArray)) return;
-
-                itensArray.forEach(item => {
-                    const cod = item["CÓDIGO EFISCO"] || item.codigo || '---';
-                    const prod = item.PRODUTO || item.produto || 'Sem descrição';
-                    const qtdSistema = Number(item.quantidade_sistema ?? item.qtd_sistema ?? item.quantidade ?? 0);
-                    const qtdContada = Number(item.quantidade_contada ?? item.qtd_contada ?? item.contado ?? 0);
-                    const divergencia = qtdContada - qtdSistema;
-                    const corDiv = divergencia === 0 ? 'var(--success)' : 'var(--danger)';
-
-                    linhasHtml += `
-                        <tr>
-                            <td><code>${cod}</code></td>
-                            <td><b>${prod}</b></td>
-                            <td style="text-align: center;">${qtdSistema}</td>
-                            <td style="text-align: center;"><b>${qtdContada}</b></td>
-                            <td style="text-align: center; color: ${corDiv}; font-weight: bold;">${divergencia > 0 ? '+' + divergencia : divergencia}</td>
-                        </tr>
-                    `;
-                });
-            });
-
-            tbody.innerHTML = linhasHtml || `<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item detalhado no inventário.</td></tr>`;
+            alert('Contagem de inventário salva com sucesso!');
         } catch (err) {
-            console.error('Erro ao carregar inventario_andamento:', err);
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--danger);">Erro ao carregar dados do inventário.</td></tr>`;
+            console.error('Erro ao salvar inventário:', err);
+            alert('Erro ao salvar contagem no banco de dados.');
         }
     }
 
