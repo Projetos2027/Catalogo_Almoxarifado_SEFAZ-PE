@@ -1427,29 +1427,51 @@
             const qtd = document.getElementById('etqPalletQtd')?.value.trim() || '1';
             const codId = document.getElementById('etqPalletCodId')?.value.trim() || padraoCodigoPalletHoje();
             const isMisto = !!document.getElementById('etqPalletMistoCheck')?.checked;
+            const temMistoItens = isMisto && itensPalletMisto.length > 0;
+            const itemUnico = !temMistoItens;
             const desc = isMisto ? 'PALLET MISTO' : (document.getElementById('etqPalletDesc')?.value.trim() || 'MATERIAL');
-            const mistoHtml = (isMisto && itensPalletMisto.length > 0)
+            const mistoHtml = temMistoItens
                 ? `<div style="margin-top:12px; padding-top:10px; border-top:2px dashed #64748b; font-size:1rem;">
                     ${itensPalletMisto.map(m => `<div style="display:flex; justify-content:space-between; padding:4px 0;"><span><b>${m.cod}</b> - ${m.desc}</span><b>QTD: ${m.qtd}</b></div>`).join('')}
                    </div>`
                 : '';
 
+            const topStyle = itemUnico
+                ? 'font-size:1.85rem; padding-bottom:16px; margin-bottom:20px;'
+                : '';
+            const efiscoStyle = itemUnico
+                ? 'font-size:3.25rem; line-height:1.12; margin-bottom:22px; letter-spacing:-0.01em;'
+                : 'font-size:2rem; font-weight:900; margin-bottom:10px;';
+            const descStyle = itemUnico
+                ? 'font-size:2.35rem; line-height:1.2; font-weight:800; margin-bottom:24px; text-transform:uppercase; word-break:break-word;'
+                : 'font-size:1.35rem; font-weight:700; margin-bottom:12px; text-transform:uppercase;';
+            const qtdStyle = itemUnico
+                ? 'font-size:2.85rem; line-height:1.15; font-weight:900; margin-top:auto;'
+                : 'font-size:1.5rem; font-weight:900;';
+            const footerStyle = itemUnico
+                ? 'font-size:2.35rem; padding-top:16px; margin-top:18px;'
+                : '';
+            const qrSize = itemUnico ? '195' : '135';
+            const bodyAlign = itemUnico ? 'align-items: stretch;' : 'align-items: flex-start;';
+
             return `
-                <div class="etq-pallet">
-                    <div class="etq-pallet-top">
+                <div class="etq-pallet ${itemUnico ? 'etq-pallet-item-unico' : ''}">
+                    <div class="etq-pallet-top" style="${topStyle}">
                         <span>UALMOX - SEFAZ/PE</span>
                         <span>VALIDADE: ${val}</span>
                     </div>
-                    <div class="etq-pallet-body">
-                        <div style="flex:1;">
-                            <div style="font-size:2rem; font-weight:900; margin-bottom:10px;">COD EFISCO: ${efisco}</div>
-                            <div style="font-size:1.35rem; font-weight:700; margin-bottom:12px; text-transform:uppercase;">${desc}</div>
-                            <div style="font-size:1.5rem; font-weight:900;">QTD: ${qtd}</div>
+                    <div class="etq-pallet-body" style="${bodyAlign}">
+                        <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; min-height:100%;">
+                            <div>
+                                <div style="font-weight:900; ${efiscoStyle}">COD EFISCO: ${efisco}</div>
+                                <div style="${descStyle}">${desc}</div>
+                            </div>
+                            <div style="${qtdStyle}">QTD: ${qtd}</div>
                             ${mistoHtml}
                         </div>
-                        <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="135"></div>
+                        <div class="qr-box-etiqueta" style="align-self:center; padding:8px;" data-qr="${montarUrlQrItem(efisco)}" data-size="${qrSize}"></div>
                     </div>
-                    <div class="etq-pallet-footer">COD. IDENTIFICADOR: ${codId}</div>
+                    <div class="etq-pallet-footer" style="${footerStyle}">COD. IDENTIFICADOR: ${codId}</div>
                 </div>
             `;
         }
