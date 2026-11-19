@@ -6,6 +6,8 @@
     <title>Almoxarifado SEFAZ/PE - ERP Moderno</title>
     <!-- SDK Oficial do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca para gerar QR Codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Biblioteca para gerar Códigos de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <!-- Biblioteca xlsx-js-style para ler e gerar arquivos Excel (.xlsx) COM ESTILOS E BORDAS -->
@@ -242,7 +244,41 @@
             gap: 10px;
             flex-wrap: wrap;
             align-items: center;
+            position: relative;
         }
+
+        /* Dropdown de Etiquetas no Catálogo */
+        .label-dropdown-wrap { position: relative; display: inline-block; }
+        .label-dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+            min-width: 260px;
+            z-index: 160;
+            overflow: hidden;
+        }
+        .label-dropdown-menu.open { display: block; }
+        .label-dropdown-option {
+            width: 100%;
+            text-align: left;
+            padding: 11px 14px;
+            background: white;
+            border: none;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .label-dropdown-option:last-child { border-bottom: none; }
+        .label-dropdown-option:hover { background: #f8fafc; }
+        .label-dropdown-option strong { font-size: 0.86rem; color: var(--text); }
+        .label-dropdown-option small { font-size: 0.75rem; color: var(--muted); }
         
         /* Botões Padrão Executivo */
         .btn {
@@ -405,6 +441,91 @@
         .ocr-status-box { margin-top: 8px; padding: 8px 10px; border-radius: 6px; font-size: 0.8rem; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; display: none; }
         .status-msg { text-align: center; padding: 40px; color: var(--muted); grid-column: 1 / -1; }
 
+        /* Estilos de Etiquetas no Modal e Impressão */
+        .label-preview-wrapper {
+            background: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        .etq-pallet {
+            width: 660px;
+            background: #fff;
+            border: 3px solid #0f172a;
+            color: #0f172a;
+            padding: 14px 18px;
+        }
+        .etq-pallet-top {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+        .etq-pallet-body {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        .etq-pallet-footer {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 2px solid #0f172a;
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+        .etq-prateleira {
+            width: 210mm;
+            min-height: 140mm;
+            background: #fff;
+            border: 2.5px solid #0f172a;
+            color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .etq-prat-header {
+            background: #0f172a;
+            color: #fff;
+            padding: 14px 22px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .etq-prat-body {
+            padding: 24px 26px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+        }
+        .etq-prat-footer {
+            border-top: 2px solid #0f172a;
+            padding: 12px 26px;
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+        .etq-expositor {
+            width: 360px;
+            background: #fff;
+            border: 2px solid #0f172a;
+            border-radius: 6px;
+            color: #0f172a;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+        }
+
         /* Tabelas de Inventário e Revisão */
         .inventory-table-container {
             flex: 1;
@@ -423,6 +544,23 @@
         /* Abas Principais */
         .app-view { display: none; flex: 1; flex-direction: column; }
         .app-view.active { display: flex; }
+
+        @media print {
+            body * { visibility: hidden !important; }
+            #areaImpressaoEtiqueta, #areaImpressaoEtiqueta * { visibility: visible !important; }
+            #areaImpressaoEtiqueta {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: #fff;
+            }
+            .etq-prateleira {
+                width: 210mm;
+                height: 148.5mm;
+                page-break-after: always;
+            }
+        }
 
         @media (max-width: 768px) {
             aside { transform: translateX(-100%); transition: 0.3s; }
@@ -498,6 +636,25 @@
                     <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
                 </div>
                 <div class="header-buttons">
+                    <div class="label-dropdown-wrap admin-only" id="wrapImprimirEtiquetas" style="display:none;">
+                        <button class="btn" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; font-weight:600;" onclick="alternarMenuEtiquetas(event)">
+                            🏷️ Imprimir Etiquetas ▾
+                        </button>
+                        <div class="label-dropdown-menu" id="menuEtiquetasCatalogo">
+                            <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('pallet')">
+                                <strong>📦 Etiqueta de Pallet</strong>
+                                <small>Padrão UALMOX SEFAZ/PE • Misto ou simples</small>
+                            </button>
+                            <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('prateleira')">
+                                <strong>🗄️ Etiqueta de Prateleira</strong>
+                                <small>Meia folha A4 • Sem qtd/validade • QR Code</small>
+                            </button>
+                            <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('expositor')">
+                                <strong>🪧 Etiqueta de Expositor</strong>
+                                <small>Pequena • Código, nome e QR Code</small>
+                            </button>
+                        </div>
+                    </div>
                     <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Novo Recebimento</button>
                     <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Carregar Catálogo</button>
                     <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
@@ -692,6 +849,39 @@
     </div>
 </div>
 
+<!-- Modal Imprimir Etiquetas do Catálogo -->
+<div class="modal-overlay" id="modalEtiquetaCatalogo" style="z-index: 1150;">
+    <div class="modal modal-large" style="max-width: 820px;">
+        <div class="modal-header">
+            <h2 id="tituloModalEtiquetaCatalogo">Imprimir Etiqueta</h2>
+            <button class="close-btn" onclick="fecharModalEtiquetaCatalogo()">&times;</button>
+        </div>
+        <div class="form-group">
+            <label>Selecionar item do catálogo (preenche automaticamente)</label>
+            <select id="seletorItemEtiqueta" onchange="preencherEtiquetaComItem()"></select>
+        </div>
+        <div id="camposEtiquetaCatalogo"></div>
+        <div class="label-preview-wrapper" id="previewEtiquetaCatalogo"></div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
+            <button type="button" class="btn" onclick="fecharModalEtiquetaCatalogo()">Cancelar</button>
+            <button type="button" class="btn" style="background: var(--primary); color: white; border: none;" onclick="imprimirEtiquetaCatalogo()">🖨️ Imprimir Etiqueta</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Consulta QR Code (Celular) -->
+<div class="modal-overlay" id="modalQrConsulta" style="z-index: 1200;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Consulta via QR Code</h2>
+            <button class="close-btn" onclick="fecharModalQrConsulta()">&times;</button>
+        </div>
+        <div id="corpoModalQrConsulta"></div>
+    </div>
+</div>
+
+<div id="areaImpressaoEtiqueta" style="display:none;"></div>
+
 <div class="modal-overlay" id="modalAdicionarItemInv" style="z-index: 1100;">
     <div class="modal">
         <div class="modal-header">
@@ -743,6 +933,8 @@
     let periodoInventarioAtual = 'Nenhum inventário ativo';
     let categoriasRecolhidas = false;
     let statusRecolhidos = false;
+    let tipoEtiquetaAtual = 'pallet';
+    let itensPalletMisto = [];
 
     function parseNumeroBR(valor) {
         if (valor === null || valor === undefined || valor === '') return 0;
@@ -782,6 +974,7 @@
 
         await verificarInventarioNuvem();
         await carregarItens();
+        verificarParametroQrUrl();
     }
 
     function mudarAba(nomeAba) {
@@ -854,6 +1047,7 @@
             labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
         } else {
             botoesAdmin.forEach(el => el.style.display = 'none');
+            document.getElementById('menuEtiquetasCatalogo')?.classList.remove('open');
             labelUsuario.innerText = 'Entrar';
         }
         filtrarItens();
@@ -988,6 +1182,345 @@
             </div>
             `;
         }).join('');
+    }
+
+    // =================================================================
+    // IMPRESSÃO DE ETIQUETAS NO CATÁLOGO (ADMIN)
+    // =================================================================
+    function alternarMenuEtiquetas(e) {
+        e.stopPropagation();
+        if (!usuarioLogado) return;
+        document.getElementById('menuEtiquetasCatalogo').classList.toggle('open');
+    }
+    document.addEventListener('click', () => {
+        document.getElementById('menuEtiquetasCatalogo')?.classList.remove('open');
+    });
+
+    function padraoCodigoPalletHoje() {
+        const d = new Date();
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}${mm}${yyyy}.A`;
+    }
+
+    function montarUrlQrItem(codigoEfisco) {
+        return `${window.location.origin}${window.location.pathname}?qr_item=${encodeURIComponent(codigoEfisco || '')}`;
+    }
+
+    function abrirModalEtiquetaCatalogo(tipo) {
+        if (!usuarioLogado) return alert('Acesso restrito ao administrador.');
+        tipoEtiquetaAtual = tipo;
+        itensPalletMisto = [];
+        document.getElementById('menuEtiquetasCatalogo').classList.remove('open');
+
+        const titulos = {
+            pallet: '📦 Imprimir Etiqueta de Pallet (UALMOX - SEFAZ/PE)',
+            prateleira: '🗄️ Imprimir Etiqueta de Prateleira (Meia Folha A4)',
+            expositor: '🪧 Imprimir Etiqueta de Expositor (Compacta)'
+        };
+        document.getElementById('tituloModalEtiquetaCatalogo').innerText = titulos[tipo] || 'Imprimir Etiqueta';
+
+        const sel = document.getElementById('seletorItemEtiqueta');
+        sel.innerHTML = '<option value="">-- Selecione um item ou digite manualmente --</option>' +
+            todosItens.map(item => {
+                const cod = item["CÓDIGO EFISCO"] || item.codigo || '';
+                const prod = item.PRODUTO || item.produto || '';
+                return `<option value="${cod}">${cod} - ${prod}</option>`;
+            }).join('');
+
+        renderizarCamposEtiquetaCatalogo(tipo);
+        if (todosItens.length > 0) {
+            const primeiroCod = todosItens[0]["CÓDIGO EFISCO"] || todosItens[0].codigo || '';
+            sel.value = primeiroCod;
+            preencherEtiquetaComItem();
+        } else {
+            atualizarPreviewEtiquetaCatalogo();
+        }
+
+        document.getElementById('modalEtiquetaCatalogo').classList.add('active');
+    }
+
+    function fecharModalEtiquetaCatalogo() {
+        document.getElementById('modalEtiquetaCatalogo').classList.remove('active');
+    }
+
+    function renderizarCamposEtiquetaCatalogo(tipo) {
+        const box = document.getElementById('camposEtiquetaCatalogo');
+        if (tipo === 'pallet') {
+            box.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+                    <div class="form-group">
+                        <label>COD EFISCO</label>
+                        <input type="text" id="etqPalletEfisco" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>VALIDADE</label>
+                        <input type="text" id="etqPalletValidade" value="INDETERMINADA" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>QTD</label>
+                        <input type="text" id="etqPalletQtd" value="1" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>COD. IDENTIFICADOR</label>
+                        <input type="text" id="etqPalletCodId" value="${padraoCodigoPalletHoje()}" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>DESCRIÇÃO DO MATERIAL</label>
+                    <input type="text" id="etqPalletDesc" oninput="atualizarPreviewEtiquetaCatalogo()">
+                </div>
+                <div style="padding:10px; border:1px dashed var(--border); border-radius:8px; margin-bottom:10px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; cursor:pointer;">
+                        <input type="checkbox" id="etqPalletMistoCheck" onchange="atualizarPreviewEtiquetaCatalogo()">
+                        Pallet Misto (adicionar vários itens)
+                    </label>
+                    <div style="display:grid; grid-template-columns: 1fr 2fr 1fr auto; gap:8px; margin-top:8px;">
+                        <input type="text" id="mistoCodInput" placeholder="Cód. EFISCO">
+                        <input type="text" id="mistoDescInput" placeholder="Descrição">
+                        <input type="text" id="mistoQtdInput" placeholder="Qtd">
+                        <button type="button" class="btn" onclick="adicionarItemPalletMisto()">+ Item</button>
+                    </div>
+                    <div id="listaPalletMistoPreview" style="margin-top:8px; font-size:0.82rem;"></div>
+                </div>
+            `;
+        } else if (tipo === 'prateleira') {
+            // Meia folha A4, sem quantidade e sem validade
+            box.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+                    <div class="form-group">
+                        <label>PRATELEIRA / POSIÇÃO</label>
+                        <input type="text" id="etqPratLocal" value="PRATELEIRA A-02" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>COD EFISCO</label>
+                        <input type="text" id="etqPratEfisco" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>UNIDADE</label>
+                        <input type="text" id="etqPratUnidade" value="UN" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>NOME DO ITEM</label>
+                    <input type="text" id="etqPratNome" oninput="atualizarPreviewEtiquetaCatalogo()">
+                </div>
+            `;
+        } else if (tipo === 'expositor') {
+            // Pequena e sucinta: apenas código, nome e QR code
+            box.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
+                    <div class="form-group">
+                        <label>COD EFISCO</label>
+                        <input type="text" id="etqExpEfisco" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>NOME DO ITEM</label>
+                        <input type="text" id="etqExpNome" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function adicionarItemPalletMisto() {
+        const cod = document.getElementById('mistoCodInput').value.trim();
+        const desc = document.getElementById('mistoDescInput').value.trim();
+        const qtd = document.getElementById('mistoQtdInput').value.trim() || '1';
+        if (!cod && !desc) return;
+        itensPalletMisto.push({ cod, desc, qtd });
+        document.getElementById('mistoCodInput').value = '';
+        document.getElementById('mistoDescInput').value = '';
+        document.getElementById('mistoQtdInput').value = '';
+        renderizarListaPalletMisto();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function renderizarListaPalletMisto() {
+        const el = document.getElementById('listaPalletMistoPreview');
+        if (!el) return;
+        el.innerHTML = itensPalletMisto.map((m, i) => `
+            <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                <span><b>${m.cod}</b> - ${m.desc} (Qtd: ${m.qtd})</span>
+                <button type="button" style="border:none; background:none; color:var(--danger); cursor:pointer;" onclick="removerItemPalletMisto(${i})">remover</button>
+            </div>
+        `).join('');
+    }
+
+    function removerItemPalletMisto(i) {
+        itensPalletMisto.splice(i, 1);
+        renderizarListaPalletMisto();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function preencherEtiquetaComItem() {
+        const codSel = document.getElementById('seletorItemEtiqueta').value;
+        const item = todosItens.find(i => String(i["CÓDIGO EFISCO"] || i.codigo || '') === String(codSel));
+        if (!item) return;
+
+        const cod = item["CÓDIGO EFISCO"] || item.codigo || '';
+        const prod = item.PRODUTO || item.produto || '';
+        const unid = item["UNIDADE DE MEDIDA"] || item.unidade || 'UN';
+        const val = item.validade ? formatarDataBR(item.validade) : 'INDETERMINADA';
+
+        if (tipoEtiquetaAtual === 'pallet') {
+            document.getElementById('etqPalletEfisco').value = cod;
+            document.getElementById('etqPalletDesc').value = prod;
+            document.getElementById('etqPalletValidade').value = val;
+        } else if (tipoEtiquetaAtual === 'prateleira') {
+            document.getElementById('etqPratEfisco').value = cod;
+            document.getElementById('etqPratNome').value = prod;
+            document.getElementById('etqPratUnidade').value = unid;
+        } else if (tipoEtiquetaAtual === 'expositor') {
+            document.getElementById('etqExpEfisco').value = cod;
+            document.getElementById('etqExpNome').value = prod;
+        }
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function montarHtmlEtiquetaAtual() {
+        if (tipoEtiquetaAtual === 'pallet') {
+            const efisco = document.getElementById('etqPalletEfisco')?.value.trim() || '---';
+            const val = document.getElementById('etqPalletValidade')?.value.trim() || 'INDETERMINADA';
+            const qtd = document.getElementById('etqPalletQtd')?.value.trim() || '1';
+            const codId = document.getElementById('etqPalletCodId')?.value.trim() || padraoCodigoPalletHoje();
+            const isMisto = !!document.getElementById('etqPalletMistoCheck')?.checked;
+            const desc = isMisto ? 'PALLET MISTO' : (document.getElementById('etqPalletDesc')?.value.trim() || 'MATERIAL');
+            const mistoHtml = (isMisto && itensPalletMisto.length > 0)
+                ? `<div style="margin-top:8px; padding-top:6px; border-top:1px dashed #64748b; font-size:0.82rem;">
+                    ${itensPalletMisto.map(m => `<div style="display:flex; justify-content:space-between; padding:2px 0;"><span><b>${m.cod}</b> - ${m.desc}</span><b>QTD: ${m.qtd}</b></div>`).join('')}
+                   </div>`
+                : '';
+
+            return `
+                <div class="etq-pallet">
+                    <div class="etq-pallet-top">
+                        <span>UALMOX - SEFAZ/PE</span>
+                        <span>VALIDADE: ${val}</span>
+                    </div>
+                    <div class="etq-pallet-body">
+                        <div>
+                            <div style="font-size:1.25rem; font-weight:800; margin-bottom:4px;">COD EFISCO: ${efisco}</div>
+                            <div style="font-size:0.95rem; font-weight:600; margin-bottom:6px; text-transform:uppercase;">${desc}</div>
+                            <div style="font-size:1rem; font-weight:800;">QTD: ${qtd}</div>
+                        </div>
+                        <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="92"></div>
+                    </div>
+                    ${mistoHtml}
+                    <div class="etq-pallet-footer">COD. IDENTIFICADOR: ${codId}</div>
+                </div>
+            `;
+        }
+
+        if (tipoEtiquetaAtual === 'prateleira') {
+            const local = document.getElementById('etqPratLocal')?.value.trim() || 'PRATELEIRA';
+            const efisco = document.getElementById('etqPratEfisco')?.value.trim() || '---';
+            const nome = document.getElementById('etqPratNome')?.value.trim() || 'ITEM';
+            const unid = document.getElementById('etqPratUnidade')?.value.trim() || 'UN';
+
+            return `
+                <div class="etq-prateleira">
+                    <div class="etq-prat-header">
+                        <span>UALMOX - SEFAZ/PE</span>
+                        <span>${local}</span>
+                    </div>
+                    <div class="etq-prat-body">
+                        <div>
+                            <div style="font-size:1.9rem; font-weight:900; margin-bottom:12px;">COD EFISCO: ${efisco}</div>
+                            <div style="font-size:1.4rem; font-weight:800; text-transform:uppercase;">${nome}</div>
+                        </div>
+                        <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="165"></div>
+                    </div>
+                    <div class="etq-prat-footer">UNIDADE: ${unid}</div>
+                </div>
+            `;
+        }
+
+        const efisco = document.getElementById('etqExpEfisco')?.value.trim() || '---';
+        const nome = document.getElementById('etqExpNome')?.value.trim() || 'ITEM';
+        return `
+            <div class="etq-expositor">
+                <div>
+                    <div style="font-size:1.1rem; font-weight:900; margin-bottom:5px;">COD EFISCO: ${efisco}</div>
+                    <div style="font-size:0.92rem; font-weight:700; text-transform:uppercase; line-height:1.25;">${nome}</div>
+                </div>
+                <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="84"></div>
+            </div>
+        `;
+    }
+
+    function renderizarQrEmContainer(container) {
+        if (!window.QRCode) return;
+        container.querySelectorAll('.qr-box-etiqueta').forEach(el => {
+            el.innerHTML = '';
+            const texto = el.getAttribute('data-qr') || '';
+            const tamanho = Number(el.getAttribute('data-size') || 90);
+            new QRCode(el, {
+                text: texto,
+                width: tamanho,
+                height: tamanho,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        });
+    }
+
+    function atualizarPreviewEtiquetaCatalogo() {
+        const preview = document.getElementById('previewEtiquetaCatalogo');
+        preview.innerHTML = montarHtmlEtiquetaAtual();
+        renderizarQrEmContainer(preview);
+    }
+
+    function imprimirEtiquetaCatalogo() {
+        const area = document.getElementById('areaImpressaoEtiqueta');
+        area.innerHTML = montarHtmlEtiquetaAtual();
+        renderizarQrEmContainer(area);
+        area.style.display = 'block';
+        setTimeout(() => {
+            window.print();
+            area.style.display = 'none';
+        }, 150);
+    }
+
+    // Consulta rápida via QR Code
+    function verificarParametroQrUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const codQr = params.get('qr_item');
+        if (codQr) abrirModalQrConsulta(codQr);
+    }
+
+    function abrirModalQrConsulta(codEfisco) {
+        const item = todosItens.find(i => String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === String(codEfisco).trim());
+        const corpo = document.getElementById('corpoModalQrConsulta');
+        if (!item) {
+            corpo.innerHTML = `<p>Item com código <b>${codEfisco}</b> não encontrado.</p>`;
+            document.getElementById('modalQrConsulta').classList.add('active');
+            return;
+        }
+        const qtdSistema = Number(item.QUANTIDADE || item.quantidade || 0);
+        const unid = item["UNIDADE DE MEDIDA"] || item.unidade || 'UN';
+        const prod = item.PRODUTO || item.produto || 'Sem descrição';
+        const validade = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
+
+        corpo.innerHTML = `
+            <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:14px;">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--primary);">COD EFISCO: ${codEfisco}</div>
+                <h3 style="margin:6px 0;">${prod}</h3>
+                <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a; padding:10px 12px; border-radius:6px; margin:10px 0; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Quantidade no sistema:</span>
+                    <strong style="font-size:1.25rem;">${qtdSistema} ${unid}</strong>
+                </div>
+                <div style="font-size:0.85rem; line-height:1.6;">
+                    <div><b>Unidade:</b> ${unid}</div>
+                    <div><b>Validade:</b> ${validade}</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('modalQrConsulta').classList.add('active');
+    }
+
+    function fecharModalQrConsulta() {
+        document.getElementById('modalQrConsulta').classList.remove('active');
     }
 
     function renderizarTabelaEstoque() {
