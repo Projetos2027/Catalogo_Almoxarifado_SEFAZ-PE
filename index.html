@@ -247,6 +247,66 @@
             position: relative;
         }
 
+        /* Autocomplete no Seletor de Etiqueta */
+        .autocomplete-box { position: relative; }
+        .autocomplete-input-wrap { position: relative; display: flex; align-items: center; }
+        .autocomplete-input-wrap input {
+            width: 100%;
+            padding: 10px 38px 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #fff;
+            font-size: 0.92rem;
+        }
+        .autocomplete-clear-btn {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 2px 6px;
+        }
+        .autocomplete-clear-btn:hover { color: var(--text); }
+        .autocomplete-suggestions {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 4px);
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 1300;
+        }
+        .autocomplete-suggestions.open { display: block; }
+        .autocomplete-suggestion-item {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .autocomplete-suggestion-item:last-child { border-bottom: none; }
+        .autocomplete-suggestion-item:hover,
+        .autocomplete-suggestion-item.active { background: #eff6ff; }
+        .autocomplete-suggestion-code {
+            font-family: monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .autocomplete-suggestion-desc {
+            font-size: 0.86rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
         /* Dropdown de Etiquetas no Catálogo */
         .label-dropdown-wrap { position: relative; display: inline-block; }
         .label-dropdown-menu {
@@ -899,9 +959,18 @@
             <h2 id="tituloModalEtiquetaCatalogo">Imprimir Etiqueta</h2>
             <button class="close-btn" onclick="fecharModalEtiquetaCatalogo()">&times;</button>
         </div>
-        <div class="form-group">
-            <label>Selecionar item do catálogo (preenche automaticamente)</label>
-            <select id="seletorItemEtiqueta" onchange="preencherEtiquetaComItem()"></select>
+        <div class="form-group autocomplete-box">
+            <label>Buscar e selecionar item do catálogo (digite código ou nome — preenche automaticamente)</label>
+            <div class="autocomplete-input-wrap">
+                <input type="text" id="buscaItemEtiqueta" autocomplete="off"
+                    placeholder="Digite o código EFISCO ou parte do nome do item..."
+                    oninput="filtrarSugestoesEtiqueta()"
+                    onfocus="filtrarSugestoesEtiqueta()"
+                    onkeydown="navegarSugestoesEtiqueta(event)">
+                <button type="button" class="autocomplete-clear-btn" title="Limpar busca" onclick="limparBuscaItemEtiqueta()">✕</button>
+            </div>
+            <input type="hidden" id="seletorItemEtiqueta">
+            <div class="autocomplete-suggestions" id="sugestoesItemEtiqueta"></div>
         </div>
         <div id="camposEtiquetaCatalogo"></div>
         <div class="label-preview-wrapper" id="previewEtiquetaCatalogo"></div>
@@ -1264,22 +1333,14 @@
         };
         document.getElementById('tituloModalEtiquetaCatalogo').innerText = titulos[tipo] || 'Imprimir Etiqueta';
 
-        const sel = document.getElementById('seletorItemEtiqueta');
-        sel.innerHTML = '<option value="">-- Selecione um item ou digite manualmente --</option>' +
-            todosItens.map(item => {
-                const cod = item["CÓDIGO EFISCO"] || item.codigo || '';
-                const prod = item.PRODUTO || item.produto || '';
-                return `<option value="${cod}">${cod} - ${prod}</option>`;
-            }).join('');
-
         renderizarCamposEtiquetaCatalogo(tipo);
-        if (todosItens.length > 0) {
-            const primeiroCod = todosItens[0]["CÓDIGO EFISCO"] || todosItens[0].codigo || '';
-            sel.value = primeiroCod;
-            preencherEtiquetaComItem();
-        } else {
-            atualizarPreviewEtiquetaCatalogo();
-        }
+        const inputBusca = document.getElementById('buscaItemEtiqueta');
+        const hiddenSel = document.getElementById('seletorItemEtiqueta');
+        const sugBox = document.getElementById('sugestoesItemEtiqueta');
+        if (inputBusca) inputBusca.value = '';
+        if (hiddenSel) hiddenSel.value = '';
+        if (sugBox) sugBox.classList.remove('open');
+        atualizarPreviewEtiquetaCatalogo();
 
         document.getElementById('modalEtiquetaCatalogo').classList.add('active');
     }
@@ -1395,9 +1456,122 @@
         atualizarPreviewEtiquetaCatalogo();
     }
 
-    function preencherEtiquetaComItem() {
+    let indiceSugestaoAtiva = -1;
+    let sugestoesAtuaisEtiqueta = [];
+
+    function normalizarTextoBusca(str) {
+        return String(str || '')
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .toLowerCase()
+            .trim();
+    }
+
+    function filtrarSugestoesEtiqueta() {
+        const input = document.getElementById('buscaItemEtiqueta');
+        const box = document.getElementById('sugestoesItemEtiqueta');
+        if (!input || !box) return;
+
+        const termo = normalizarTextoBusca(input.value);
+        const palavras = termo.split(/\s+/).filter(Boolean);
+
+        const matches = todosItens.filter(item => {
+            const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '');
+            const prod = String(item.PRODUTO || item.produto || '');
+            const alvo = normalizarTextoBusca(`${cod} ${prod}`);
+            if (palavras.length === 0) return true;
+            return palavras.every(p => alvo.includes(p));
+        }).slice(0, 25);
+
+        sugestoesAtuaisEtiqueta = matches;
+        indiceSugestaoAtiva = matches.length > 0 ? 0 : -1;
+
+        if (matches.length === 0) {
+            box.innerHTML = `<div class="autocomplete-suggestion-item" style="cursor:default; color:var(--muted);">Nenhum item encontrado para "${input.value}"</div>`;
+            box.classList.add('open');
+            return;
+        }
+
+        box.innerHTML = matches.map((item, idx) => {
+            const cod = item["CÓDIGO EFISCO"] || item.codigo || '';
+            const prod = item.PRODUTO || item.produto || 'Sem descrição';
+            const unid = item["UNIDADE DE MEDIDA"] || item.unidade || 'UN';
+            return `
+                <div class="autocomplete-suggestion-item ${idx === indiceSugestaoAtiva ? 'active' : ''}"
+                     onmousedown="selecionarSugestaoEtiqueta(${idx})">
+                    <span class="autocomplete-suggestion-code">CÓD. EFISCO: ${cod} • ${unid}</span>
+                    <span class="autocomplete-suggestion-desc">${prod}</span>
+                </div>
+            `;
+        }).join('');
+        box.classList.add('open');
+    }
+
+    function navegarSugestoesEtiqueta(e) {
+        const box = document.getElementById('sugestoesItemEtiqueta');
+        if (!box || !box.classList.contains('open') || sugestoesAtuaisEtiqueta.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            indiceSugestaoAtiva = (indiceSugestaoAtiva + 1) % sugestoesAtuaisEtiqueta.length;
+            atualizarDestaqueSugestao();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            indiceSugestaoAtiva = (indiceSugestaoAtiva - 1 + sugestoesAtuaisEtiqueta.length) % sugestoesAtuaisEtiqueta.length;
+            atualizarDestaqueSugestao();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (indiceSugestaoAtiva >= 0) selecionarSugestaoEtiqueta(indiceSugestaoAtiva);
+        } else if (e.key === 'Escape') {
+            box.classList.remove('open');
+        }
+    }
+
+    function atualizarDestaqueSugestao() {
+        const box = document.getElementById('sugestoesItemEtiqueta');
+        if (!box) return;
+        const itensEl = box.querySelectorAll('.autocomplete-suggestion-item');
+        itensEl.forEach((el, idx) => {
+            el.classList.toggle('active', idx === indiceSugestaoAtiva);
+            if (idx === indiceSugestaoAtiva) el.scrollIntoView({ block: 'nearest' });
+        });
+    }
+
+    function selecionarSugestaoEtiqueta(idx) {
+        const item = sugestoesAtuaisEtiqueta[idx];
+        if (!item) return;
+        const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '');
+        const prod = String(item.PRODUTO || item.produto || '');
+        const input = document.getElementById('buscaItemEtiqueta');
+        const hiddenSel = document.getElementById('seletorItemEtiqueta');
+        const box = document.getElementById('sugestoesItemEtiqueta');
+
+        if (input) input.value = `${cod} - ${prod}`;
+        if (hiddenSel) hiddenSel.value = cod;
+        if (box) box.classList.remove('open');
+        preencherEtiquetaComItem(item);
+    }
+
+    function limparBuscaItemEtiqueta() {
+        const input = document.getElementById('buscaItemEtiqueta');
+        const hiddenSel = document.getElementById('seletorItemEtiqueta');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        if (hiddenSel) hiddenSel.value = '';
+        filtrarSugestoesEtiqueta();
+    }
+
+    document.addEventListener('click', (e) => {
+        const box = document.getElementById('sugestoesItemEtiqueta');
+        const wrap = e.target.closest('.autocomplete-box');
+        if (box && !wrap) box.classList.remove('open');
+    });
+
+    function preencherEtiquetaComItem(itemFornecido) {
         const codSel = document.getElementById('seletorItemEtiqueta').value;
-        const item = todosItens.find(i => String(i["CÓDIGO EFISCO"] || i.codigo || '') === String(codSel));
+        const item = itemFornecido || todosItens.find(i => String(i["CÓDIGO EFISCO"] || i.codigo || '') === String(codSel));
         if (!item) return;
 
         const cod = item["CÓDIGO EFISCO"] || item.codigo || '';
