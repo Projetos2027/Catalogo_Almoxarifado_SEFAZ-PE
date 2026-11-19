@@ -447,38 +447,47 @@
             padding: 16px;
             border-radius: 8px;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow-x: auto;
+            justify-content: flex-start;
+            align-items: flex-start;
+            overflow: auto;
+            max-height: 52vh;
             margin-top: 10px;
         }
         .etq-pallet {
-            width: 660px;
+            width: 297mm;
+            height: 210mm;
             background: #fff;
-            border: 3px solid #0f172a;
+            border: 4px solid #0f172a;
             color: #0f172a;
-            padding: 14px 18px;
+            padding: 22px 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
         }
         .etq-pallet-top {
             display: flex;
             justify-content: space-between;
-            border-bottom: 2px solid #0f172a;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
-            font-weight: 800;
+            align-items: center;
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+            font-weight: 900;
+            font-size: 1.45rem;
         }
         .etq-pallet-body {
             display: flex;
             justify-content: space-between;
-            gap: 14px;
+            gap: 24px;
             align-items: flex-start;
+            flex: 1;
         }
         .etq-pallet-footer {
-            margin-top: 10px;
-            padding-top: 8px;
-            border-top: 2px solid #0f172a;
-            font-size: 1.2rem;
-            font-weight: 800;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 3px solid #0f172a;
+            font-size: 1.85rem;
+            font-weight: 900;
         }
         .etq-prateleira {
             width: 210mm;
@@ -489,6 +498,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            flex-shrink: 0;
         }
         .etq-prat-header {
             background: #0f172a;
@@ -524,6 +534,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 14px;
+            flex-shrink: 0;
         }
 
         /* Tabelas de Inventário e Revisão */
@@ -546,14 +557,25 @@
         .app-view.active { display: flex; }
 
         @media print {
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
             body * { visibility: hidden !important; }
             #areaImpressaoEtiqueta, #areaImpressaoEtiqueta * { visibility: visible !important; }
             #areaImpressaoEtiqueta {
                 position: fixed;
                 left: 0;
                 top: 0;
-                width: 100%;
+                width: 297mm;
+                height: 210mm;
                 background: #fff;
+            }
+            .etq-pallet {
+                width: 297mm;
+                height: 210mm;
+                page-break-after: always;
+                break-after: page;
             }
             .etq-prateleira {
                 width: 210mm;
@@ -643,7 +665,7 @@
                         <div class="label-dropdown-menu" id="menuEtiquetasCatalogo">
                             <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('pallet')">
                                 <strong>📦 Etiqueta de Pallet</strong>
-                                <small>Padrão UALMOX SEFAZ/PE • Misto ou simples</small>
+                                <small>A4 Horizontal (297×210mm) • UALMOX SEFAZ/PE</small>
                             </button>
                             <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('prateleira')">
                                 <strong>🗄️ Etiqueta de Prateleira</strong>
@@ -851,7 +873,7 @@
 
 <!-- Modal Imprimir Etiquetas do Catálogo -->
 <div class="modal-overlay" id="modalEtiquetaCatalogo" style="z-index: 1150;">
-    <div class="modal modal-large" style="max-width: 820px;">
+    <div class="modal modal-large" style="max-width: 960px;">
         <div class="modal-header">
             <h2 id="tituloModalEtiquetaCatalogo">Imprimir Etiqueta</h2>
             <button class="close-btn" onclick="fecharModalEtiquetaCatalogo()">&times;</button>
@@ -1215,7 +1237,7 @@
         document.getElementById('menuEtiquetasCatalogo').classList.remove('open');
 
         const titulos = {
-            pallet: '📦 Imprimir Etiqueta de Pallet (UALMOX - SEFAZ/PE)',
+            pallet: '📦 Imprimir Etiqueta de Pallet (A4 Horizontal • 297×210mm)',
             prateleira: '🗄️ Imprimir Etiqueta de Prateleira (Meia Folha A4)',
             expositor: '🪧 Imprimir Etiqueta de Expositor (Compacta)'
         };
@@ -1286,7 +1308,6 @@
                 </div>
             `;
         } else if (tipo === 'prateleira') {
-            // Meia folha A4, sem quantidade e sem validade
             box.innerHTML = `
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
                     <div class="form-group">
@@ -1308,7 +1329,6 @@
                 </div>
             `;
         } else if (tipo === 'expositor') {
-            // Pequena e sucinta: apenas código, nome e QR code
             box.innerHTML = `
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
                     <div class="form-group">
@@ -1388,8 +1408,8 @@
             const isMisto = !!document.getElementById('etqPalletMistoCheck')?.checked;
             const desc = isMisto ? 'PALLET MISTO' : (document.getElementById('etqPalletDesc')?.value.trim() || 'MATERIAL');
             const mistoHtml = (isMisto && itensPalletMisto.length > 0)
-                ? `<div style="margin-top:8px; padding-top:6px; border-top:1px dashed #64748b; font-size:0.82rem;">
-                    ${itensPalletMisto.map(m => `<div style="display:flex; justify-content:space-between; padding:2px 0;"><span><b>${m.cod}</b> - ${m.desc}</span><b>QTD: ${m.qtd}</b></div>`).join('')}
+                ? `<div style="margin-top:12px; padding-top:10px; border-top:2px dashed #64748b; font-size:1rem;">
+                    ${itensPalletMisto.map(m => `<div style="display:flex; justify-content:space-between; padding:4px 0;"><span><b>${m.cod}</b> - ${m.desc}</span><b>QTD: ${m.qtd}</b></div>`).join('')}
                    </div>`
                 : '';
 
@@ -1400,14 +1420,14 @@
                         <span>VALIDADE: ${val}</span>
                     </div>
                     <div class="etq-pallet-body">
-                        <div>
-                            <div style="font-size:1.25rem; font-weight:800; margin-bottom:4px;">COD EFISCO: ${efisco}</div>
-                            <div style="font-size:0.95rem; font-weight:600; margin-bottom:6px; text-transform:uppercase;">${desc}</div>
-                            <div style="font-size:1rem; font-weight:800;">QTD: ${qtd}</div>
+                        <div style="flex:1;">
+                            <div style="font-size:2rem; font-weight:900; margin-bottom:10px;">COD EFISCO: ${efisco}</div>
+                            <div style="font-size:1.35rem; font-weight:700; margin-bottom:12px; text-transform:uppercase;">${desc}</div>
+                            <div style="font-size:1.5rem; font-weight:900;">QTD: ${qtd}</div>
+                            ${mistoHtml}
                         </div>
-                        <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="92"></div>
+                        <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="135"></div>
                     </div>
-                    ${mistoHtml}
                     <div class="etq-pallet-footer">COD. IDENTIFICADOR: ${codId}</div>
                 </div>
             `;
