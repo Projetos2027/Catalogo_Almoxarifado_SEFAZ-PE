@@ -561,26 +561,47 @@
                 size: A4 landscape;
                 margin: 0;
             }
-            body * { visibility: hidden !important; }
-            #areaImpressaoEtiqueta, #areaImpressaoEtiqueta * { visibility: visible !important; }
+            html, body {
+                width: 297mm !important;
+                height: 210mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background: #fff !important;
+            }
+            body > :not(#areaImpressaoEtiqueta) {
+                display: none !important;
+            }
             #areaImpressaoEtiqueta {
-                position: fixed;
-                left: 0;
-                top: 0;
-                width: 297mm;
-                height: 210mm;
-                background: #fff;
+                display: block !important;
+                position: fixed !important;
+                inset: 0 !important;
+                width: 297mm !important;
+                height: 210mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                overflow: hidden !important;
+                z-index: 99999 !important;
             }
             .etq-pallet {
-                width: 297mm;
-                height: 210mm;
-                page-break-after: always;
-                break-after: page;
+                width: 296mm !important;
+                height: 209mm !important;
+                max-width: 296mm !important;
+                max-height: 209mm !important;
+                margin: 0 !important;
+                page-break-before: avoid !important;
+                page-break-after: avoid !important;
+                break-before: avoid !important;
+                break-after: avoid !important;
+                break-inside: avoid !important;
             }
             .etq-prateleira {
-                width: 210mm;
-                height: 148.5mm;
-                page-break-after: always;
+                width: 210mm !important;
+                height: 148.5mm !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                break-inside: avoid !important;
             }
         }
 
