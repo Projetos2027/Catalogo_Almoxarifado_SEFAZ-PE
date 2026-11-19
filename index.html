@@ -507,94 +507,113 @@
             padding: 16px;
             border-radius: 8px;
             display: flex;
-            justify-content: flex-start;
+            justify-content: center;
             align-items: flex-start;
-            overflow: auto;
-            max-height: 52vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 54vh;
             margin-top: 10px;
+            position: relative;
+        }
+        .label-preview-stage {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            flex-shrink: 0;
+        }
+        .label-preview-scaler {
+            transform-origin: top left;
+            flex-shrink: 0;
         }
         .etq-pallet {
-            width: 297mm;
-            height: 210mm;
+            width: 263mm;
+            height: 176mm;
             background: #fff;
             border: 4px solid #0f172a;
             color: #0f172a;
-            padding: 22px 28px;
+            padding: 18px 24px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             flex-shrink: 0;
+            box-sizing: border-box;
         }
         .etq-pallet-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 3px solid #0f172a;
-            padding-bottom: 12px;
-            margin-bottom: 16px;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
             font-weight: 900;
-            font-size: 1.45rem;
+            font-size: 1.4rem;
         }
         .etq-pallet-body {
             display: flex;
             justify-content: space-between;
-            gap: 24px;
+            gap: 20px;
             align-items: flex-start;
             flex: 1;
         }
         .etq-pallet-footer {
-            margin-top: 14px;
-            padding-top: 12px;
+            margin-top: 12px;
+            padding-top: 10px;
             border-top: 3px solid #0f172a;
-            font-size: 1.85rem;
+            font-size: 1.75rem;
             font-weight: 900;
         }
+        /* Meia folha A4 Vertical (A4 vertical = 210mm x 297mm -> meia folha = 210mm x 148.5mm; com margem larga de 15mm = 180mm x 118.5mm) */
         .etq-prateleira {
-            width: 210mm;
-            min-height: 140mm;
+            width: 180mm;
+            height: 118.5mm;
             background: #fff;
-            border: 2.5px solid #0f172a;
+            border: 3px solid #0f172a;
             color: #0f172a;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             flex-shrink: 0;
+            box-sizing: border-box;
         }
         .etq-prat-header {
             background: #0f172a;
             color: #fff;
-            padding: 14px 22px;
+            padding: 12px 20px;
             font-weight: 800;
-            font-size: 1.1rem;
-            display: flex;
-            justify-content: space-between;
-        }
-        .etq-prat-body {
-            padding: 24px 26px;
+            font-size: 1.05rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
+        }
+        .etq-prat-body {
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
             flex: 1;
         }
         .etq-prat-footer {
-            border-top: 2px solid #0f172a;
-            padding: 12px 26px;
-            font-size: 1.1rem;
+            border-top: 2.5px solid #0f172a;
+            padding: 10px 22px;
+            font-size: 1.05rem;
             font-weight: 800;
         }
         .etq-expositor {
-            width: 360px;
+            width: 95mm;
+            min-height: 45mm;
             background: #fff;
-            border: 2px solid #0f172a;
+            border: 2.5px solid #0f172a;
             border-radius: 6px;
             color: #0f172a;
-            padding: 14px 16px;
+            padding: 12px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             flex-shrink: 0;
+            box-sizing: border-box;
         }
 
         /* Tabelas de Inventário e Revisão */
@@ -617,39 +636,50 @@
         .app-view.active { display: flex; }
 
         @media print {
-            @page {
-                size: A4 landscape;
-                margin: 0;
-            }
             html, body {
-                width: 297mm !important;
-                height: 210mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                overflow: hidden !important;
                 background: #fff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             body > :not(#areaImpressaoEtiqueta) {
                 display: none !important;
             }
             #areaImpressaoEtiqueta {
-                display: block !important;
-                position: fixed !important;
-                inset: 0 !important;
-                width: 297mm !important;
-                height: 210mm !important;
+                display: flex !important;
+                align-items: flex-start !important;
+                justify-content: center !important;
+                width: 100% !important;
                 margin: 0 !important;
-                padding: 0 !important;
+                padding: 15mm !important;
+                box-sizing: border-box !important;
                 background: #fff !important;
-                overflow: hidden !important;
                 z-index: 99999 !important;
             }
-            .etq-pallet {
-                width: 296mm !important;
+            #areaImpressaoEtiqueta.print-pallet {
                 height: 209mm !important;
-                max-width: 296mm !important;
-                max-height: 209mm !important;
-                margin: 0 !important;
+                align-items: center !important;
+                padding: 16mm !important;
+                overflow: hidden !important;
+            }
+            #areaImpressaoEtiqueta.print-prateleira {
+                height: 148.5mm !important;
+                align-items: center !important;
+                padding: 15mm !important;
+                overflow: hidden !important;
+            }
+            #areaImpressaoEtiqueta.print-expositor {
+                align-items: flex-start !important;
+                justify-content: flex-start !important;
+                padding: 18mm !important;
+            }
+            .etq-pallet {
+                width: 263mm !important;
+                height: 176mm !important;
+                max-width: 263mm !important;
+                max-height: 176mm !important;
+                margin: 0 auto !important;
                 page-break-before: avoid !important;
                 page-break-after: avoid !important;
                 break-before: avoid !important;
@@ -657,10 +687,22 @@
                 break-inside: avoid !important;
             }
             .etq-prateleira {
-                width: 210mm !important;
-                height: 148.5mm !important;
+                width: 180mm !important;
+                height: 118.5mm !important;
+                max-width: 180mm !important;
+                max-height: 118.5mm !important;
+                margin: 0 auto !important;
+                page-break-before: avoid !important;
                 page-break-after: avoid !important;
+                break-before: avoid !important;
                 break-after: avoid !important;
+                break-inside: avoid !important;
+            }
+            .etq-expositor {
+                width: 95mm !important;
+                max-width: 95mm !important;
+                margin: 0 !important;
+                page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
         }
@@ -750,7 +792,7 @@
                             </button>
                             <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('prateleira')">
                                 <strong>🗄️ Etiqueta de Prateleira</strong>
-                                <small>Meia folha A4 • Sem qtd/validade • QR Code</small>
+                                <small>Meia folha A4 Vertical • Margem larga • QR Code</small>
                             </button>
                             <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('expositor')">
                                 <strong>🪧 Etiqueta de Expositor</strong>
@@ -1328,7 +1370,7 @@
 
         const titulos = {
             pallet: '📦 Imprimir Etiqueta de Pallet (A4 Horizontal • 297×210mm)',
-            prateleira: '🗄️ Imprimir Etiqueta de Prateleira (Meia Folha A4)',
+            prateleira: '🗄️ Imprimir Etiqueta de Prateleira (Meia Folha A4 Vertical)',
             expositor: '🪧 Imprimir Etiqueta de Expositor (Compacta)'
         };
         document.getElementById('tituloModalEtiquetaCatalogo').innerText = titulos[tipo] || 'Imprimir Etiqueta';
@@ -1611,21 +1653,21 @@
                 : '';
 
             const topStyle = itemUnico
-                ? 'font-size:1.85rem; padding-bottom:16px; margin-bottom:20px;'
+                ? 'font-size:1.65rem; padding-bottom:12px; margin-bottom:14px;'
                 : '';
             const efiscoStyle = itemUnico
-                ? 'font-size:3.25rem; line-height:1.12; margin-bottom:22px; letter-spacing:-0.01em;'
+                ? 'font-size:2.9rem; line-height:1.12; margin-bottom:16px; letter-spacing:-0.01em;'
                 : 'font-size:2rem; font-weight:900; margin-bottom:10px;';
             const descStyle = itemUnico
-                ? 'font-size:2.35rem; line-height:1.2; font-weight:800; margin-bottom:24px; text-transform:uppercase; word-break:break-word;'
+                ? 'font-size:2.05rem; line-height:1.2; font-weight:800; margin-bottom:16px; text-transform:uppercase; word-break:break-word;'
                 : 'font-size:1.35rem; font-weight:700; margin-bottom:12px; text-transform:uppercase;';
             const qtdStyle = itemUnico
-                ? 'font-size:2.85rem; line-height:1.15; font-weight:900; margin-top:auto;'
+                ? 'font-size:2.55rem; line-height:1.15; font-weight:900; margin-top:auto;'
                 : 'font-size:1.5rem; font-weight:900;';
             const footerStyle = itemUnico
-                ? 'font-size:2.35rem; padding-top:16px; margin-top:18px;'
+                ? 'font-size:2.05rem; padding-top:12px; margin-top:14px;'
                 : '';
-            const qrSize = itemUnico ? '195' : '135';
+            const qrSize = itemUnico ? '175' : '135';
             const bodyAlign = itemUnico ? 'align-items: stretch;' : 'align-items: flex-start;';
 
             return `
@@ -1663,11 +1705,11 @@
                         <span>${local}</span>
                     </div>
                     <div class="etq-prat-body">
-                        <div>
-                            <div style="font-size:1.9rem; font-weight:900; margin-bottom:12px;">COD EFISCO: ${efisco}</div>
-                            <div style="font-size:1.4rem; font-weight:800; text-transform:uppercase;">${nome}</div>
+                        <div style="flex:1;">
+                            <div style="font-size:1.75rem; font-weight:900; margin-bottom:10px;">COD EFISCO: ${efisco}</div>
+                            <div style="font-size:1.25rem; font-weight:800; text-transform:uppercase; line-height:1.25; word-break:break-word;">${nome}</div>
                         </div>
-                        <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="165"></div>
+                        <div class="qr-box-etiqueta" style="flex-shrink:0;" data-qr="${montarUrlQrItem(efisco)}" data-size="140"></div>
                     </div>
                     <div class="etq-prat-footer">UNIDADE: ${unid}</div>
                 </div>
@@ -1702,20 +1744,65 @@
         });
     }
 
+    function ajustarEscalaPreviewEtiqueta() {
+        const wrapper = document.getElementById('previewEtiquetaCatalogo');
+        if (!wrapper) return;
+        const stage = wrapper.querySelector('.label-preview-stage');
+        const scaler = wrapper.querySelector('.label-preview-scaler');
+        const labelEl = scaler ? scaler.firstElementChild : null;
+        if (!stage || !scaler || !labelEl) return;
+
+        scaler.style.transform = 'none';
+        stage.style.width = '';
+        stage.style.height = '';
+
+        const style = window.getComputedStyle(wrapper);
+        const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+        const disponivelW = Math.max(120, wrapper.clientWidth - padX);
+        const naturalW = labelEl.offsetWidth;
+        const naturalH = labelEl.offsetHeight;
+
+        if (naturalW > 0 && naturalH > 0) {
+            const escala = Math.min(1, disponivelW / naturalW);
+            scaler.style.transform = `scale(${escala})`;
+            stage.style.width = `${Math.ceil(naturalW * escala)}px`;
+            stage.style.height = `${Math.ceil(naturalH * escala)}px`;
+        }
+    }
+
     function atualizarPreviewEtiquetaCatalogo() {
         const preview = document.getElementById('previewEtiquetaCatalogo');
-        preview.innerHTML = montarHtmlEtiquetaAtual();
+        preview.innerHTML = `<div class="label-preview-stage"><div class="label-preview-scaler">${montarHtmlEtiquetaAtual()}</div></div>`;
         renderizarQrEmContainer(preview);
+        requestAnimationFrame(ajustarEscalaPreviewEtiqueta);
     }
+
+    window.addEventListener('resize', () => {
+        if (document.getElementById('modalEtiquetaCatalogo')?.classList.contains('active')) {
+            ajustarEscalaPreviewEtiqueta();
+        }
+    });
 
     function imprimirEtiquetaCatalogo() {
         const area = document.getElementById('areaImpressaoEtiqueta');
+        area.className = `print-${tipoEtiquetaAtual}`;
         area.innerHTML = montarHtmlEtiquetaAtual();
         renderizarQrEmContainer(area);
-        area.style.display = 'block';
+
+        let pageRuleEl = document.getElementById('dynamicPrintPageStyle');
+        if (!pageRuleEl) {
+            pageRuleEl = document.createElement('style');
+            pageRuleEl.id = 'dynamicPrintPageStyle';
+            document.head.appendChild(pageRuleEl);
+        }
+        const orientacao = tipoEtiquetaAtual === 'pallet' ? 'A4 landscape' : 'A4 portrait';
+        pageRuleEl.textContent = `@media print { @page { size: ${orientacao}; margin: 0; } }`;
+
+        area.style.display = 'flex';
         setTimeout(() => {
             window.print();
             area.style.display = 'none';
+            area.className = '';
         }, 150);
     }
 
