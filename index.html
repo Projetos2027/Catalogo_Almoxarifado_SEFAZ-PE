@@ -1,3 +1,2157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Almoxarifado SEFAZ/PE - ERP Moderno</title>
+    <!-- SDK Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca para gerar QR Codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Biblioteca para gerar Códigos de Barras -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- Biblioteca xlsx-js-style para ler e gerar arquivos Excel (.xlsx) COM ESTILOS E BORDAS -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <!-- Biblioteca html2pdf para gerar arquivos PDF formatados -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Biblioteca PDF.js para ler arquivos PDF de recebimento -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Biblioteca Tesseract.js para OCR (leitura de validade/embalagem nas fotos) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; flex-direction: column; }
+        
+        /* Top Bar Principal */
+        .top-navbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 110;
+        }
+        .top-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+        }
+        .top-nav-links {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+            align-items: center;
+            height: 100%;
+        }
+        .top-nav-item {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: 0.15s;
+        }
+        .top-nav-item:hover, .top-nav-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+        .top-user-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .user-profile-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        /* Layout Principal com Sidebar e Conteúdo */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            margin-top: 60px;
+        }
+
+        /* Sidebar Minimalista */
+        aside {
+            width: 260px;
+            background: white;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 60px;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .sidebar-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .sidebar-section h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            font-weight: 700;
+            margin: 0;
+        }
+        .sidebar-arrow {
+            font-size: 0.75rem;
+            color: var(--muted);
+            transition: transform 0.2s ease;
+        }
+        .sidebar-arrow.collapsed {
+            transform: rotate(-90deg);
+        }
+        .sidebar-nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+        }
+        .sidebar-nav-list.hidden {
+            display: none;
+        }
+        .sidebar-nav-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: var(--text);
+            transition: 0.15s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-nav-item:hover, .sidebar-nav-item.active {
+            background: #eff6ff;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .btn-filtros-sidebar {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        /* Conteúdo Principal */
+        .content-wrapper {
+            margin-left: 260px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 60px);
+        }
+        .sub-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            position: sticky;
+            top: 60px;
+            z-index: 90;
+        }
+        .search-spotlight {
+            flex: 1;
+            max-width: 500px;
+            position: relative;
+        }
+        .search-spotlight input {
+            width: 100%;
+            padding: 10px 14px 10px 38px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #f8fafc;
+            transition: 0.15s;
+        }
+        .search-spotlight input:focus {
+            background: white;
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .search-spotlight span {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+        }
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Autocomplete no Seletor de Etiqueta */
+        .autocomplete-box { position: relative; }
+        .autocomplete-input-wrap { position: relative; display: flex; align-items: center; }
+        .autocomplete-input-wrap input {
+            width: 100%;
+            padding: 10px 38px 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #fff;
+            font-size: 0.92rem;
+        }
+        .autocomplete-clear-btn {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 2px 6px;
+        }
+        .autocomplete-clear-btn:hover { color: var(--text); }
+        .autocomplete-suggestions {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 4px);
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 1300;
+        }
+        .autocomplete-suggestions.open { display: block; }
+        .autocomplete-suggestion-item {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .autocomplete-suggestion-item:last-child { border-bottom: none; }
+        .autocomplete-suggestion-item:hover,
+        .autocomplete-suggestion-item.active { background: #eff6ff; }
+        .autocomplete-suggestion-code {
+            font-family: monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .autocomplete-suggestion-desc {
+            font-size: 0.86rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* Dropdown de Etiquetas no Catálogo */
+        .label-dropdown-wrap { position: relative; display: inline-block; }
+        .label-dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+            min-width: 260px;
+            z-index: 160;
+            overflow: hidden;
+        }
+        .label-dropdown-menu.open { display: block; }
+        .label-dropdown-option {
+            width: 100%;
+            text-align: left;
+            padding: 11px 14px;
+            background: white;
+            border: none;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .label-dropdown-option:last-child { border-bottom: none; }
+        .label-dropdown-option:hover { background: #f8fafc; }
+        .label-dropdown-option strong { font-size: 0.86rem; color: var(--text); }
+        .label-dropdown-option small { font-size: 0.75rem; color: var(--muted); }
+        
+        /* Botões Padrão Executivo */
+        .btn {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text);
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .btn:hover { background: #f8fafc; border-color: var(--muted); }
+        .btn-add { background: var(--primary); color: white; border-color: var(--primary); display: none; }
+        .btn-add:hover { background: var(--primary-light); border-color: var(--primary-light); }
+        .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; border: none; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
+        .btn-label { background: #e0f2fe; color: #0369a1; padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
+        .btn-photo { background: #fef08a; color: #854d0e; padding: 6px 10px; font-size: 0.75rem; border: none; display: none; }
+
+        .catalog-container { padding: 24px; flex: 1; }
+        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+
+        .item-card {
+            background: var(--card);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.15s ease;
+        }
+        .item-card.admin-clicavel { cursor: pointer; }
+        .item-card.admin-clicavel:hover { transform: translateY(-3px); border-color: var(--primary-light); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
+        .item-card.esgotado { background: #fff5f5; border-color: #f87171; }
+        .item-card.esgotado .item-body { background: #fff5f5; }
+
+        .item-img-box {
+            width: 100%;
+            height: 170px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            border-bottom: 1px solid var(--border);
+        }
+        .item-img-box img { width: 100%; height: 100%; object-fit: cover; }
+        .badge-cod {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(15, 23, 42, 0.85);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .item-body { padding: 14px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .item-cat { font-size: 0.7rem; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.03em; }
+        .item-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+        .item-validade { font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; }
+        .item-meta { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); align-items: center; }
+        .item-actions { display: flex; gap: 4px; align-items: center; }
+
+        /* Estilo ERP Moderno (Tabela Híbrida) para a Aba Estoque */
+        .erp-container {
+            padding: 24px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .erp-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .erp-table-container {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 12px;
+            max-height: 62vh;
+        }
+        table.erp-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        table.erp-table th {
+            background: #f1f5f9;
+            color: var(--text);
+            font-weight: 600;
+            padding: 12px 14px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--border);
+        }
+        table.erp-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            background: white;
+        }
+        table.erp-table tr:hover td { background: #f8fafc; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .modal-large { max-width: 1150px; max-height: 92vh; display: flex; flex-direction: column; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #fff;
+        }
+        .form-group small { color: var(--muted); font-size: 0.75rem; display: block; margin-top: 4px; }
+        .preview-upload { width: 100%; max-height: 160px; object-fit: contain; margin-top: 8px; border-radius: 6px; display: none; }
+        .ocr-status-box { margin-top: 8px; padding: 8px 10px; border-radius: 6px; font-size: 0.8rem; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; display: none; }
+        .status-msg { text-align: center; padding: 40px; color: var(--muted); grid-column: 1 / -1; }
+
+        /* Estilos de Etiquetas no Modal e Impressão */
+        .label-preview-wrapper {
+            background: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 54vh;
+            margin-top: 10px;
+            position: relative;
+        }
+        .label-preview-stage {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            flex-shrink: 0;
+        }
+        .label-preview-scaler {
+            transform-origin: top left;
+            flex-shrink: 0;
+        }
+        .etq-pallet {
+            width: 263mm;
+            height: 176mm;
+            background: #fff;
+            border: 4px solid #0f172a;
+            color: #0f172a;
+            padding: 18px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        .etq-pallet-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+            font-weight: 900;
+            font-size: 1.4rem;
+        }
+        .etq-pallet-body {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+            flex: 1;
+        }
+        .etq-pallet-footer {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 3px solid #0f172a;
+            font-size: 1.75rem;
+            font-weight: 900;
+        }
+        /* Meia folha A4 Vertical (A4 vertical = 210mm x 297mm -> meia folha = 210mm x 148.5mm; com margem larga de 15mm = 180mm x 118.5mm) */
+        .etq-prateleira {
+            width: 180mm;
+            height: 118.5mm;
+            background: #fff;
+            border: 3px solid #0f172a;
+            color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        .etq-prat-header {
+            background: #0f172a;
+            color: #fff;
+            padding: 12px 20px;
+            font-weight: 800;
+            font-size: 1.05rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .etq-prat-body {
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            flex: 1;
+        }
+        .etq-prat-footer {
+            border-top: 2.5px solid #0f172a;
+            padding: 10px 22px;
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+        .etq-expositor {
+            width: 95mm;
+            min-height: 45mm;
+            background: #fff;
+            border: 2.5px solid #0f172a;
+            border-radius: 6px;
+            color: #0f172a;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+
+        /* Tabelas de Inventário e Revisão */
+        .inventory-table-container {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 12px;
+            max-height: 55vh;
+        }
+        table.inv-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
+        table.inv-table th { background: #f1f5f9; padding: 10px; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); }
+        table.inv-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+        .inv-input-qtd { width: 80px; padding: 6px; border: 1px solid var(--border); border-radius: 6px; font-weight: bold; text-align: center; }
+        .inv-input-text { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+
+        /* Abas Principais */
+        .app-view { display: none; flex: 1; flex-direction: column; }
+        .app-view.active { display: flex; }
+
+        @media print {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            body > :not(#areaImpressaoEtiqueta) {
+                display: none !important;
+            }
+            #areaImpressaoEtiqueta {
+                display: flex !important;
+                align-items: flex-start !important;
+                justify-content: center !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 15mm !important;
+                box-sizing: border-box !important;
+                background: #fff !important;
+                z-index: 99999 !important;
+            }
+            #areaImpressaoEtiqueta.print-pallet {
+                height: 209mm !important;
+                align-items: center !important;
+                padding: 16mm !important;
+                overflow: hidden !important;
+            }
+            #areaImpressaoEtiqueta.print-prateleira {
+                height: 148.5mm !important;
+                align-items: center !important;
+                padding: 15mm !important;
+                overflow: hidden !important;
+            }
+            #areaImpressaoEtiqueta.print-expositor {
+                align-items: flex-start !important;
+                justify-content: flex-start !important;
+                padding: 18mm !important;
+            }
+            .etq-pallet {
+                width: 263mm !important;
+                height: 176mm !important;
+                max-width: 263mm !important;
+                max-height: 176mm !important;
+                margin: 0 auto !important;
+                page-break-before: avoid !important;
+                page-break-after: avoid !important;
+                break-before: avoid !important;
+                break-after: avoid !important;
+                break-inside: avoid !important;
+            }
+            .etq-prateleira {
+                width: 180mm !important;
+                height: 118.5mm !important;
+                max-width: 180mm !important;
+                max-height: 118.5mm !important;
+                margin: 0 auto !important;
+                page-break-before: avoid !important;
+                page-break-after: avoid !important;
+                break-before: avoid !important;
+                break-after: avoid !important;
+                break-inside: avoid !important;
+            }
+            .etq-expositor {
+                width: 95mm !important;
+                max-width: 95mm !important;
+                margin: 0 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            aside { transform: translateX(-100%); transition: 0.3s; }
+            aside.mobile-open { transform: translateX(0); }
+            .content-wrapper { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Navigation Bar -->
+<nav class="top-navbar">
+    <div class="top-brand">
+        <span>🛡️</span>
+        <span>Pernambuco</span>
+        <span style="font-weight: 400; color: var(--muted);">|</span>
+        <span style="color: var(--primary);">Almoxarifado SEFAZ/PE</span>
+    </div>
+    <ul class="top-nav-links">
+        <li class="top-nav-item active" id="abaNavCatalogo" onclick="mudarAba('catalogo')">📦 Catálogo</li>
+        <li class="top-nav-item" id="abaNavEstoque" onclick="mudarAba('estoque')">📋 Estoque</li>
+        <li class="top-nav-item" id="abaNavPedidos" onclick="mudarAba('pedidos')">🛒 Pedidos</li>
+        <li class="top-nav-item" id="abaNavInventario" onclick="mudarAba('inventario')">📊 Inventário</li>
+        <li class="top-nav-item" id="abaNavRelatorios" onclick="mudarAba('relatorios')">📈 Relatórios</li>
+    </ul>
+    <div class="top-user-area">
+        <span style="cursor:pointer;" title="Notificações">🔔</span>
+        <div class="user-profile-badge" onclick="controlarSessao()">
+            <span>👤</span>
+            <span id="labelUsuarioTopo">Entrar</span>
+            <span>▼</span>
+        </div>
+    </div>
+</nav>
+
+<div class="main-layout">
+    <!-- Sidebar Minimalista -->
+    <aside id="appSidebar">
+        <div class="sidebar-section">
+            <button class="btn-filtros-sidebar">
+                <span>⚙️</span> Filtros de Busca
+            </button>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-header" onclick="toggleSecaoCategorias()">
+                <h3>Macro Categorias</h3>
+                <span class="sidebar-arrow" id="setaCategorias">▼</span>
+            </div>
+            <ul class="sidebar-nav-list" id="sidebarCategoriasList">
+                <li class="sidebar-nav-item active" onclick="selecionarMacroSidebar('')">
+                    <span>📁 Todas</span>
+                </li>
+            </ul>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-header" onclick="toggleSecaoStatus()">
+                <h3>Status</h3>
+                <span class="sidebar-arrow" id="setaStatus">▼</span>
+            </div>
+            <ul class="sidebar-nav-list" id="sidebarStatusList">
+                <li class="sidebar-nav-item active" onclick="filtrarStatusSidebar('todos')"><span>📋 Com Saldo (Catálogo)</span></li>
+                <li class="sidebar-nav-item" onclick="filtrarStatusSidebar('esgotados')"><span>⚠️ Apenas Esgotados</span></li>
+            </ul>
+        </div>
+    </aside>
+
+    <div class="content-wrapper">
+        <!-- ABA 1: CATÁLOGO -->
+        <div id="viewCatalogo" class="app-view active">
+            <div class="sub-header">
+                <div class="search-spotlight">
+                    <span>🔍</span>
+                    <input type="text" id="busca" placeholder="Buscar por código EFISCO, produto ou categoria..." oninput="filtrarItens()">
+                </div>
+                <div class="header-buttons">
+                    <div class="label-dropdown-wrap admin-only" id="wrapImprimirEtiquetas" style="display:none;">
+                        <button class="btn" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; font-weight:600;" onclick="alternarMenuEtiquetas(event)">
+                            🏷️ Imprimir Etiquetas ▾
+                        </button>
+                        <div class="label-dropdown-menu" id="menuEtiquetasCatalogo">
+                            <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('pallet')">
+                                <strong>📦 Etiqueta de Pallet</strong>
+                                <small>A4 Horizontal (297×210mm) • UALMOX SEFAZ/PE</small>
+                            </button>
+                            <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('prateleira')">
+                                <strong>🗄️ Etiqueta de Prateleira</strong>
+                                <small>Meia folha A4 Vertical • Margem larga • QR Code</small>
+                            </button>
+                            <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('expositor')">
+                                <strong>🪧 Etiqueta de Expositor</strong>
+                                <small>Pequena • Código, nome e QR Code</small>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn btn-import-pdf admin-only" id="btnImportarPdf" onclick="abrirModalImportarPdf()" style="display:none;">📥 Novo Recebimento</button>
+                    <button class="btn btn-import admin-only" id="btnImportar" onclick="abrirModalImportar()" style="display:none;">📥 Carregar Catálogo</button>
+                    <button class="btn btn-add admin-only" id="btnNovoItem" onclick="abrirModalCadastro()" style="display:none;">+ Novo Item</button>
+                </div>
+            </div>
+            <div class="catalog-container">
+                <div class="catalog-grid" id="gridCatalogo">
+                    <div class="status-msg">Carregando itens do catálogo com saldo...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: ESTOQUE (ERP Moderno Híbrido) -->
+        <div id="viewEstoque" class="app-view">
+            <div class="sub-header">
+                <div class="search-spotlight">
+                    <span>🔍</span>
+                    <input type="text" id="buscaEstoque" placeholder="Pesquisar por Código, Produto ou Empenho..." oninput="renderizarTabelaEstoque()">
+                </div>
+                <div class="header-buttons">
+                    <button class="btn admin-only" onclick="abrirModalEntradaEstoqueManual()" style="display:none; background:var(--primary); color:white; border:none;">➕ Entrada Manual / Empenho</button>
+                    <button class="btn admin-only" onclick="abrirModalImportarPdf()" style="display:none;">📥 Entrada via PDF</button>
+                </div>
+            </div>
+            <div class="erp-container">
+                <div class="erp-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2 style="font-size: 1.15rem; color: var(--text);">📋 Controle de Estoque por Hierarquia e PK (Código + U.M)</h2>
+                            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 2px;">Macro Categoria > Categoria > Micro Categoria | Preço Médio e Saldos</p>
+                        </div>
+                        <span id="badgeTotalEstoque" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 SKUs Ativos: 0</span>
+                    </div>
+                    <div class="erp-table-container">
+                        <table class="erp-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Produto / Descrição</th>
+                                    <th>Macro > Cat > Micro</th>
+                                    <th>U.M</th>
+                                    <th style="text-align: right;">Preço Médio</th>
+                                    <th style="text-align: center;">Disponível</th>
+                                    <th style="text-align: center;">Reservado</th>
+                                    <th>Empenho Vinculado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaCorpoEstoque">
+                                <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--muted);">Carregando estoque...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: PEDIDOS (Saídas) -->
+        <div id="viewPedidos" class="app-view" style="padding: 24px;">
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 950px; margin: 0 auto; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 style="font-size: 1.25rem; color: var(--text);">🛒 Módulo de Pedidos e Baixas (Saídas)</h2>
+                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Registre saídas manualmente ou importe o PDF gerado pelo sistema externo</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalImportarPdfPedido()">📥 Importar Pedido via PDF</button>
+                        <button class="btn btn-primary" onclick="abrirModalNovoPedido()" style="width: auto;">➕ Nova Requisição de Saída</button>
+                    </div>
+                </div>
+                <div id="listaPedidosContainer">
+                    <div class="status-msg" style="padding: 30px;">Nenhuma requisição de saída registrada neste período.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 4: INVENTÁRIO -->
+        <div id="viewInventario" class="app-view" style="padding: 24px;">
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 style="font-size: 1.25rem; color: var(--text);">📊 Módulo de Inventário e Balanço Físico</h2>
+                        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Auditoria de saldos, contagem física e atualização direta de estoque</p>
+                    </div>
+                    <div id="acoesTopoInventario" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;" onclick="abrirSeletorCorrigirBase()" title="Reimporta a planilha corrigindo números com separador de milhar">🔄 Corrigir Base (Excel)</button>
+                        <button class="btn" style="background: #2563eb; color: white; border: none;" onclick="abrirModalAdicionarItemInventario()">➕ Adicionar Item Físico</button>
+                        <button class="btn" style="background: #fee2e2; color: #dc2626; border: none;" onclick="finalizarInventarioAtivo()">🏁 Finalizar Inventário</button>
+                        <button class="btn" style="background: var(--success); color: white; border: none; font-weight: bold;" onclick="finalizarInventarioAtivoDireto()">✅ Atualizar Estoque e Catálogo com Base no Inventário</button>
+                    </div>
+                </div>
+                <input type="file" id="arquivoCorrigirBaseInv" accept=".xlsx, .xls" style="display:none;" onchange="executarCorrecaoBaseInventario(event)">
+                
+                <div id="invEtapaSelecaoTela" style="display:none; text-align: center; padding: 40px;">
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 24px; border-radius: 8px; max-width: 600px; margin: 0 auto 20px auto;">
+                        <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 1.1rem;">Inventário em Andamento Encontrado</h3>
+                        <p id="periodoInventarioAtivoLabel" style="font-size: 0.95rem; color: #334155; margin-bottom: 10px;">Carregando...</p>
+                    </div>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn" style="background: #2563eb; color: white; padding: 12px 24px; border: none;" onclick="continuarContagemExistenteTela()">▶️ Continuar Contagem</button>
+                        <button class="btn" style="background: white; color: var(--text); border: 1px solid var(--border); padding: 12px 24px;" onclick="irParaIniciarNovaContagemTela()">🔄 Iniciar Nova Contagem</button>
+                    </div>
+                </div>
+
+                <div id="invEtapa1Tela" style="max-width: 600px; margin: 40px auto; width: 100%;">
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color: #1e40af; margin-bottom: 6px; font-size: 1rem;">Iniciar Novo Balanço Físico</h3>
+                        <p style="font-size: 0.9rem; color: #334155; line-height: 1.4;">Selecione o arquivo Excel base extraído do sistema para carregar a base de saldos.</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Arquivo Excel Base (.xlsx) do Sistema:</label>
+                        <input type="file" id="arquivoBaseInventario" accept=".xlsx, .xls" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; width: 100%;">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="iniciarContagemInventario()" id="btnIniciarInv">Carregar e Iniciar Contagem</button>
+                </div>
+
+                <div id="invEtapa2Tela" style="display:none; flex: 1; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <span id="badgeTotalInventario" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">📦 Total na Base: 0 itens</span>
+                            <span id="badgeFaltamContar" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">⏳ Faltam contar: 0 itens</span>
+                            <span id="statusSalvamentoNuvem" style="font-size: 0.85rem; color: var(--success); font-weight: 500;">💾 Sincronizado</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="buscaInventario" placeholder="🔍 Filtrar por código ou produto..." oninput="renderizarTabelaInventario()" style="flex: 1; min-width: 240px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
+                        <select id="filtroStatusInventario" onchange="renderizarTabelaInventario()" style="padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
+                            <option value="todos">📋 Todos os Itens</option>
+                            <option value="nao_contados">⏳ Apenas Não Contados</option>
+                            <option value="divergencias">⚠️ Apenas Divergências (Falta/Sobra)</option>
+                            <option value="ok">✅ Apenas OK</option>
+                        </select>
+                    </div>
+                    
+                    <div class="inventory-table-container">
+                        <table class="inv-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Produto</th>
+                                    <th>U.M</th>
+                                    <th style="text-align: center;">Base</th>
+                                    <th style="text-align: center;">1ª Cont.</th>
+                                    <th style="text-align: center;">2ª Cont.</th>
+                                    <th style="text-align: center;">Dif.</th>
+                                    <th>Status</th>
+                                    <th>Observações / Justificativa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaCorpoInventario"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 5: RELATÓRIOS -->
+        <div id="viewRelatorios" class="app-view" style="padding: 24px;">
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 900px; margin: 0 auto; width: 100%;">
+                <h2 style="font-size: 1.25rem; color: var(--text); margin-bottom: 6px;">📈 Central de Relatórios Executivos</h2>
+                <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 24px;">Selecione o inventário auditado para gerar os relatórios gerenciais e conferir o período de contagem.</p>
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                    <h3 style="font-size: 0.95rem; color: var(--text); margin-bottom: 12px;">🗓️ Seleção de Inventário para Relatório</h3>
+                    <div id="infoInventarioRelatorio" style="font-size: 0.95rem; color: #334155; margin-bottom: 16px;">Carregando informações...</div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn" style="background: white; color: var(--text); border: 1px solid var(--border); padding: 12px 20px;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório Executivo (.xlsx)</button>
+                        <button class="btn" style="background: white; color: var(--danger); border: 1px solid #fecaca; padding: 12px 20px;" onclick="exportarRelatorioPDF()">📥 Baixar Relatório Executivo (.pdf)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modais do Sistema -->
+<div class="modal-overlay" id="modalLogin">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Acesso Restrito (Admin)</h2>
+            <button class="close-btn" onclick="fecharModalLogin()">&times;</button>
+        </div>
+        <form onsubmit="fazerLogin(event)">
+            <div class="form-group">
+                <label>E-mail de Administrador</label>
+                <input type="email" id="loginEmail" required placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="loginSenha" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary" id="btnLogar">Entrar no Sistema</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Imprimir Etiquetas do Catálogo -->
+<div class="modal-overlay" id="modalEtiquetaCatalogo" style="z-index: 1150;">
+    <div class="modal modal-large" style="max-width: 960px;">
+        <div class="modal-header">
+            <h2 id="tituloModalEtiquetaCatalogo">Imprimir Etiqueta</h2>
+            <button class="close-btn" onclick="fecharModalEtiquetaCatalogo()">&times;</button>
+        </div>
+        <div class="form-group autocomplete-box">
+            <label>Buscar e selecionar item do catálogo (digite código ou nome — preenche automaticamente)</label>
+            <div class="autocomplete-input-wrap">
+                <input type="text" id="buscaItemEtiqueta" autocomplete="off"
+                    placeholder="Digite o código EFISCO ou parte do nome do item..."
+                    oninput="filtrarSugestoesEtiqueta()"
+                    onfocus="filtrarSugestoesEtiqueta()"
+                    onkeydown="navegarSugestoesEtiqueta(event)">
+                <button type="button" class="autocomplete-clear-btn" title="Limpar busca" onclick="limparBuscaItemEtiqueta()">✕</button>
+            </div>
+            <input type="hidden" id="seletorItemEtiqueta">
+            <div class="autocomplete-suggestions" id="sugestoesItemEtiqueta"></div>
+        </div>
+        <div id="camposEtiquetaCatalogo"></div>
+        <div class="label-preview-wrapper" id="previewEtiquetaCatalogo"></div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
+            <button type="button" class="btn" onclick="fecharModalEtiquetaCatalogo()">Cancelar</button>
+            <button type="button" class="btn" style="background: var(--primary); color: white; border: none;" onclick="imprimirEtiquetaCatalogo()">🖨️ Imprimir Etiqueta</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Consulta QR Code (Celular) -->
+<div class="modal-overlay" id="modalQrConsulta" style="z-index: 1200;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Consulta via QR Code</h2>
+            <button class="close-btn" onclick="fecharModalQrConsulta()">&times;</button>
+        </div>
+        <div id="corpoModalQrConsulta"></div>
+    </div>
+</div>
+
+<div id="areaImpressaoEtiqueta" style="display:none;"></div>
+
+<div class="modal-overlay" id="modalAdicionarItemInv" style="z-index: 1100;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Adicionar Item Não Listado</h2>
+            <button class="close-btn" onclick="fecharModalAdicionarItemInv()">&times;</button>
+        </div>
+        <form id="formItemInvManual" onsubmit="adicionarItemManualInventario(event)">
+            <div class="form-group">
+                <label>CÓDIGO *</label>
+                <input type="text" id="manualCodigo" required placeholder="Ex: 99999">
+            </div>
+            <div class="form-group">
+                <label>PRODUTO *</label>
+                <input type="text" id="manualProduto" required placeholder="Ex: Material Encontrado">
+            </div>
+            <div class="form-group">
+                <label>UNIDADE DE MEDIDA *</label>
+                <input type="text" id="manualUnidade" required value="UN">
+            </div>
+            <div class="form-group">
+                <label>QUANTIDADE CONTADA (1ª Cont.) *</label>
+                <input type="number" id="manualQtd" required min="0" value="1">
+            </div>
+            <div class="form-group">
+                <label>OBSERVAÇÃO / JUSTIFICATIVA</label>
+                <input type="text" id="manualObs" value="Item encontrado no depósito não constante na base">
+            </div>
+            <button type="submit" class="btn btn-primary">Adicionar ao Inventário</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // =================================================================
+    const SUPABASE_URL = 'https://sylzwplcbjzexryoehax.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_--VzdV5ee4_3kehOf80uQg_YQbAWY3G';
+    // =================================================================
+    
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let todosItens = [];
+    let listaPedidos = [];
+    let fornecedoresCadastrados = [];
+    let usuarioLogado = null;
+    let macroSelecionadaSidebar = '';
+    let statusFiltroSidebar = 'todos';
+    let tokenSessaoLocal = 'token_' + Math.random().toString(36).substring(2) + Date.now();
+    let intervaloVerificacaoSessao = null;
+    let itensInventarioBase = [];
+    let periodoInventarioAtual = 'Nenhum inventário ativo';
+    let categoriasRecolhidas = false;
+    let statusRecolhidos = false;
+    let tipoEtiquetaAtual = 'pallet';
+    let itensPalletMisto = [];
+
+    function parseNumeroBR(valor) {
+        if (valor === null || valor === undefined || valor === '') return 0;
+        if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
+        let str = String(valor).trim().replace(/\s/g, '');
+        if (!str) return 0;
+        if (str.includes(',')) {
+            str = str.replace(/\./g, '').replace(',', '.');
+            const num = parseFloat(str);
+            return isNaN(num) ? 0 : num;
+        }
+        if (/^\d{1,3}(\.\d{3})+$/.test(str)) {
+            const num = parseInt(str.replace(/\./g, ''), 10);
+            return isNaN(num) ? 0 : num;
+        }
+        const num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
+    }
+
+    async function iniciarSistema() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            await registrarSessaoAtiva(session.user.email);
+            iniciarVigilanciaSessao(session.user.email);
+        }
+        atualizarEstadoAuth(session ? session.user : null);
+        
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                await registrarSessaoAtiva(session.user.email);
+                iniciarVigilanciaSessao(session.user.email);
+            } else {
+                pararVigilanciaSessao();
+            }
+            atualizarEstadoAuth(session ? session.user : null);
+        });
+
+        await verificarInventarioNuvem();
+        await carregarItens();
+        verificarParametroQrUrl();
+    }
+
+    function mudarAba(nomeAba) {
+        document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.top-nav-item').forEach(i => i.classList.remove('active'));
+        if (nomeAba === 'catalogo') {
+            document.getElementById('viewCatalogo').classList.add('active');
+            document.getElementById('abaNavCatalogo').classList.add('active');
+            filtrarItens();
+        } else if (nomeAba === 'estoque') {
+            document.getElementById('viewEstoque').classList.add('active');
+            document.getElementById('abaNavEstoque').classList.add('active');
+            renderizarTabelaEstoque();
+        } else if (nomeAba === 'pedidos') {
+            document.getElementById('viewPedidos').classList.add('active');
+            document.getElementById('abaNavPedidos').classList.add('active');
+            renderizarListaPedidos();
+        } else if (nomeAba === 'inventario') {
+            document.getElementById('viewInventario').classList.add('active');
+            document.getElementById('abaNavInventario').classList.add('active');
+            atualizarVisualTelaInventario();
+        } else if (nomeAba === 'relatorios') {
+            document.getElementById('viewRelatorios').classList.add('active');
+            document.getElementById('abaNavRelatorios').classList.add('active');
+            atualizarPainelRelatorios();
+        }
+    }
+
+    function toggleSecaoCategorias() {
+        categoriasRecolhidas = !categoriasRecolhidas;
+        document.getElementById('sidebarCategoriasList').classList.toggle('hidden', categoriasRecolhidas);
+        document.getElementById('setaCategorias').classList.toggle('collapsed', categoriasRecolhidas);
+    }
+
+    function toggleSecaoStatus() {
+        statusRecolhidos = !statusRecolhidos;
+        document.getElementById('sidebarStatusList').classList.toggle('hidden', statusRecolhidos);
+        document.getElementById('setaStatus').classList.toggle('collapsed', statusRecolhidos);
+    }
+
+    async function registrarSessaoAtiva(email) {
+        await supabaseClient.from('controle_sessao').upsert({ id: 1, token_sessao: tokenSessaoLocal, email_admin: email, atualizado_em: new Date() });
+    }
+
+    function iniciarVigilanciaSessao(email) {
+        if (intervaloVerificacaoSessao) clearInterval(intervaloVerificacaoSessao);
+        intervaloVerificacaoSessao = setInterval(async () => {
+            if (!usuarioLogado) return;
+            const { data } = await supabaseClient.from('controle_sessao').select('token_sessao').eq('id', 1).single();
+            if (data && data.token_sessao !== tokenSessaoLocal) {
+                pararVigilanciaSessao();
+                await supabaseClient.auth.signOut();
+                alert('Sua sessão foi encerrada por login em outro dispositivo.');
+                window.location.reload();
+            }
+        }, 5000);
+    }
+
+    function pararVigilanciaSessao() {
+        if (intervaloVerificacaoSessao) { clearInterval(intervaloVerificacaoSessao); intervaloVerificacaoSessao = null; }
+    }
+
+    function atualizarEstadoAuth(user) {
+        usuarioLogado = user;
+        const botoesAdmin = document.querySelectorAll('.admin-only');
+        const labelUsuario = document.getElementById('labelUsuarioTopo');
+        if (user) {
+            botoesAdmin.forEach(el => el.style.display = 'inline-flex');
+            const nomeAdmin = user.email.split('@')[0];
+            labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
+        } else {
+            botoesAdmin.forEach(el => el.style.display = 'none');
+            document.getElementById('menuEtiquetasCatalogo')?.classList.remove('open');
+            labelUsuario.innerText = 'Entrar';
+        }
+        filtrarItens();
+    }
+
+    function controlarSessao() {
+        if (usuarioLogado) {
+            if (confirm('Deseja sair do modo administrador?')) {
+                supabaseClient.auth.signOut();
+                alert('Você saiu do modo administrador.');
+            }
+        } else {
+            document.getElementById('modalLogin').classList.add('active');
+        }
+    }
+
+    async function fazerLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const senha = document.getElementById('loginSenha').value;
+        const btn = document.getElementById('btnLogar');
+        btn.disabled = true; btn.innerText = 'Entrando...';
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+        btn.disabled = false; btn.innerText = 'Entrar no Sistema';
+        if (error) {
+            alert('Erro ao entrar: E-mail ou senha incorretos.');
+        } else {
+            fecharModalLogin();
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginSenha').value = '';
+            alert('Login efetuado com sucesso!');
+        }
+    }
+    function fecharModalLogin() { document.getElementById('modalLogin').classList.remove('active'); }
+
+    async function carregarItens() {
+        const grid = document.getElementById('gridCatalogo');
+        const { data, error } = await supabaseClient.from('bens').select('*').order('criado_em', { ascending: false });
+        if (error) {
+            grid.innerHTML = `<div class="status-msg">Erro ao carregar: ${error.message}</div>`;
+            return;
+        }
+        todosItens = data || [];
+        atualizarSidebarMacroCategorias();
+        filtrarItens();
+        renderizarTabelaEstoque();
+    }
+
+    function formatarDataBR(dataIso) {
+        if (!dataIso) return 'Indeterminada';
+        const partes = dataIso.split('T')[0].split('-');
+        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        return dataIso;
+    }
+
+    function obterTodasMacroUnicas() {
+        const macros = todosItens.map(i => i.macro_categoria || i.MACRO_CATEGORIA || 'Geral').filter(Boolean);
+        return [...new Set(macros)].sort();
+    }
+
+    function atualizarSidebarMacroCategorias() {
+        const listaMacros = obterTodasMacroUnicas();
+        const container = document.getElementById('sidebarCategoriasList');
+        let html = `<li class="sidebar-nav-item ${macroSelecionadaSidebar === '' ? 'active' : ''}" onclick="selecionarMacroSidebar('')"><span>📁 Todas</span><span>(${todosItens.length})</span></li>`;
+        listaMacros.forEach(macro => {
+            const count = todosItens.filter(i => (i.macro_categoria || i.MACRO_CATEGORIA || 'Geral') === macro).length;
+            html += `<li class="sidebar-nav-item ${macroSelecionadaSidebar === macro ? 'active' : ''}" onclick="selecionarMacroSidebar('${macro}')"><span>${macro}</span><span>(${count})</span></li>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function selecionarMacroSidebar(macro) {
+        macroSelecionadaSidebar = macro;
+        atualizarSidebarMacroCategorias();
+        filtrarItens();
+    }
+
+    function filtrarStatusSidebar(status) {
+        statusFiltroSidebar = status;
+        filtrarItens();
+    }
+
+    function filtrarItens() {
+        const termo = document.getElementById('busca') ? document.getElementById('busca').value.toLowerCase() : '';
+        const filtrados = todosItens.filter(item => {
+            const qtd = Number(item.QUANTIDADE || item.quantidade || 0);
+            if (statusFiltroSidebar === 'esgotados') {
+                if (qtd > 0) return false;
+            } else {
+                if (qtd <= 0) return false;
+            }
+            const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
+            const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
+            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || 'Geral');
+            const bateTexto = cod.includes(termo) || prod.includes(termo);
+            const bateMacro = !macroSelecionadaSidebar || macro === macroSelecionadaSidebar;
+            return bateTexto && bateMacro;
+        });
+        renderizarGrid(filtrados);
+    }
+
+    function renderizarGrid(lista) {
+        const grid = document.getElementById('gridCatalogo');
+        if (lista.length === 0) {
+            grid.innerHTML = '<div class="status-msg">Nenhum item encontrado no catálogo.</div>';
+            return;
+        }
+        grid.innerHTML = lista.map(item => {
+            const qtdExibida = Number(item.QUANTIDADE || item.quantidade || 0);
+            const esgotado = qtdExibida === 0;
+            const validadeTexto = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
+            const eAdmin = !!usuarioLogado;
+            const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Geral';
+            const categ = item.categoria || item.CATEGORIA || 'Geral';
+            const micro = item.micro_categoria || item.MICRO_CATEGORIA || 'Geral';
+            return `
+            <div class="item-card ${esgotado ? 'esgotado' : ''} ${eAdmin ? 'admin-clicavel' : ''}">
+                <div class="item-img-box">
+                    <span class="badge-cod">${item["CÓDIGO EFISCO"] || item.codigo || 'SEM CÓDIGO'}</span>
+                    ${item.foto_url ? `<img src="${item.foto_url}" alt="${item.PRODUTO || item.produto}" loading="lazy">` : `<span style="color:#94a3b8; font-size:0.85rem;">📷 Sem foto</span>`}
+                </div>
+                <div class="item-body">
+                    <div>
+                        <div class="item-cat">${macro} > ${categ} > ${micro}</div>
+                        <div class="item-title">${item.PRODUTO || item.produto || 'Sem descrição'}</div>
+                        <div class="item-validade">⏳ Validade: <b>${validadeTexto}</b></div>
+                    </div>
+                    <div class="item-meta">
+                        <span>Qtd Disponível: <b>${qtdExibida}</b> (${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'}) ${esgotado ? '<span style="color:var(--danger); font-weight:bold; margin-left:4px;">(Esgotado)</span>' : ''}</span>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    // =================================================================
+    // IMPRESSÃO DE ETIQUETAS NO CATÁLOGO (ADMIN)
+    // =================================================================
+    function alternarMenuEtiquetas(e) {
+        e.stopPropagation();
+        if (!usuarioLogado) return;
+        document.getElementById('menuEtiquetasCatalogo').classList.toggle('open');
+    }
+    document.addEventListener('click', () => {
+        document.getElementById('menuEtiquetasCatalogo')?.classList.remove('open');
+    });
+
+    function padraoCodigoPalletHoje() {
+        const d = new Date();
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}${mm}${yyyy}.A`;
+    }
+
+    function montarUrlQrItem(codigoEfisco) {
+        return `${window.location.origin}${window.location.pathname}?qr_item=${encodeURIComponent(codigoEfisco || '')}`;
+    }
+
+    function abrirModalEtiquetaCatalogo(tipo) {
+        if (!usuarioLogado) return alert('Acesso restrito ao administrador.');
+        tipoEtiquetaAtual = tipo;
+        itensPalletMisto = [];
+        document.getElementById('menuEtiquetasCatalogo').classList.remove('open');
+
+        const titulos = {
+            pallet: '📦 Imprimir Etiqueta de Pallet (A4 Horizontal • 297×210mm)',
+            prateleira: '🗄️ Imprimir Etiqueta de Prateleira (Meia Folha A4 Vertical)',
+            expositor: '🪧 Imprimir Etiqueta de Expositor (Compacta)'
+        };
+        document.getElementById('tituloModalEtiquetaCatalogo').innerText = titulos[tipo] || 'Imprimir Etiqueta';
+
+        renderizarCamposEtiquetaCatalogo(tipo);
+        const inputBusca = document.getElementById('buscaItemEtiqueta');
+        const hiddenSel = document.getElementById('seletorItemEtiqueta');
+        const sugBox = document.getElementById('sugestoesItemEtiqueta');
+        if (inputBusca) inputBusca.value = '';
+        if (hiddenSel) hiddenSel.value = '';
+        if (sugBox) sugBox.classList.remove('open');
+        atualizarPreviewEtiquetaCatalogo();
+
+        document.getElementById('modalEtiquetaCatalogo').classList.add('active');
+    }
+
+    function fecharModalEtiquetaCatalogo() {
+        document.getElementById('modalEtiquetaCatalogo').classList.remove('active');
+    }
+
+    function renderizarCamposEtiquetaCatalogo(tipo) {
+        const box = document.getElementById('camposEtiquetaCatalogo');
+        if (tipo === 'pallet') {
+            box.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+                    <div class="form-group">
+                        <label>COD EFISCO</label>
+                        <input type="text" id="etqPalletEfisco" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>VALIDADE</label>
+                        <input type="text" id="etqPalletValidade" value="INDETERMINADA" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>QTD</label>
+                        <input type="text" id="etqPalletQtd" value="1" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>COD. IDENTIFICADOR</label>
+                        <input type="text" id="etqPalletCodId" value="${padraoCodigoPalletHoje()}" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>DESCRIÇÃO DO MATERIAL</label>
+                    <input type="text" id="etqPalletDesc" oninput="atualizarPreviewEtiquetaCatalogo()">
+                </div>
+                <div style="padding:10px; border:1px dashed var(--border); border-radius:8px; margin-bottom:10px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; cursor:pointer;">
+                        <input type="checkbox" id="etqPalletMistoCheck" onchange="atualizarPreviewEtiquetaCatalogo()">
+                        Pallet Misto (adicionar vários itens)
+                    </label>
+                    <div style="display:grid; grid-template-columns: 1fr 2fr 1fr auto; gap:8px; margin-top:8px;">
+                        <input type="text" id="mistoCodInput" placeholder="Cód. EFISCO">
+                        <input type="text" id="mistoDescInput" placeholder="Descrição">
+                        <input type="text" id="mistoQtdInput" placeholder="Qtd">
+                        <button type="button" class="btn" onclick="adicionarItemPalletMisto()">+ Item</button>
+                    </div>
+                    <div id="listaPalletMistoPreview" style="margin-top:8px; font-size:0.82rem;"></div>
+                </div>
+            `;
+        } else if (tipo === 'prateleira') {
+            box.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+                    <div class="form-group">
+                        <label>PRATELEIRA / POSIÇÃO</label>
+                        <input type="text" id="etqPratLocal" value="PRATELEIRA A-02" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>COD EFISCO</label>
+                        <input type="text" id="etqPratEfisco" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>UNIDADE</label>
+                        <input type="text" id="etqPratUnidade" value="UN" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>NOME DO ITEM</label>
+                    <input type="text" id="etqPratNome" oninput="atualizarPreviewEtiquetaCatalogo()">
+                </div>
+            `;
+        } else if (tipo === 'expositor') {
+            box.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
+                    <div class="form-group">
+                        <label>COD EFISCO</label>
+                        <input type="text" id="etqExpEfisco" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                    <div class="form-group">
+                        <label>NOME DO ITEM</label>
+                        <input type="text" id="etqExpNome" oninput="atualizarPreviewEtiquetaCatalogo()">
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function adicionarItemPalletMisto() {
+        const cod = document.getElementById('mistoCodInput').value.trim();
+        const desc = document.getElementById('mistoDescInput').value.trim();
+        const qtd = document.getElementById('mistoQtdInput').value.trim() || '1';
+        if (!cod && !desc) return;
+        itensPalletMisto.push({ cod, desc, qtd });
+        document.getElementById('mistoCodInput').value = '';
+        document.getElementById('mistoDescInput').value = '';
+        document.getElementById('mistoQtdInput').value = '';
+        renderizarListaPalletMisto();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function renderizarListaPalletMisto() {
+        const el = document.getElementById('listaPalletMistoPreview');
+        if (!el) return;
+        el.innerHTML = itensPalletMisto.map((m, i) => `
+            <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                <span><b>${m.cod}</b> - ${m.desc} (Qtd: ${m.qtd})</span>
+                <button type="button" style="border:none; background:none; color:var(--danger); cursor:pointer;" onclick="removerItemPalletMisto(${i})">remover</button>
+            </div>
+        `).join('');
+    }
+
+    function removerItemPalletMisto(i) {
+        itensPalletMisto.splice(i, 1);
+        renderizarListaPalletMisto();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    let indiceSugestaoAtiva = -1;
+    let sugestoesAtuaisEtiqueta = [];
+
+    function normalizarTextoBusca(str) {
+        return String(str || '')
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .toLowerCase()
+            .trim();
+    }
+
+    function filtrarSugestoesEtiqueta() {
+        const input = document.getElementById('buscaItemEtiqueta');
+        const box = document.getElementById('sugestoesItemEtiqueta');
+        if (!input || !box) return;
+
+        const termo = normalizarTextoBusca(input.value);
+        const palavras = termo.split(/\s+/).filter(Boolean);
+
+        const matches = todosItens.filter(item => {
+            const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '');
+            const prod = String(item.PRODUTO || item.produto || '');
+            const alvo = normalizarTextoBusca(`${cod} ${prod}`);
+            if (palavras.length === 0) return true;
+            return palavras.every(p => alvo.includes(p));
+        }).slice(0, 25);
+
+        sugestoesAtuaisEtiqueta = matches;
+        indiceSugestaoAtiva = matches.length > 0 ? 0 : -1;
+
+        if (matches.length === 0) {
+            box.innerHTML = `<div class="autocomplete-suggestion-item" style="cursor:default; color:var(--muted);">Nenhum item encontrado para "${input.value}"</div>`;
+            box.classList.add('open');
+            return;
+        }
+
+        box.innerHTML = matches.map((item, idx) => {
+            const cod = item["CÓDIGO EFISCO"] || item.codigo || '';
+            const prod = item.PRODUTO || item.produto || 'Sem descrição';
+            const unid = item["UNIDADE DE MEDIDA"] || item.unidade || 'UN';
+            return `
+                <div class="autocomplete-suggestion-item ${idx === indiceSugestaoAtiva ? 'active' : ''}"
+                     onmousedown="selecionarSugestaoEtiqueta(${idx})">
+                    <span class="autocomplete-suggestion-code">CÓD. EFISCO: ${cod} • ${unid}</span>
+                    <span class="autocomplete-suggestion-desc">${prod}</span>
+                </div>
+            `;
+        }).join('');
+        box.classList.add('open');
+    }
+
+    function navegarSugestoesEtiqueta(e) {
+        const box = document.getElementById('sugestoesItemEtiqueta');
+        if (!box || !box.classList.contains('open') || sugestoesAtuaisEtiqueta.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            indiceSugestaoAtiva = (indiceSugestaoAtiva + 1) % sugestoesAtuaisEtiqueta.length;
+            atualizarDestaqueSugestao();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            indiceSugestaoAtiva = (indiceSugestaoAtiva - 1 + sugestoesAtuaisEtiqueta.length) % sugestoesAtuaisEtiqueta.length;
+            atualizarDestaqueSugestao();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (indiceSugestaoAtiva >= 0) selecionarSugestaoEtiqueta(indiceSugestaoAtiva);
+        } else if (e.key === 'Escape') {
+            box.classList.remove('open');
+        }
+    }
+
+    function atualizarDestaqueSugestao() {
+        const box = document.getElementById('sugestoesItemEtiqueta');
+        if (!box) return;
+        const itensEl = box.querySelectorAll('.autocomplete-suggestion-item');
+        itensEl.forEach((el, idx) => {
+            el.classList.toggle('active', idx === indiceSugestaoAtiva);
+            if (idx === indiceSugestaoAtiva) el.scrollIntoView({ block: 'nearest' });
+        });
+    }
+
+    function selecionarSugestaoEtiqueta(idx) {
+        const item = sugestoesAtuaisEtiqueta[idx];
+        if (!item) return;
+        const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '');
+        const prod = String(item.PRODUTO || item.produto || '');
+        const input = document.getElementById('buscaItemEtiqueta');
+        const hiddenSel = document.getElementById('seletorItemEtiqueta');
+        const box = document.getElementById('sugestoesItemEtiqueta');
+
+        if (input) input.value = `${cod} - ${prod}`;
+        if (hiddenSel) hiddenSel.value = cod;
+        if (box) box.classList.remove('open');
+        preencherEtiquetaComItem(item);
+    }
+
+    function limparBuscaItemEtiqueta() {
+        const input = document.getElementById('buscaItemEtiqueta');
+        const hiddenSel = document.getElementById('seletorItemEtiqueta');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        if (hiddenSel) hiddenSel.value = '';
+        filtrarSugestoesEtiqueta();
+    }
+
+    document.addEventListener('click', (e) => {
+        const box = document.getElementById('sugestoesItemEtiqueta');
+        const wrap = e.target.closest('.autocomplete-box');
+        if (box && !wrap) box.classList.remove('open');
+    });
+
+    function preencherEtiquetaComItem(itemFornecido) {
+        const codSel = document.getElementById('seletorItemEtiqueta').value;
+        const item = itemFornecido || todosItens.find(i => String(i["CÓDIGO EFISCO"] || i.codigo || '') === String(codSel));
+        if (!item) return;
+
+        const cod = item["CÓDIGO EFISCO"] || item.codigo || '';
+        const prod = item.PRODUTO || item.produto || '';
+        const unid = item["UNIDADE DE MEDIDA"] || item.unidade || 'UN';
+        const val = item.validade ? formatarDataBR(item.validade) : 'INDETERMINADA';
+
+        if (tipoEtiquetaAtual === 'pallet') {
+            document.getElementById('etqPalletEfisco').value = cod;
+            document.getElementById('etqPalletDesc').value = prod;
+            document.getElementById('etqPalletValidade').value = val;
+        } else if (tipoEtiquetaAtual === 'prateleira') {
+            document.getElementById('etqPratEfisco').value = cod;
+            document.getElementById('etqPratNome').value = prod;
+            document.getElementById('etqPratUnidade').value = unid;
+        } else if (tipoEtiquetaAtual === 'expositor') {
+            document.getElementById('etqExpEfisco').value = cod;
+            document.getElementById('etqExpNome').value = prod;
+        }
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function montarHtmlEtiquetaAtual() {
+        if (tipoEtiquetaAtual === 'pallet') {
+            const efisco = document.getElementById('etqPalletEfisco')?.value.trim() || '---';
+            const val = document.getElementById('etqPalletValidade')?.value.trim() || 'INDETERMINADA';
+            const qtd = document.getElementById('etqPalletQtd')?.value.trim() || '1';
+            const codId = document.getElementById('etqPalletCodId')?.value.trim() || padraoCodigoPalletHoje();
+            const isMisto = !!document.getElementById('etqPalletMistoCheck')?.checked;
+            const temMistoItens = isMisto && itensPalletMisto.length > 0;
+            const itemUnico = !temMistoItens;
+            const desc = isMisto ? 'PALLET MISTO' : (document.getElementById('etqPalletDesc')?.value.trim() || 'MATERIAL');
+            const mistoHtml = temMistoItens
+                ? `<div style="margin-top:12px; padding-top:10px; border-top:2px dashed #64748b; font-size:1rem;">
+                    ${itensPalletMisto.map(m => `<div style="display:flex; justify-content:space-between; padding:4px 0;"><span><b>${m.cod}</b> - ${m.desc}</span><b>QTD: ${m.qtd}</b></div>`).join('')}
+                   </div>`
+                : '';
+
+            const topStyle = itemUnico
+                ? 'font-size:1.65rem; padding-bottom:12px; margin-bottom:14px;'
+                : '';
+            const efiscoStyle = itemUnico
+                ? 'font-size:2.9rem; line-height:1.12; margin-bottom:16px; letter-spacing:-0.01em;'
+                : 'font-size:2rem; font-weight:900; margin-bottom:10px;';
+            const descStyle = itemUnico
+                ? 'font-size:2.05rem; line-height:1.2; font-weight:800; margin-bottom:16px; text-transform:uppercase; word-break:break-word;'
+                : 'font-size:1.35rem; font-weight:700; margin-bottom:12px; text-transform:uppercase;';
+            const qtdStyle = itemUnico
+                ? 'font-size:2.55rem; line-height:1.15; font-weight:900; margin-top:auto;'
+                : 'font-size:1.5rem; font-weight:900;';
+            const footerStyle = itemUnico
+                ? 'font-size:2.05rem; padding-top:12px; margin-top:14px;'
+                : '';
+            const qrSize = itemUnico ? '175' : '135';
+            const bodyAlign = itemUnico ? 'align-items: stretch;' : 'align-items: flex-start;';
+
+            return `
+                <div class="etq-pallet ${itemUnico ? 'etq-pallet-item-unico' : ''}">
+                    <div class="etq-pallet-top" style="${topStyle}">
+                        <span>UALMOX - SEFAZ/PE</span>
+                        <span>VALIDADE: ${val}</span>
+                    </div>
+                    <div class="etq-pallet-body" style="${bodyAlign}">
+                        <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; min-height:100%;">
+                            <div>
+                                <div style="font-weight:900; ${efiscoStyle}">COD EFISCO: ${efisco}</div>
+                                <div style="${descStyle}">${desc}</div>
+                            </div>
+                            <div style="${qtdStyle}">QTD: ${qtd}</div>
+                            ${mistoHtml}
+                        </div>
+                        <div class="qr-box-etiqueta" style="align-self:center; padding:8px;" data-qr="${montarUrlQrItem(efisco)}" data-size="${qrSize}"></div>
+                    </div>
+                    <div class="etq-pallet-footer" style="${footerStyle}">COD. IDENTIFICADOR: ${codId}</div>
+                </div>
+            `;
+        }
+
+        if (tipoEtiquetaAtual === 'prateleira') {
+            const local = document.getElementById('etqPratLocal')?.value.trim() || 'PRATELEIRA';
+            const efisco = document.getElementById('etqPratEfisco')?.value.trim() || '---';
+            const nome = document.getElementById('etqPratNome')?.value.trim() || 'ITEM';
+            const unid = document.getElementById('etqPratUnidade')?.value.trim() || 'UN';
+
+            return `
+                <div class="etq-prateleira">
+                    <div class="etq-prat-header">
+                        <span>UALMOX - SEFAZ/PE</span>
+                        <span>${local}</span>
+                    </div>
+                    <div class="etq-prat-body">
+                        <div style="flex:1;">
+                            <div style="font-size:1.75rem; font-weight:900; margin-bottom:10px;">COD EFISCO: ${efisco}</div>
+                            <div style="font-size:1.25rem; font-weight:800; text-transform:uppercase; line-height:1.25; word-break:break-word;">${nome}</div>
+                        </div>
+                        <div class="qr-box-etiqueta" style="flex-shrink:0;" data-qr="${montarUrlQrItem(efisco)}" data-size="140"></div>
+                    </div>
+                    <div class="etq-prat-footer">UNIDADE: ${unid}</div>
+                </div>
+            `;
+        }
+
+        const efisco = document.getElementById('etqExpEfisco')?.value.trim() || '---';
+        const nome = document.getElementById('etqExpNome')?.value.trim() || 'ITEM';
+        return `
+            <div class="etq-expositor">
+                <div>
+                    <div style="font-size:1.1rem; font-weight:900; margin-bottom:5px;">COD EFISCO: ${efisco}</div>
+                    <div style="font-size:0.92rem; font-weight:700; text-transform:uppercase; line-height:1.25;">${nome}</div>
+                </div>
+                <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="84"></div>
+            </div>
+        `;
+    }
+
+    function renderizarQrEmContainer(container) {
+        if (!window.QRCode) return;
+        container.querySelectorAll('.qr-box-etiqueta').forEach(el => {
+            el.innerHTML = '';
+            const texto = el.getAttribute('data-qr') || '';
+            const tamanho = Number(el.getAttribute('data-size') || 90);
+            new QRCode(el, {
+                text: texto,
+                width: tamanho,
+                height: tamanho,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        });
+    }
+
+    function ajustarEscalaPreviewEtiqueta() {
+        const wrapper = document.getElementById('previewEtiquetaCatalogo');
+        if (!wrapper) return;
+        const stage = wrapper.querySelector('.label-preview-stage');
+        const scaler = wrapper.querySelector('.label-preview-scaler');
+        const labelEl = scaler ? scaler.firstElementChild : null;
+        if (!stage || !scaler || !labelEl) return;
+
+        scaler.style.transform = 'none';
+        stage.style.width = '';
+        stage.style.height = '';
+
+        const style = window.getComputedStyle(wrapper);
+        const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+        const disponivelW = Math.max(120, wrapper.clientWidth - padX);
+        const naturalW = labelEl.offsetWidth;
+        const naturalH = labelEl.offsetHeight;
+
+        if (naturalW > 0 && naturalH > 0) {
+            const escala = Math.min(1, disponivelW / naturalW);
+            scaler.style.transform = `scale(${escala})`;
+            stage.style.width = `${Math.ceil(naturalW * escala)}px`;
+            stage.style.height = `${Math.ceil(naturalH * escala)}px`;
+        }
+    }
+
+    function atualizarPreviewEtiquetaCatalogo() {
+        const preview = document.getElementById('previewEtiquetaCatalogo');
+        preview.innerHTML = `<div class="label-preview-stage"><div class="label-preview-scaler">${montarHtmlEtiquetaAtual()}</div></div>`;
+        renderizarQrEmContainer(preview);
+        requestAnimationFrame(ajustarEscalaPreviewEtiqueta);
+    }
+
+    window.addEventListener('resize', () => {
+        if (document.getElementById('modalEtiquetaCatalogo')?.classList.contains('active')) {
+            ajustarEscalaPreviewEtiqueta();
+        }
+    });
+
+    function imprimirEtiquetaCatalogo() {
+        const area = document.getElementById('areaImpressaoEtiqueta');
+        area.className = `print-${tipoEtiquetaAtual}`;
+        area.innerHTML = montarHtmlEtiquetaAtual();
+        renderizarQrEmContainer(area);
+
+        let pageRuleEl = document.getElementById('dynamicPrintPageStyle');
+        if (!pageRuleEl) {
+            pageRuleEl = document.createElement('style');
+            pageRuleEl.id = 'dynamicPrintPageStyle';
+            document.head.appendChild(pageRuleEl);
+        }
+        const orientacao = tipoEtiquetaAtual === 'pallet' ? 'A4 landscape' : 'A4 portrait';
+        pageRuleEl.textContent = `@media print { @page { size: ${orientacao}; margin: 0; } }`;
+
+        area.style.display = 'flex';
+        setTimeout(() => {
+            window.print();
+            area.style.display = 'none';
+            area.className = '';
+        }, 150);
+    }
+
+    // Consulta rápida via QR Code
+    function verificarParametroQrUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const codQr = params.get('qr_item');
+        if (codQr) abrirModalQrConsulta(codQr);
+    }
+
+    function abrirModalQrConsulta(codEfisco) {
+        const item = todosItens.find(i => String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === String(codEfisco).trim());
+        const corpo = document.getElementById('corpoModalQrConsulta');
+        if (!item) {
+            corpo.innerHTML = `<p>Item com código <b>${codEfisco}</b> não encontrado.</p>`;
+            document.getElementById('modalQrConsulta').classList.add('active');
+            return;
+        }
+        const qtdSistema = Number(item.QUANTIDADE || item.quantidade || 0);
+        const unid = item["UNIDADE DE MEDIDA"] || item.unidade || 'UN';
+        const prod = item.PRODUTO || item.produto || 'Sem descrição';
+        const validade = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
+
+        corpo.innerHTML = `
+            <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:14px;">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--primary);">COD EFISCO: ${codEfisco}</div>
+                <h3 style="margin:6px 0;">${prod}</h3>
+                <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a; padding:10px 12px; border-radius:6px; margin:10px 0; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Quantidade no sistema:</span>
+                    <strong style="font-size:1.25rem;">${qtdSistema} ${unid}</strong>
+                </div>
+                <div style="font-size:0.85rem; line-height:1.6;">
+                    <div><b>Unidade:</b> ${unid}</div>
+                    <div><b>Validade:</b> ${validade}</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('modalQrConsulta').classList.add('active');
+    }
+
+    function fecharModalQrConsulta() {
+        document.getElementById('modalQrConsulta').classList.remove('active');
+    }
+
+    function renderizarTabelaEstoque() {
+        const tbody = document.getElementById('tabelaCorpoEstoque');
+        const termo = document.getElementById('buscaEstoque') ? document.getElementById('buscaEstoque').value.toLowerCase().trim() : '';
+        if (!todosItens || todosItens.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item cadastrado no estoque.</td></tr>`;
+            document.getElementById('badgeTotalEstoque').innerText = `📦 SKUs Ativos: 0`;
+            return;
+        }
+        const filtrados = todosItens.filter(item => {
+            const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
+            const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
+            const emp = String(item.empenho || '').toLowerCase();
+            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || '').toLowerCase();
+            const cat = String(item.categoria || item.CATEGORIA || '').toLowerCase();
+            const micro = String(item.micro_categoria || item.MICRO_CATEGORIA || '').toLowerCase();
+            return !termo || cod.includes(termo) || prod.includes(termo) || emp.includes(termo) || macro.includes(termo) || cat.includes(termo) || micro.includes(termo);
+        });
+        document.getElementById('badgeTotalEstoque').innerText = `📦 SKUs Ativos: ${todosItens.length}`;
+        if (filtrados.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum resultado para a busca.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = filtrados.map(item => {
+            const disp = Number(item.QUANTIDADE || item.quantidade || 0);
+            const reservado = Number(item.reservado || 0);
+            const precoMedio = Number(item.preco_medio || 0);
+            const empenho = item.empenho || '<span style="color:#94a3b8; font-style:italic;">Não vinculado</span>';
+            const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Geral';
+            const cat = item.categoria || item.CATEGORIA || 'Geral';
+            const micro = item.micro_categoria || item.MICRO_CATEGORIA || 'Geral';
+            return `
+            <tr>
+                <td><code>${item["CÓDIGO EFISCO"] || item.codigo || '---'}</code></td>
+                <td><b>${item.PRODUTO || item.produto || 'Sem descrição'}</b></td>
+                <td><span style="background:#eff6ff; color:#1d4ed8; padding:3px 8px; border-radius:4px; font-size:0.78rem; font-weight:600;">${macro} > ${cat} > ${micro}</span></td>
+                <td><b>${item["UNIDADE DE MEDIDA"] || item.unidade || 'UN'}</b></td>
+                <td style="text-align: right; font-family:monospace; font-weight:bold;">R$ ${precoMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
+                <td style="text-align: center;"><span style="color:${disp > 0 ? '#15803d' : '#b91c1c'}; font-weight:bold;">${disp}</span></td>
+                <td style="text-align: center; color:var(--muted);">${reservado}</td>
+                <td>${empenho}</td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    // --- MÓDULO DE INVENTÁRIO (Restaurado Completo) ---
+    function normalizarItensInventario(lista) {
+        return (lista || []).map(item => {
+            const c1Raw = item.contagem1;
+            const isZeroOrEmpty = (c1Raw === '' || c1Raw === null || c1Raw === undefined || Number(c1Raw) === 0);
+            const marcadoNaoEncontrado = item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado');
+            if (isZeroOrEmpty && !marcadoNaoEncontrado) return { ...item, contagem1: '', naoEncontrado: false };
+            if (Number(c1Raw) === 0 && marcadoNaoEncontrado) return { ...item, contagem1: 0, naoEncontrado: true };
+            return { ...item, naoEncontrado: false };
+        });
+    }
+
+    function itemEstaContado(item) {
+        const c1 = item.contagem1;
+        if (c1 === '' || c1 === undefined || c1 === null || isNaN(Number(c1))) return false;
+        if (Number(c1) === 0) return item.naoEncontrado === true || String(item.obs || '').toLowerCase().includes('não encontrado');
+        return true;
+    }
+
+    async function verificarInventarioNuvem() {
+        try {
+            const { data } = await supabaseClient.from('inventario_andamento').select('itens_json, atualizado_em').eq('id', 1).maybeSingle();
+            if (data && data.itens_json) {
+                const parsed = JSON.parse(data.itens_json);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    itensInventarioBase = normalizarItensInventario(parsed);
+                    periodoInventarioAtual = data.atualizado_em ? new Date(data.atualizado_em).toLocaleString('pt-BR') : 'Data não registrada';
+                    return true;
+                }
+            }
+        } catch (e) { console.error(e); }
+        itensInventarioBase = [];
+        periodoInventarioAtual = 'Nenhum inventário ativo';
+        return false;
+    }
+
+    async function salvarInventarioNuvem() {
+        if (!itensInventarioBase || itensInventarioBase.length === 0) return;
+        const jsonStr = JSON.stringify(itensInventarioBase);
+        const agora = new Date();
+        const dataHoraFormatada = agora.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
+        try {
+            await supabaseClient.from('inventario_andamento').upsert({ id: 1, itens_json: jsonStr, atualizado_em: agora });
+            periodoInventarioAtual = dataHoraFormatada;
+            const statusEl = document.getElementById('statusSalvamentoNuvem');
+            if (statusEl) statusEl.innerHTML = `💾 Sincronizado em ${dataHoraFormatada}`;
+        } catch (e) { console.error(e); }
+    }
+
+    async function atualizarVisualTelaInventario() {
+        await verificarInventarioNuvem();
+        const etapaSel = document.getElementById('invEtapaSelecaoTela');
+        const etapa1 = document.getElementById('invEtapa1Tela');
+        const etapa2 = document.getElementById('invEtapa2Tela');
+        const acoesTopo = document.getElementById('acoesTopoInventario');
+        const labelPeriodo = document.getElementById('periodoInventarioAtivoLabel');
+        if (itensInventarioBase.length > 0) {
+            etapaSel.style.display = 'block';
+            etapa1.style.display = 'none';
+            etapa2.style.display = 'none';
+            if (acoesTopo) acoesTopo.style.display = 'flex';
+            if (labelPeriodo) labelPeriodo.innerHTML = `Inventário em andamento encontrado.<br><b>Período:</b> ${periodoInventarioAtual}`;
+        } else {
+            etapaSel.style.display = 'none';
+            etapa1.style.display = 'block';
+            etapa2.style.display = 'none';
+            if (acoesTopo) acoesTopo.style.display = 'none';
+        }
+    }
+
+    function continuarContagemExistenteTela() {
+        document.getElementById('invEtapaSelecaoTela').style.display = 'none';
+        document.getElementById('invEtapa1Tela').style.display = 'none';
+        document.getElementById('invEtapa2Tela').style.display = 'flex';
+        renderizarTabelaInventario();
+    }
+
+    function irParaIniciarNovaContagemTela() {
+        if (itensInventarioBase.length > 0 && !confirm('Substituir inventário atual?')) return;
+        document.getElementById('invEtapaSelecaoTela').style.display = 'none';
+        document.getElementById('invEtapa1Tela').style.display = 'block';
+        document.getElementById('invEtapa2Tela').style.display = 'none';
+    }
+
+    function abrirSeletorCorrigirBase() {
+        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo.');
+        document.getElementById('arquivoCorrigirBaseInv').click();
+    }
+
+    function executarCorrecaoBaseInventario(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', raw: false });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+                const mapaPlanilha = new Map();
+                for (let i = 3; i < linhas.length; i++) {
+                    const r = linhas[i];
+                    if (!r || !r[0]) continue;
+                    const codigo = String(r[0]).trim();
+                    const unidade = String(r[3] || 'UN').trim();
+                    const qtdBase = parseNumeroBR(r[5]);
+                    if (qtdBase <= 0) continue;
+                    mapaPlanilha.set(`${codigo}_${unidade.toLowerCase()}`, { codigo, base: qtdBase });
+                }
+                itensInventarioBase.forEach(item => {
+                    const chave = `${String(item.codigo).trim()}_${String(item.unidade || 'UN').trim().toLowerCase()}`;
+                    if (mapaPlanilha.has(chave)) item.base = mapaPlanilha.get(chave).base;
+                });
+                await salvarInventarioNuvem();
+                renderizarTabelaInventario();
+                alert('Base corrigida com sucesso!');
+            } catch (err) { alert('Erro: ' + err.message); }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async function iniciarContagemInventario() {
+        const input = document.getElementById('arquivoBaseInventario');
+        if (!input.files || input.files.length === 0) return alert('Selecione o arquivo Excel base!');
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', raw: false });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const linhas = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+                let novosItens = [];
+                const chavesVistas = new Set();
+                for (let i = 3; i < linhas.length; i++) {
+                    let r = linhas[i];
+                    if (!r || !r[0]) continue;
+                    const codigo = String(r[0]).trim();
+                    const unidade = String(r[3] || 'UN').trim();
+                    const chave = `${codigo}_${unidade.toLowerCase()}`;
+                    if (chavesVistas.has(chave)) continue;
+                    chavesVistas.add(chave);
+                    const qtdBase = parseNumeroBR(r[5]);
+                    if (qtdBase <= 0) continue;
+                    novosItens.push({ codigo, produto: String(r[1] || '').trim(), unidade, base: qtdBase, contagem1: '', contagem2: '', naoEncontrado: false, obs: '' });
+                }
+                itensInventarioBase = novosItens;
+                await salvarInventarioNuvem();
+                continuarContagemExistenteTela();
+            } catch (err) { alert('Erro: ' + err.message); }
+        };
+        reader.readAsArrayBuffer(input.files[0]);
+    }
+
+    async function marcarNaoEncontrado(index) {
+        itensInventarioBase[index].contagem1 = 0;
+        itensInventarioBase[index].naoEncontrado = true;
+        if (!itensInventarioBase[index].obs) itensInventarioBase[index].obs = 'Item não encontrado';
+        await salvarInventarioNuvem();
+        renderizarTabelaInventario();
+    }
+
+    function abrirModalAdicionarItemInventario() { document.getElementById('modalAdicionarItemInv').classList.add('active'); }
+    function fecharModalAdicionarItemInv() { document.getElementById('modalAdicionarItemInv').classList.remove('active'); }
+
+    async function adicionarItemManualInventario(e) {
+        e.preventDefault();
+        itensInventarioBase.push({
+            codigo: document.getElementById('manualCodigo').value.trim(),
+            produto: document.getElementById('manualProduto').value.trim(),
+            unidade: document.getElementById('manualUnidade').value.trim().toUpperCase(),
+            base: 0,
+            contagem1: parseInt(document.getElementById('manualQtd').value) || 0,
+            contagem2: '',
+            naoEncontrado: false,
+            obs: document.getElementById('manualObs').value.trim()
+        });
+        await salvarInventarioNuvem();
+        renderizarTabelaInventario();
+        fecharModalAdicionarItemInv();
+    }
+
+    function renderizarTabelaInventario() {
+        const tbody = document.getElementById('tabelaCorpoInventario');
+        const termo = document.getElementById('buscaInventario') ? document.getElementById('buscaInventario').value.toLowerCase().trim() : '';
+        const filtroStatus = document.getElementById('filtroStatusInventario') ? document.getElementById('filtroStatusInventario').value : 'todos';
+        let faltamContar = 0;
+        itensInventarioBase.forEach(item => { if (!itemEstaContado(item)) faltamContar++; });
+        let html = '';
+        itensInventarioBase.forEach((item, index) => {
+            const cod = String(item.codigo || '').toLowerCase();
+            const prod = String(item.produto || '').toLowerCase();
+            if (termo && !cod.includes(termo) && !prod.includes(termo)) return;
+            const contado = itemEstaContado(item);
+            const valorInputC1 = contado ? item.contagem1 : '';
+            const c1 = contado ? Number(item.contagem1) : 0;
+            const c2 = (item.contagem2 !== '' && item.contagem2 !== null && !isNaN(Number(item.contagem2))) ? Number(item.contagem2) : null;
+            const efetiva = c2 !== null ? c2 : c1;
+            const dif = contado ? (efetiva - item.base) : null;
+            if (filtroStatus === 'nao_contados' && contado) return;
+            if (filtroStatus === 'divergencias' && (!contado || dif === 0)) return;
+            if (filtroStatus === 'ok' && (!contado || dif !== 0)) return;
+            let statusBadge = '<span style="color:#64748b; background:#f1f5f9; padding:3px 8px; border-radius:4px; font-size:0.78rem;">NÃO CONTADO</span>';
+            let difTexto = '-';
+            if (contado) {
+                difTexto = dif;
+                if (dif === 0) statusBadge = '<span style="color:var(--success); font-weight:bold;">OK</span>';
+                else if (dif > 0) statusBadge = `<span style="color:#d97706; font-weight:bold;">+${dif} (Sobra)</span>`;
+                else statusBadge = `<span style="color:var(--danger); font-weight:bold;">${dif} (Falta)</span>`;
+            }
+            html += `
+            <tr>
+                <td><button class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-right: 6px; border:none;" onclick="marcarNaoEncontrado(${index})">❌</button><code>${item.codigo}</code></td>
+                <td><b>${item.produto}</b></td>
+                <td>${item.unidade}</td>
+                <td style="text-align: center; font-weight:bold;">${item.base}</td>
+                <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${valorInputC1}" min="0" onchange="atualizarContagem(${index}, 'c1', this.value)"></td>
+                <td style="text-align: center;"><input type="number" class="inv-input-qtd" value="${item.contagem2 ?? ''}" min="0" onchange="atualizarContagem(${index}, 'c2', this.value)"></td>
+                <td style="text-align: center; font-weight:bold;">${difTexto}</td>
+                <td>${statusBadge}</td>
+                <td><input type="text" class="inv-input-text" value="${item.obs || ''}" onchange="atualizarContagem(${index}, 'obs', this.value)"></td>
+            </tr>
+            `;
+        });
+        document.getElementById('badgeTotalInventario').innerText = `📦 Total na Base: ${itensInventarioBase.length} itens`;
+        document.getElementById('badgeFaltamContar').innerText = `⏳ Faltam contar: ${faltamContar} itens`;
+        tbody.innerHTML = html || `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--muted);">Nenhum item encontrado.</td></tr>`;
+    }
+
+    async function atualizarContagem(index, tipo, valor) {
+        if (tipo === 'c1') {
+            const num = parseInt(valor);
+            itensInventarioBase[index].contagem1 = (isNaN(num) || num <= 0) ? '' : num;
+            itensInventarioBase[index].naoEncontrado = false;
+        } else if (tipo === 'c2') {
+            itensInventarioBase[index].contagem2 = (valor !== '') ? parseInt(valor) : null;
+        } else if (tipo === 'obs') {
+            itensInventarioBase[index].obs = valor;
+        }
+        await salvarInventarioNuvem();
+        if (tipo !== 'obs') renderizarTabelaInventario();
+    }
+
+    async function finalizarInventarioAtivo() {
+        if (itensInventarioBase.length === 0) return;
+        if (!confirm('Deseja atualizar o ESTOQUE/CATÁLOGO com base neste inventário e encerrar a contagem?')) return;
+        await finalizarInventarioAtivoDireto();
+    }
+
+    async function finalizarInventarioAtivoDireto() {
+        if (itensInventarioBase.length === 0) return alert('Nenhum inventário ativo para atualizar.');
+        if (!confirm('Deseja atualizar o ESTOQUE e o CATÁLOGO com base nas contagens deste inventário?')) return;
+        for (const invItem of itensInventarioBase) {
+            const contado = itemEstaContado(invItem);
+            if (!contado) continue;
+            const qFinal = invItem.contagem2 !== null && invItem.contagem2 !== undefined && !isNaN(invItem.contagem2) ? invItem.contagem2 : Number(invItem.contagem1);
+            
+            const itemEstoque = todosItens.find(i => 
+                String(i["CÓDIGO EFISCO"] || i.codigo || '').trim() === String(invItem.codigo).trim() &&
+                String(i["UNIDADE DE MEDIDA"] || i.unidade || '').trim().toUpperCase() === String(invItem.unidade).trim().toUpperCase()
+            );
             if (itemEstoque) {
                 await supabaseClient.from('bens').update({ "QUANTIDADE": qFinal }).eq('id', itemEstoque.id);
             } else {
