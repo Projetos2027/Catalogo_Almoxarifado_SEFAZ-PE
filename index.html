@@ -983,6 +983,7 @@
     </ul>
     <div class="top-user-area">
         <span style="cursor:pointer;" title="Notificações">🔔</span>
+        <button type="button" class="btn admin-only" id="btnConfigParametros" onclick="abrirModalConfigParametros()" title="Configurar Categorias e Unidades de Medida" style="display:none; padding:6px 10px; font-size:0.95rem; border-radius:20px;">⚙️</button>
         <div class="user-profile-badge" onclick="controlarSessao()">
             <span>👤</span>
             <span id="labelUsuarioTopo">Entrar</span>
@@ -1326,8 +1327,8 @@
                     <input type="text" id="editItemCodigo" required placeholder="Ex: 123456">
                 </div>
                 <div class="form-group">
-                    <label>UNIDADE DE MEDIDA *</label>
-                    <input type="text" id="editItemUnidade" required value="UN" placeholder="UN, CX, KG, PCT...">
+                    <label>UNIDADE DE MEDIDA (ENUM) *</label>
+                    <select id="editItemUnidade" required></select>
                 </div>
             </div>
 
@@ -1353,19 +1354,16 @@
 
             <div class="form-grid-3">
                 <div class="form-group">
-                    <label>MACRO CATEGORIA</label>
-                    <input type="text" id="editItemMacro" list="listaSugestoesMacro" placeholder="Ex: Engenharia">
-                    <datalist id="listaSugestoesMacro"></datalist>
+                    <label>MACRO CATEGORIA (ENUM) *</label>
+                    <select id="editItemMacro" required onchange="sincronizarCascataSelectsItem('macro')"></select>
                 </div>
                 <div class="form-group">
-                    <label>CATEGORIA</label>
-                    <input type="text" id="editItemCategoria" list="listaSugestoesCategoria" placeholder="Ex: Elétrica">
-                    <datalist id="listaSugestoesCategoria"></datalist>
+                    <label>CATEGORIA (ENUM) *</label>
+                    <select id="editItemCategoria" required onchange="sincronizarCascataSelectsItem('categoria')"></select>
                 </div>
                 <div class="form-group">
-                    <label>MICRO CATEGORIA</label>
-                    <input type="text" id="editItemMicro" list="listaSugestoesMicro" placeholder="Ex: Disjuntor">
-                    <datalist id="listaSugestoesMicro"></datalist>
+                    <label>MICRO CATEGORIA (ENUM) *</label>
+                    <select id="editItemMicro" required></select>
                 </div>
             </div>
 
@@ -1437,6 +1435,95 @@
 </div>
 
 <div id="areaImpressaoEtiqueta" style="display:none;"></div>
+
+
+<!-- Modal Configuração de Categorias e Unidades de Medida (Enum) -->
+<div class="modal-overlay" id="modalConfigParametros" style="z-index: 1280;">
+    <div class="modal modal-large" style="max-width: 820px;">
+        <div class="modal-header">
+            <h2>⚙️ Configurações — Categorias e Unidades de Medida</h2>
+            <button class="close-btn" onclick="fecharModalConfigParametros()">&times;</button>
+        </div>
+
+        <div style="display:flex; gap:8px; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:16px; flex-wrap:wrap;">
+            <button type="button" class="btn" id="tabCfgCategorias" onclick="alternarAbaConfig('categorias')" style="background:var(--primary); color:#fff; border-color:var(--primary); font-weight:600;">🗂️ Categorias (Macro / Cat / Micro)</button>
+            <button type="button" class="btn" id="tabCfgUnidades" onclick="alternarAbaConfig('unidades')">📏 Unidades de Medida</button>
+        </div>
+
+        <!-- Aba Categorias -->
+        <div id="painelCfgCategorias">
+            <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:16px;">
+                <h3 style="font-size:0.92rem; margin-bottom:10px;" id="tituloFormCategoriaCfg">➕ Nova Categoria</h3>
+                <div class="form-grid-3">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>MACRO CATEGORIA *</label>
+                        <input type="text" id="cfgMacroInput" placeholder="Ex: Engenharia">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>CATEGORIA *</label>
+                        <input type="text" id="cfgCategoriaInput" placeholder="Ex: Elétrica">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>MICRO CATEGORIA *</label>
+                        <input type="text" id="cfgMicroInput" placeholder="Ex: Disjuntor">
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+                    <button type="button" class="btn" id="btnCancelarEditCategoria" onclick="limparFormCategoriaCfg()" style="display:none;">Cancelar Edição</button>
+                    <button type="button" class="btn btn-primary" id="btnSalvarCategoriaCfg" onclick="salvarCategoriaConfig()" style="width:auto; padding:8px 16px;">💾 Adicionar Categoria</button>
+                </div>
+            </div>
+
+            <div class="erp-table-container" style="max-height: 320px; margin-top:0;">
+                <table class="erp-table">
+                    <thead>
+                        <tr>
+                            <th>Macro Categoria</th>
+                            <th>Categoria</th>
+                            <th>Micro Categoria</th>
+                            <th style="text-align:right; width:150px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCorpoCategoriasCfg"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Aba Unidades de Medida -->
+        <div id="painelCfgUnidades" style="display:none;">
+            <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:16px;">
+                <h3 style="font-size:0.92rem; margin-bottom:10px;" id="tituloFormUnidadeCfg">➕ Nova Unidade de Medida</h3>
+                <div class="form-grid-2">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>SIGLA / CÓDIGO (ENUM) *</label>
+                        <input type="text" id="cfgUnidadeSiglaInput" placeholder="Ex: UN, CX, KG, PCT, M" maxlength="12" style="text-transform:uppercase;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>DESCRIÇÃO *</label>
+                        <input type="text" id="cfgUnidadeNomeInput" placeholder="Ex: Unidade, Caixa, Quilograma">
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+                    <button type="button" class="btn" id="btnCancelarEditUnidade" onclick="limparFormUnidadeCfg()" style="display:none;">Cancelar Edição</button>
+                    <button type="button" class="btn btn-primary" id="btnSalvarUnidadeCfg" onclick="salvarUnidadeConfig()" style="width:auto; padding:8px 16px;">💾 Adicionar Unidade</button>
+                </div>
+            </div>
+
+            <div class="erp-table-container" style="max-height: 320px; margin-top:0;">
+                <table class="erp-table">
+                    <thead>
+                        <tr>
+                            <th style="width:120px;">Sigla</th>
+                            <th>Descrição</th>
+                            <th style="text-align:right; width:150px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCorpoUnidadesCfg"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal-overlay" id="modalAdicionarItemInv" style="z-index: 1100;">
     <div class="modal">
@@ -1675,6 +1762,7 @@
             } catch (_) {}
             return it;
         });
+        sincronizarEnumsComItensExistentes(true);
         atualizarSidebarMacroCategorias();
         filtrarItens();
         renderizarTabelaEstoque();
@@ -2823,6 +2911,427 @@
     // =================================================================
     // EDIÇÃO E CADASTRO DE ITEM DO CATÁLOGO (ÁREA ADMIN - MÚLTIPLAS FOTOS)
     // =================================================================
+
+    // =================================================================
+    // ENUM DE CATEGORIAS E UNIDADES DE MEDIDA (CONFIGURAÇÃO ADMIN)
+    // =================================================================
+    const STORAGE_ENUM_UNIDADES = 'almox_enum_unidades_v1';
+    const STORAGE_ENUM_CATEGORIAS = 'almox_enum_categorias_v1';
+
+    const UNIDADES_PADRAO_ENUM = [
+        { sigla: 'UN', nome: 'Unidade' },
+        { sigla: 'CX', nome: 'Caixa' },
+        { sigla: 'PCT', nome: 'Pacote' },
+        { sigla: 'KG', nome: 'Quilograma' },
+        { sigla: 'G', nome: 'Grama' },
+        { sigla: 'L', nome: 'Litro' },
+        { sigla: 'ML', nome: 'Mililitro' },
+        { sigla: 'M', nome: 'Metro' },
+        { sigla: 'M2', nome: 'Metro Quadrado' },
+        { sigla: 'RL', nome: 'Rolo' },
+        { sigla: 'PAR', nome: 'Par' },
+        { sigla: 'FD', nome: 'Fardo' },
+        { sigla: 'GL', nome: 'Galão' },
+        { sigla: 'BD', nome: 'Balde' }
+    ];
+
+    const CATEGORIAS_PADRAO_ENUM = [
+        { macro: 'Geral', categoria: 'Geral', micro: 'Geral' },
+        { macro: 'Engenharia', categoria: 'Elétrica', micro: 'Disjuntor' },
+        { macro: 'Engenharia', categoria: 'Hidráulica', micro: 'Conexão' },
+        { macro: 'Administrativo', categoria: 'Expediente', micro: 'Papelaria' },
+        { macro: 'Limpeza e Conservação', categoria: 'Higiene', micro: 'Desinfetante' },
+        { macro: 'Informática', categoria: 'Periféricos', micro: 'Cabos e Adaptadores' }
+    ];
+
+    let enumUnidades = [];
+    let enumCategorias = [];
+    let indiceEdicaoCategoriaCfg = -1;
+    let indiceEdicaoUnidadeCfg = -1;
+
+    function inicializarEnumsPadrao() {
+        try {
+            const rawUn = localStorage.getItem(STORAGE_ENUM_UNIDADES);
+            if (rawUn) {
+                const parsed = JSON.parse(rawUn);
+                if (Array.isArray(parsed) && parsed.length > 0) enumUnidades = parsed;
+            }
+        } catch (_) {}
+        if (enumUnidades.length === 0) enumUnidades = [...UNIDADES_PADRAO_ENUM];
+
+        try {
+            const rawCat = localStorage.getItem(STORAGE_ENUM_CATEGORIAS);
+            if (rawCat) {
+                const parsed = JSON.parse(rawCat);
+                if (Array.isArray(parsed) && parsed.length > 0) enumCategorias = parsed;
+            }
+        } catch (_) {}
+        if (enumCategorias.length === 0) enumCategorias = [...CATEGORIAS_PADRAO_ENUM];
+
+        sincronizarEnumsComItensExistentes(false);
+        salvarEnumsLocalStorage();
+    }
+
+    function salvarEnumsLocalStorage() {
+        try {
+            localStorage.setItem(STORAGE_ENUM_UNIDADES, JSON.stringify(enumUnidades));
+            localStorage.setItem(STORAGE_ENUM_CATEGORIAS, JSON.stringify(enumCategorias));
+        } catch (_) {}
+    }
+
+    function sincronizarEnumsComItensExistentes(persistir = true) {
+        (todosItens || []).forEach(it => {
+            const un = String(it["UNIDADE DE MEDIDA"] || it.unidade || '').trim().toUpperCase();
+            if (un && !enumUnidades.some(u => u.sigla.toUpperCase() === un)) {
+                enumUnidades.push({ sigla: un, nome: un });
+            }
+
+            const macro = String(it.macro_categoria || it.MACRO_CATEGORIA || 'Geral').trim() || 'Geral';
+            const cat = String(it.categoria || it.CATEGORIA || 'Geral').trim() || 'Geral';
+            const micro = String(it.micro_categoria || it.MICRO_CATEGORIA || 'Geral').trim() || 'Geral';
+
+            const existeCat = enumCategorias.some(c =>
+                normalizarTextoBusca(c.macro) === normalizarTextoBusca(macro) &&
+                normalizarTextoBusca(c.categoria) === normalizarTextoBusca(cat) &&
+                normalizarTextoBusca(c.micro) === normalizarTextoBusca(micro)
+            );
+            if (!existeCat) {
+                enumCategorias.push({ macro, categoria: cat, micro });
+            }
+        });
+        if (persistir) salvarEnumsLocalStorage();
+    }
+
+    function preencherSelectUnidadesItem(valorSelecionado = 'UN') {
+        const sel = document.getElementById('editItemUnidade');
+        if (!sel) return;
+        const alvo = String(valorSelecionado || 'UN').trim().toUpperCase();
+        if (alvo && !enumUnidades.some(u => u.sigla.toUpperCase() === alvo)) {
+            enumUnidades.unshift({ sigla: alvo, nome: alvo });
+            salvarEnumsLocalStorage();
+        }
+        sel.innerHTML = enumUnidades.map(u => {
+            const label = u.nome && u.nome.toUpperCase() !== u.sigla.toUpperCase()
+                ? `${u.sigla} — ${u.nome}`
+                : u.sigla;
+            return `<option value="${u.sigla.replace(/"/g, '&quot;')}">${label}</option>`;
+        }).join('');
+        sel.value = enumUnidades.some(u => u.sigla.toUpperCase() === alvo)
+            ? enumUnidades.find(u => u.sigla.toUpperCase() === alvo).sigla
+            : (enumUnidades[0]?.sigla || 'UN');
+    }
+
+    function preencherSelectsCategoriasItem(macroSel = 'Geral', catSel = 'Geral', microSel = 'Geral') {
+        const selMacro = document.getElementById('editItemMacro');
+        const selCat = document.getElementById('editItemCategoria');
+        const selMicro = document.getElementById('editItemMicro');
+        if (!selMacro || !selCat || !selMicro) return;
+
+        const mAlvo = String(macroSel || 'Geral').trim() || 'Geral';
+        const cAlvo = String(catSel || 'Geral').trim() || 'Geral';
+        const miAlvo = String(microSel || 'Geral').trim() || 'Geral';
+
+        if (!enumCategorias.some(c => c.macro === mAlvo && c.categoria === cAlvo && c.micro === miAlvo)) {
+            enumCategorias.unshift({ macro: mAlvo, categoria: cAlvo, micro: miAlvo });
+            salvarEnumsLocalStorage();
+        }
+
+        const macrosUnicas = [...new Set(enumCategorias.map(c => c.macro))];
+        selMacro.innerHTML = macrosUnicas.map(m => `<option value="${m.replace(/"/g, '&quot;')}">${m}</option>`).join('');
+        selMacro.value = macrosUnicas.includes(mAlvo) ? mAlvo : (macrosUnicas[0] || 'Geral');
+
+        sincronizarCascataSelectsItem('macro', cAlvo, miAlvo);
+    }
+
+    function sincronizarCascataSelectsItem(origem, categoriaPreferida = null, microPreferida = null) {
+        const selMacro = document.getElementById('editItemMacro');
+        const selCat = document.getElementById('editItemCategoria');
+        const selMicro = document.getElementById('editItemMicro');
+        if (!selMacro || !selCat || !selMicro) return;
+
+        const macroAtual = selMacro.value;
+        const catsDisponiveis = [...new Set(
+            enumCategorias.filter(c => c.macro === macroAtual).map(c => c.categoria)
+        )];
+        if (catsDisponiveis.length === 0) catsDisponiveis.push('Geral');
+
+        const catAlvo = origem === 'macro'
+            ? (categoriaPreferida && catsDisponiveis.includes(categoriaPreferida) ? categoriaPreferida : catsDisponiveis[0])
+            : (catsDisponiveis.includes(selCat.value) ? selCat.value : catsDisponiveis[0]);
+
+        selCat.innerHTML = catsDisponiveis.map(c => `<option value="${c.replace(/"/g, '&quot;')}">${c}</option>`).join('');
+        selCat.value = catAlvo;
+
+        const microsDisponiveis = [...new Set(
+            enumCategorias
+                .filter(c => c.macro === macroAtual && c.categoria === catAlvo)
+                .map(c => c.micro)
+        )];
+        if (microsDisponiveis.length === 0) microsDisponiveis.push('Geral');
+
+        const microAlvo = (origem === 'macro' || origem === 'categoria') && microPreferida && microsDisponiveis.includes(microPreferida)
+            ? microPreferida
+            : (microsDisponiveis.includes(selMicro.value) ? selMicro.value : microsDisponiveis[0]);
+
+        selMicro.innerHTML = microsDisponiveis.map(mi => `<option value="${mi.replace(/"/g, '&quot;')}">${mi}</option>`).join('');
+        selMicro.value = microAlvo;
+    }
+
+    function abrirModalConfigParametros() {
+        if (!usuarioLogado) return alert('Acesso restrito ao administrador.');
+        sincronizarEnumsComItensExistentes(true);
+        limparFormCategoriaCfg();
+        limparFormUnidadeCfg();
+        alternarAbaConfig('categorias');
+        document.getElementById('modalConfigParametros').classList.add('active');
+    }
+
+    function fecharModalConfigParametros() {
+        document.getElementById('modalConfigParametros').classList.remove('active');
+    }
+
+    function alternarAbaConfig(aba) {
+        const ehCat = aba === 'categorias';
+        document.getElementById('painelCfgCategorias').style.display = ehCat ? 'block' : 'none';
+        document.getElementById('painelCfgUnidades').style.display = ehCat ? 'none' : 'block';
+
+        const btnCat = document.getElementById('tabCfgCategorias');
+        const btnUn = document.getElementById('tabCfgUnidades');
+
+        if (ehCat) {
+            btnCat.style.background = 'var(--primary)';
+            btnCat.style.color = '#fff';
+            btnCat.style.borderColor = 'var(--primary)';
+            btnCat.style.fontWeight = '600';
+            btnUn.style.background = 'white';
+            btnUn.style.color = 'var(--text)';
+            btnUn.style.borderColor = 'var(--border)';
+            btnUn.style.fontWeight = '500';
+            renderizarTabelaCategoriasConfig();
+        } else {
+            btnUn.style.background = 'var(--primary)';
+            btnUn.style.color = '#fff';
+            btnUn.style.borderColor = 'var(--primary)';
+            btnUn.style.fontWeight = '600';
+            btnCat.style.background = 'white';
+            btnCat.style.color = 'var(--text)';
+            btnCat.style.borderColor = 'var(--border)';
+            btnCat.style.fontWeight = '500';
+            renderizarTabelaUnidadesConfig();
+        }
+    }
+
+    function limparFormCategoriaCfg() {
+        indiceEdicaoCategoriaCfg = -1;
+        document.getElementById('cfgMacroInput').value = '';
+        document.getElementById('cfgCategoriaInput').value = '';
+        document.getElementById('cfgMicroInput').value = '';
+        document.getElementById('tituloFormCategoriaCfg').innerText = '➕ Nova Categoria';
+        document.getElementById('btnSalvarCategoriaCfg').innerText = '💾 Adicionar Categoria';
+        document.getElementById('btnCancelarEditCategoria').style.display = 'none';
+    }
+
+    function prepararEdicaoCategoriaCfg(idx) {
+        const item = enumCategorias[idx];
+        if (!item) return;
+        indiceEdicaoCategoriaCfg = idx;
+        document.getElementById('cfgMacroInput').value = item.macro;
+        document.getElementById('cfgCategoriaInput').value = item.categoria;
+        document.getElementById('cfgMicroInput').value = item.micro;
+        document.getElementById('tituloFormCategoriaCfg').innerText = '✏️ Alterar Categoria';
+        document.getElementById('btnSalvarCategoriaCfg').innerText = '💾 Salvar Alteração';
+        document.getElementById('btnCancelarEditCategoria').style.display = 'inline-flex';
+    }
+
+    async function salvarCategoriaConfig() {
+        if (!usuarioLogado) return;
+        const macro = document.getElementById('cfgMacroInput').value.trim();
+        const categoria = document.getElementById('cfgCategoriaInput').value.trim();
+        const micro = document.getElementById('cfgMicroInput').value.trim();
+
+        if (!macro || !categoria || !micro) {
+            return alert('Preencha Macro Categoria, Categoria e Micro Categoria.');
+        }
+
+        if (indiceEdicaoCategoriaCfg >= 0 && enumCategorias[indiceEdicaoCategoriaCfg]) {
+            const anterior = enumCategorias[indiceEdicaoCategoriaCfg];
+            enumCategorias[indiceEdicaoCategoriaCfg] = { macro, categoria, micro };
+
+            const itensAfetados = todosItens.filter(it =>
+                (it.macro_categoria || it.MACRO_CATEGORIA || 'Geral') === anterior.macro &&
+                (it.categoria || it.CATEGORIA || 'Geral') === anterior.categoria &&
+                (it.micro_categoria || it.MICRO_CATEGORIA || 'Geral') === anterior.micro
+            );
+            for (const it of itensAfetados) {
+                await supabaseClient.from('bens').update({
+                    macro_categoria: macro,
+                    categoria: categoria,
+                    micro_categoria: micro
+                }).eq('id', it.id);
+                it.macro_categoria = macro;
+                it.categoria = categoria;
+                it.micro_categoria = micro;
+            }
+        } else {
+            const duplicada = enumCategorias.some(c =>
+                normalizarTextoBusca(c.macro) === normalizarTextoBusca(macro) &&
+                normalizarTextoBusca(c.categoria) === normalizarTextoBusca(categoria) &&
+                normalizarTextoBusca(c.micro) === normalizarTextoBusca(micro)
+            );
+            if (duplicada) {
+                return alert('Essa combinação de Macro, Categoria e Micro já existe.');
+            }
+            enumCategorias.push({ macro, categoria, micro });
+        }
+
+        salvarEnumsLocalStorage();
+        limparFormCategoriaCfg();
+        renderizarTabelaCategoriasConfig();
+        atualizarSidebarMacroCategorias();
+        filtrarItens();
+        renderizarTabelaEstoque();
+    }
+
+    async function excluirCategoriaConfig(idx) {
+        if (!usuarioLogado) return;
+        const item = enumCategorias[idx];
+        if (!item) return;
+        if (enumCategorias.length <= 1) {
+            return alert('É necessário manter ao menos uma categoria cadastrada.');
+        }
+
+        const emUso = todosItens.some(it =>
+            (it.macro_categoria || it.MACRO_CATEGORIA || 'Geral') === item.macro &&
+            (it.categoria || it.CATEGORIA || 'Geral') === item.categoria &&
+            (it.micro_categoria || it.MICRO_CATEGORIA || 'Geral') === item.micro
+        );
+        if (emUso) {
+            return alert('Não é possível excluir: existem itens do catálogo utilizando esta categoria.');
+        }
+
+        if (!confirm(`Excluir a categoria "${item.macro} > ${item.categoria} > ${item.micro}"?`)) return;
+        enumCategorias.splice(idx, 1);
+        salvarEnumsLocalStorage();
+        if (indiceEdicaoCategoriaCfg === idx) limparFormCategoriaCfg();
+        renderizarTabelaCategoriasConfig();
+    }
+
+    function renderizarTabelaCategoriasConfig() {
+        const tbody = document.getElementById('tabelaCorpoCategoriasCfg');
+        if (!tbody) return;
+        if (enumCategorias.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--muted);">Nenhuma categoria cadastrada.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = enumCategorias.map((c, idx) => `
+            <tr>
+                <td><b>${c.macro}</b></td>
+                <td>${c.categoria}</td>
+                <td>${c.micro}</td>
+                <td style="text-align:right; white-space:nowrap;">
+                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem;" onclick="prepararEdicaoCategoriaCfg(${idx})">✏️ Editar</button>
+                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem; color:var(--danger); border-color:#fecaca;" onclick="excluirCategoriaConfig(${idx})">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function limparFormUnidadeCfg() {
+        indiceEdicaoUnidadeCfg = -1;
+        document.getElementById('cfgUnidadeSiglaInput').value = '';
+        document.getElementById('cfgUnidadeNomeInput').value = '';
+        document.getElementById('tituloFormUnidadeCfg').innerText = '➕ Nova Unidade de Medida';
+        document.getElementById('btnSalvarUnidadeCfg').innerText = '💾 Adicionar Unidade';
+        document.getElementById('btnCancelarEditUnidade').style.display = 'none';
+    }
+
+    function prepararEdicaoUnidadeCfg(idx) {
+        const un = enumUnidades[idx];
+        if (!un) return;
+        indiceEdicaoUnidadeCfg = idx;
+        document.getElementById('cfgUnidadeSiglaInput').value = un.sigla;
+        document.getElementById('cfgUnidadeNomeInput').value = un.nome;
+        document.getElementById('tituloFormUnidadeCfg').innerText = '✏️ Alterar Unidade de Medida';
+        document.getElementById('btnSalvarUnidadeCfg').innerText = '💾 Salvar Alteração';
+        document.getElementById('btnCancelarEditUnidade').style.display = 'inline-flex';
+    }
+
+    async function salvarUnidadeConfig() {
+        if (!usuarioLogado) return;
+        const sigla = document.getElementById('cfgUnidadeSiglaInput').value.trim().toUpperCase();
+        const nome = document.getElementById('cfgUnidadeNomeInput').value.trim() || sigla;
+
+        if (!sigla) return alert('Informe a sigla da unidade de medida.');
+
+        if (indiceEdicaoUnidadeCfg >= 0 && enumUnidades[indiceEdicaoUnidadeCfg]) {
+            const anterior = enumUnidades[indiceEdicaoUnidadeCfg];
+            enumUnidades[indiceEdicaoUnidadeCfg] = { sigla, nome };
+
+            if (anterior.sigla !== sigla) {
+                const itensAfetados = todosItens.filter(it =>
+                    String(it["UNIDADE DE MEDIDA"] || it.unidade || '').trim().toUpperCase() === anterior.sigla.toUpperCase()
+                );
+                for (const it of itensAfetados) {
+                    await supabaseClient.from('bens').update({ "UNIDADE DE MEDIDA": sigla }).eq('id', it.id);
+                    it["UNIDADE DE MEDIDA"] = sigla;
+                    it.unidade = sigla;
+                }
+            }
+        } else {
+            if (enumUnidades.some(u => u.sigla.toUpperCase() === sigla)) {
+                return alert(`A unidade "${sigla}" já está cadastrada.`);
+            }
+            enumUnidades.push({ sigla, nome });
+        }
+
+        salvarEnumsLocalStorage();
+        limparFormUnidadeCfg();
+        renderizarTabelaUnidadesConfig();
+        filtrarItens();
+        renderizarTabelaEstoque();
+    }
+
+    async function excluirUnidadeConfig(idx) {
+        if (!usuarioLogado) return;
+        const un = enumUnidades[idx];
+        if (!un) return;
+        if (enumUnidades.length <= 1) {
+            return alert('É necessário manter ao menos uma unidade de medida cadastrada.');
+        }
+
+        const emUso = todosItens.some(it =>
+            String(it["UNIDADE DE MEDIDA"] || it.unidade || '').trim().toUpperCase() === un.sigla.toUpperCase()
+        );
+        if (emUso) {
+            return alert(`Não é possível excluir a unidade "${un.sigla}": existem itens utilizando-a.`);
+        }
+
+        if (!confirm(`Excluir a unidade de medida "${un.sigla}"?`)) return;
+        enumUnidades.splice(idx, 1);
+        salvarEnumsLocalStorage();
+        if (indiceEdicaoUnidadeCfg === idx) limparFormUnidadeCfg();
+        renderizarTabelaUnidadesConfig();
+    }
+
+    function renderizarTabelaUnidadesConfig() {
+        const tbody = document.getElementById('tabelaCorpoUnidadesCfg');
+        if (!tbody) return;
+        if (enumUnidades.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">Nenhuma unidade cadastrada.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = enumUnidades.map((u, idx) => `
+            <tr>
+                <td><code><b>${u.sigla}</b></code></td>
+                <td>${u.nome}</td>
+                <td style="text-align:right; white-space:nowrap;">
+                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem;" onclick="prepararEdicaoUnidadeCfg(${idx})">✏️ Editar</button>
+                    <button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem; color:var(--danger); border-color:#fecaca;" onclick="excluirUnidadeConfig(${idx})">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
     let fotosExistentesModalAdmin = [];
     let novosArquivosFotosModalAdmin = [];
 
@@ -3000,20 +3509,18 @@
 
     function abrirModalCadastro() {
         if (!usuarioLogado) return alert('Acesso restrito ao administrador.');
-        popularDatalistsCategorias();
+        sincronizarEnumsComItensExistentes(true);
         fotosExistentesModalAdmin = [];
         novosArquivosFotosModalAdmin = [];
 
         document.getElementById('tituloModalItemAdmin').innerText = '➕ Novo Item no Catálogo';
         document.getElementById('editItemId').value = '';
         document.getElementById('editItemCodigo').value = '';
-        document.getElementById('editItemUnidade').value = 'UN';
+        preencherSelectUnidadesItem('UN');
         document.getElementById('editItemProduto').value = '';
         document.getElementById('editItemQtd').value = '1';
         document.getElementById('editItemValidade').value = '';
-        document.getElementById('editItemMacro').value = macroSelecionadaSidebar || 'Geral';
-        document.getElementById('editItemCategoria').value = 'Geral';
-        document.getElementById('editItemMicro').value = 'Geral';
+        preencherSelectsCategoriasItem(macroSelecionadaSidebar || 'Geral', 'Geral', 'Geral');
         document.getElementById('editItemPrecoMedio').value = '';
         document.getElementById('editItemEmpenho').value = '';
         document.getElementById('editItemFotoArquivo').value = '';
@@ -3031,7 +3538,7 @@
         const item = todosItens.find(i => String(i.id) === String(idAlvo));
         if (!item) return alert('Item não encontrado.');
 
-        popularDatalistsCategorias();
+        sincronizarEnumsComItensExistentes(true);
         fotosExistentesModalAdmin = obterFotosItem(item);
         novosArquivosFotosModalAdmin = [];
 
@@ -3048,13 +3555,11 @@
         document.getElementById('tituloModalItemAdmin').innerText = `✏️ Editar Item (${cod || 'Sem Código'})`;
         document.getElementById('editItemId').value = item.id;
         document.getElementById('editItemCodigo').value = cod;
-        document.getElementById('editItemUnidade').value = unid;
+        preencherSelectUnidadesItem(unid);
         document.getElementById('editItemProduto').value = prod;
         document.getElementById('editItemQtd').value = qtd;
         document.getElementById('editItemValidade').value = normalizarValidadeParaInputDate(item.validade);
-        document.getElementById('editItemMacro').value = macro;
-        document.getElementById('editItemCategoria').value = cat;
-        document.getElementById('editItemMicro').value = micro;
+        preencherSelectsCategoriasItem(macro, cat, micro);
         document.getElementById('editItemPrecoMedio').value = precoMedio;
         document.getElementById('editItemEmpenho').value = empenho;
         document.getElementById('editItemFotoArquivo').value = '';
@@ -3316,7 +3821,10 @@
         alert('Item excluído com sucesso.');
     }
 
-    window.onload = iniciarSistema;
+    window.onload = () => {
+        inicializarEnumsPadrao();
+        iniciarSistema();
+    };
 </script>
 </body>
 </html>
