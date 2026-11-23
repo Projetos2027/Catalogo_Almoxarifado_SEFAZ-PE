@@ -974,10 +974,10 @@
     </div>
     <ul class="top-nav-links">
         <li class="top-nav-item active" id="abaNavCatalogo" onclick="mudarAba('catalogo')">📦 Catálogo</li>
-        <li class="top-nav-item" id="abaNavEstoque" onclick="mudarAba('estoque')">📋 Estoque</li>
-        <li class="top-nav-item" id="abaNavPedidos" onclick="mudarAba('pedidos')">🛒 Pedidos</li>
-        <li class="top-nav-item" id="abaNavInventario" onclick="mudarAba('inventario')">📊 Inventário</li>
-        <li class="top-nav-item" id="abaNavRelatorios" onclick="mudarAba('relatorios')">📈 Relatórios</li>
+        <li class="top-nav-item admin-only" id="abaNavEstoque" onclick="mudarAba('estoque')" style="display:none;">📋 Estoque</li>
+        <li class="top-nav-item admin-only" id="abaNavPedidos" onclick="mudarAba('pedidos')" style="display:none;">🛒 Pedidos</li>
+        <li class="top-nav-item admin-only" id="abaNavInventario" onclick="mudarAba('inventario')" style="display:none;">📊 Inventário</li>
+        <li class="top-nav-item admin-only" id="abaNavRelatorios" onclick="mudarAba('relatorios')" style="display:none;">📈 Relatórios</li>
     </ul>
     <div class="top-user-area">
         <span style="cursor:pointer;" title="Notificações">🔔</span>
@@ -1532,6 +1532,11 @@
     }
 
     function mudarAba(nomeAba) {
+        const abasApenasAdmin = ['estoque', 'pedidos', 'inventario', 'relatorios'];
+        if (abasApenasAdmin.includes(nomeAba) && !usuarioLogado) {
+            alert('Acesso restrito ao administrador.');
+            nomeAba = 'catalogo';
+        }
         document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.top-nav-item').forEach(i => i.classList.remove('active'));
         if (nomeAba === 'catalogo') {
@@ -1596,13 +1601,19 @@
         const botoesAdmin = document.querySelectorAll('.admin-only');
         const labelUsuario = document.getElementById('labelUsuarioTopo');
         if (user) {
-            botoesAdmin.forEach(el => el.style.display = 'inline-flex');
+            botoesAdmin.forEach(el => {
+                el.style.display = el.classList.contains('top-nav-item') ? 'flex' : 'inline-flex';
+            });
             const nomeAdmin = user.email.split('@')[0];
             labelUsuario.innerText = nomeAdmin.charAt(0).toUpperCase() + nomeAdmin.slice(1);
         } else {
             botoesAdmin.forEach(el => el.style.display = 'none');
             document.getElementById('menuEtiquetasCatalogo')?.classList.remove('open');
             labelUsuario.innerText = 'Entrar';
+            const abaAtiva = document.querySelector('.app-view.active')?.id;
+            if (abaAtiva && abaAtiva !== 'viewCatalogo') {
+                mudarAba('catalogo');
+            }
         }
         filtrarItens();
     }
@@ -1610,7 +1621,9 @@
     function controlarSessao() {
         if (usuarioLogado) {
             if (confirm('Deseja sair do modo administrador?')) {
-                supabaseClient.auth.signOut();
+                await supabaseClient.auth.signOut();
+                atualizarEstadoAuth(null);
+                mudarAba('catalogo');
                 alert('Você saiu do modo administrador.');
             }
         } else {
