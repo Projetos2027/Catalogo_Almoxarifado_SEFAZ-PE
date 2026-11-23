@@ -732,10 +732,10 @@
             flex-wrap: wrap;
             margin-top: 8px;
         }
-        /* Meia folha A4 Vertical (A4 vertical = 210mm x 297mm -> meia folha = 210mm x 148.5mm; com margem larga de 15mm = 180mm x 118.5mm) */
+        /* Etiqueta de Prateleira Horizontal: 25,5 cm x 12 cm (255mm x 120mm) */
         .etq-prateleira {
-            width: 180mm;
-            height: 118.5mm;
+            width: 255mm;
+            height: 120mm;
             background: #fff;
             border: 3px solid #0f172a;
             color: #0f172a;
@@ -833,9 +833,11 @@
                 overflow: hidden !important;
             }
             #areaImpressaoEtiqueta.print-prateleira {
-                height: 148.5mm !important;
+                height: auto !important;
+                min-height: 120mm !important;
                 align-items: center !important;
-                padding: 15mm !important;
+                justify-content: center !important;
+                padding: 8mm !important;
                 overflow: hidden !important;
             }
             #areaImpressaoEtiqueta.print-expositor {
@@ -935,10 +937,10 @@
                 break-inside: avoid !important;
             }
             .etq-prateleira {
-                width: 180mm !important;
-                height: 118.5mm !important;
-                max-width: 180mm !important;
-                max-height: 118.5mm !important;
+                width: 255mm !important;
+                height: 120mm !important;
+                max-width: 255mm !important;
+                max-height: 120mm !important;
                 margin: 0 auto !important;
                 page-break-before: avoid !important;
                 page-break-after: avoid !important;
@@ -1040,7 +1042,7 @@
                             </button>
                             <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('prateleira')">
                                 <strong>🗄️ Etiqueta de Prateleira</strong>
-                                <small>Meia folha A4 Vertical • Margem larga • QR Code</small>
+                                <small>25,5 cm × 12 cm • Horizontal • QR Code</small>
                             </button>
                             <button class="label-dropdown-option" onclick="abrirModalEtiquetaCatalogo('expositor')">
                                 <strong>🪧 Etiqueta de Expositor</strong>
@@ -1814,7 +1816,7 @@
 
         const titulos = {
             pallet: '📦 Imprimir Etiqueta de Pallet (A4 Horizontal • 297×210mm)',
-            prateleira: '🗄️ Imprimir Etiqueta de Prateleira (Meia Folha A4 Vertical)',
+            prateleira: '🗄️ Imprimir Etiqueta de Prateleira (25,5 cm × 12 cm • Horizontal)',
             expositor: '🪧 Imprimir Etiqueta de Expositor (Compacta)'
         };
         document.getElementById('tituloModalEtiquetaCatalogo').innerText = titulos[tipo] || 'Imprimir Etiqueta';
@@ -2242,7 +2244,7 @@
             pageRuleEl.id = 'dynamicPrintPageStyle';
             document.head.appendChild(pageRuleEl);
         }
-        const orientacao = tipoEtiquetaAtual === 'pallet' ? 'A4 landscape' : 'A4 portrait';
+        const orientacao = (tipoEtiquetaAtual === 'pallet' || tipoEtiquetaAtual === 'prateleira') ? 'landscape' : 'A4 portrait';
         pageRuleEl.textContent = `@media print { @page { size: ${orientacao}; margin: 0; } }`;
 
         area.style.display = 'flex';
