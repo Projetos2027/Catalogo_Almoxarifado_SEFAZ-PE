@@ -723,6 +723,85 @@
                 justify-content: flex-start !important;
                 padding: 18mm !important;
             }
+            #areaImpressaoEtiqueta.print-catalogo {
+                display: block !important;
+                width: 100% !important;
+                padding: 8mm 10mm !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .rel-cat-header {
+                border-bottom: 2.5px solid #0f172a;
+                padding-bottom: 10px;
+                margin-bottom: 14px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+                gap: 12px;
+            }
+            .rel-cat-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 12px;
+            }
+            .rel-cat-card {
+                border: 1.5px solid #cbd5e1;
+                border-radius: 8px;
+                overflow: hidden;
+                background: #fff;
+                break-inside: avoid;
+                page-break-inside: avoid;
+                display: flex;
+                flex-direction: column;
+            }
+            .rel-cat-img-box {
+                width: 100%;
+                height: 120px;
+                background: #f1f5f9;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-bottom: 1px solid #e2e8f0;
+                position: relative;
+                overflow: hidden;
+            }
+            .rel-cat-img-box img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .rel-cat-body {
+                padding: 10px;
+                font-size: 0.78rem;
+                line-height: 1.35;
+            }
+            .rel-cat-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.8rem;
+            }
+            .rel-cat-table th, .rel-cat-table td {
+                border: 1px solid #cbd5e1;
+                padding: 7px 8px;
+                text-align: left;
+                vertical-align: middle;
+            }
+            .rel-cat-table th {
+                background: #f1f5f9;
+                font-weight: 700;
+            }
+            .rel-cat-table tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            .rel-cat-thumb {
+                width: 54px;
+                height: 54px;
+                object-fit: cover;
+                border-radius: 4px;
+                border: 1px solid #e2e8f0;
+                display: block;
+            }
             .etq-pallet {
                 width: 263mm !important;
                 height: 176mm !important;
@@ -1015,6 +1094,44 @@
                     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                         <button class="btn" style="background: white; color: var(--text); border: 1px solid var(--border); padding: 12px 20px;" onclick="exportarRelatorioDivergencias()">📥 Baixar Relatório Executivo (.xlsx)</button>
                         <button class="btn" style="background: white; color: var(--danger); border: 1px solid #fecaca; padding: 12px 20px;" onclick="exportarRelatorioPDF()">📥 Baixar Relatório Executivo (.pdf)</button>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
+                        <div>
+                            <h3 style="font-size: 1rem; color: var(--text); margin-bottom: 4px;">📦 Impressão do Catálogo de Itens</h3>
+                            <p style="font-size: 0.85rem; color: var(--muted);">Imprime ou salva em PDF os itens do catálogo com foto, código EFISCO, hierarquia, validade e saldo.</p>
+                        </div>
+                        <span id="resumoFiltroImpressaoCatalogo" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">0 itens selecionados</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Escopo de Itens</label>
+                            <select id="filtroImpressaoEscopo" onchange="atualizarResumoImpressaoCatalogo()">
+                                <option value="com_saldo">📋 Apenas com Saldo (> 0)</option>
+                                <option value="todos">📦 Todos os Itens (inclui esgotados)</option>
+                                <option value="esgotados">⚠️ Apenas Esgotados (0)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Macro Categoria</label>
+                            <select id="filtroImpressaoMacro" onchange="atualizarResumoImpressaoCatalogo()">
+                                <option value="">Todas as Macro Categorias</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Layout da Impressão</label>
+                            <select id="filtroImpressaoLayout" onchange="atualizarResumoImpressaoCatalogo()">
+                                <option value="cards">🖼️ Grade com Fotos (Cards)</option>
+                                <option value="lista">📄 Lista Detalhada com Miniaturas</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button type="button" class="btn" style="background: var(--primary); color: white; border: none; padding: 12px 20px; font-weight: 600;" onclick="imprimirCatalogoRelatorios()">🖨️ Imprimir Catálogo com Imagens</button>
                     </div>
                 </div>
             </div>
@@ -2320,6 +2437,42 @@
         mudarAba('estoque');
     }
 
+    function obterItensCatalogoParaImpressao() {
+        const escopo = document.getElementById('filtroImpressaoEscopo')?.value || 'com_saldo';
+        const macroFiltro = document.getElementById('filtroImpressaoMacro')?.value || '';
+
+        return (todosItens || []).filter(item => {
+            const qtd = Number(item.QUANTIDADE ?? item.quantidade ?? 0);
+            if (escopo === 'com_saldo' && qtd <= 0) return false;
+            if (escopo === 'esgotados' && qtd > 0) return false;
+
+            const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || 'Geral').trim();
+            if (macroFiltro && macro !== macroFiltro) return false;
+            return true;
+        });
+    }
+
+    function popularFiltroMacroImpressaoCatalogo() {
+        const sel = document.getElementById('filtroImpressaoMacro');
+        if (!sel) return;
+        const valorAtual = sel.value;
+        const macros = obterTodasMacroUnicas();
+        sel.innerHTML = `<option value="">Todas as Macro Categorias</option>` +
+            macros.map(m => `<option value="${m.replace(/"/g, '&quot;')}">${m}</option>`).join('');
+        if (macros.includes(valorAtual)) {
+            sel.value = valorAtual;
+        }
+    }
+
+    function atualizarResumoImpressaoCatalogo() {
+        popularFiltroMacroImpressaoCatalogo();
+        const itensSel = obterItensCatalogoParaImpressao();
+        const badge = document.getElementById('resumoFiltroImpressaoCatalogo');
+        if (badge) {
+            badge.innerText = `${itensSel.length} ${itensSel.length === 1 ? 'item selecionado' : 'itens selecionados'}`;
+        }
+    }
+
     async function atualizarPainelRelatorios() {
         await verificarInventarioNuvem();
         const infoEl = document.getElementById('infoInventarioRelatorio');
@@ -2328,6 +2481,148 @@
         } else {
             infoEl.innerHTML = `⚠️ Nenhum inventário ativo.`;
         }
+        atualizarResumoImpressaoCatalogo();
+    }
+
+    function imprimirCatalogoRelatorios() {
+        const itens = obterItensCatalogoParaImpressao();
+        if (!itens || itens.length === 0) {
+            alert('Nenhum item encontrado com os filtros selecionados para impressão.');
+            return;
+        }
+
+        const layout = document.getElementById('filtroImpressaoLayout')?.value || 'cards';
+        const escopoLabel = document.getElementById('filtroImpressaoEscopo')?.selectedOptions[0]?.text || '';
+        const macroLabel = document.getElementById('filtroImpressaoMacro')?.value || 'Todas';
+        const dataEmissao = new Date().toLocaleString('pt-BR');
+
+        let conteudoItensHtml = '';
+        if (layout === 'lista') {
+            conteudoItensHtml = `
+                <table class="rel-cat-table">
+                    <thead>
+                        <tr>
+                            <th style="width:68px;">Foto</th>
+                            <th style="width:95px;">Cód. EFISCO</th>
+                            <th>Produto / Descrição</th>
+                            <th>Hierarquia (Macro > Cat > Micro)</th>
+                            <th style="width:85px;">Validade</th>
+                            <th style="width:95px; text-align:right;">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itens.map(item => {
+                            const cod = item["CÓDIGO EFISCO"] || item.codigo || 'SEM CÓDIGO';
+                            const prod = item.PRODUTO || item.produto || 'Sem descrição';
+                            const unid = item["UNIDADE DE MEDIDA"] || item.unidade || 'UN';
+                            const qtd = Number(item.QUANTIDADE ?? item.quantidade ?? 0);
+                            const validade = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
+                            const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Geral';
+                            const cat = item.categoria || item.CATEGORIA || 'Geral';
+                            const micro = item.micro_categoria || item.MICRO_CATEGORIA || 'Geral';
+                            const fotoHtml = item.foto_url
+                                ? `<img class="rel-cat-thumb" src="${item.foto_url}" alt="${prod}">`
+                                : `<div class="rel-cat-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:#64748b;background:#f8fafc;">Sem foto</div>`;
+                            return `
+                                <tr>
+                                    <td>${fotoHtml}</td>
+                                    <td><b><code>${cod}</code></b></td>
+                                    <td><b>${prod}</b></td>
+                                    <td style="font-size:0.74rem;color:#334155;">${macro} > ${cat} > ${micro}</td>
+                                    <td>${validade}</td>
+                                    <td style="text-align:right;"><b>${qtd}</b> ${unid}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        } else {
+            conteudoItensHtml = `
+                <div class="rel-cat-grid">
+                    ${itens.map(item => {
+                        const cod = item["CÓDIGO EFISCO"] || item.codigo || 'SEM CÓDIGO';
+                        const prod = item.PRODUTO || item.produto || 'Sem descrição';
+                        const unid = item["UNIDADE DE MEDIDA"] || item.unidade || 'UN';
+                        const qtd = Number(item.QUANTIDADE ?? item.quantidade ?? 0);
+                        const validade = item.validade ? formatarDataBR(item.validade) : 'Indeterminada';
+                        const macro = item.macro_categoria || item.MACRO_CATEGORIA || 'Geral';
+                        const cat = item.categoria || item.CATEGORIA || 'Geral';
+                        const micro = item.micro_categoria || item.MICRO_CATEGORIA || 'Geral';
+                        const imgHtml = item.foto_url
+                            ? `<img src="${item.foto_url}" alt="${prod}">`
+                            : `<span style="color:#64748b;font-size:0.75rem;">Sem foto</span>`;
+                        return `
+                            <div class="rel-cat-card">
+                                <div class="rel-cat-img-box">
+                                    <span class="badge-cod" style="font-size:0.7rem;padding:2px 6px;">${cod}</span>
+                                    ${imgHtml}
+                                </div>
+                                <div class="rel-cat-body">
+                                    <div style="font-size:0.66rem;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:3px;">${macro} > ${cat} > ${micro}</div>
+                                    <div style="font-weight:700;color:#0f172a;margin-bottom:5px;">${prod}</div>
+                                    <div style="color:#475569;margin-bottom:4px;">Validade: <b>${validade}</b></div>
+                                    <div style="border-top:1px solid #e2e8f0;padding-top:5px;display:flex;justify-content:space-between;font-weight:700;">
+                                        <span>Saldo: ${qtd} ${unid}</span>
+                                        ${qtd === 0 ? '<span style="color:#dc2626;">ESGOTADO</span>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        const htmlImpressao = `
+            <div style="width:100%;">
+                <div class="rel-cat-header">
+                    <div>
+                        <div style="font-size:0.78rem;font-weight:700;color:#2563eb;text-transform:uppercase;">UALMOX - SEFAZ/PE</div>
+                        <h2 style="font-size:1.25rem;color:#0f172a;margin-top:2px;">Catálogo de Itens do Almoxarifado</h2>
+                        <div style="font-size:0.78rem;color:#475569;margin-top:3px;">
+                            Filtro: <b>${escopoLabel}</b> • Macro: <b>${macroLabel}</b> • Total: <b>${itens.length}</b> ${itens.length === 1 ? 'item' : 'itens'}
+                        </div>
+                    </div>
+                    <div style="font-size:0.75rem;color:#64748b;text-align:right;">
+                        Emitido em:<br><b>${dataEmissao}</b>
+                    </div>
+                </div>
+                ${conteudoItensHtml}
+            </div>
+        `;
+
+        const area = document.getElementById('areaImpressaoEtiqueta');
+        area.className = 'print-catalogo';
+        area.innerHTML = htmlImpressao;
+
+        let pageRuleEl = document.getElementById('dynamicPrintPageStyle');
+        if (!pageRuleEl) {
+            pageRuleEl = document.createElement('style');
+            pageRuleEl.id = 'dynamicPrintPageStyle';
+            document.head.appendChild(pageRuleEl);
+        }
+        pageRuleEl.textContent = `@media print { @page { size: A4 portrait; margin: 8mm; } }`;
+
+        const imgs = Array.from(area.querySelectorAll('img'));
+        const esperarImagens = Promise.all(imgs.map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => {
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+                setTimeout(resolve, 2500);
+            });
+        }));
+
+        area.style.display = 'block';
+        esperarImagens.then(() => {
+            setTimeout(() => {
+                window.print();
+                area.style.display = 'none';
+                area.className = '';
+                area.innerHTML = '';
+            }, 150);
+        });
     }
 
     async function exportarRelatorioDivergencias() { alert('Relatório executivo gerado.'); }
