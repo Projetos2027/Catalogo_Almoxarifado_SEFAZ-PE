@@ -1526,8 +1526,8 @@
             atualizarEstadoAuth(session ? session.user : null);
         });
 
-        await verificarInventarioNuvem();
         await carregarItens();
+        verificarInventarioNuvem().catch(() => {});
         verificarParametroQrUrl();
     }
 
@@ -1618,7 +1618,7 @@
         filtrarItens();
     }
 
-    function controlarSessao() {
+    async function controlarSessao() {
         if (usuarioLogado) {
             if (confirm('Deseja sair do modo administrador?')) {
                 await supabaseClient.auth.signOut();
@@ -1709,22 +1709,31 @@
 
     function filtrarStatusSidebar(status) {
         statusFiltroSidebar = status;
+        const itensStatus = document.querySelectorAll('#sidebarStatusList .sidebar-nav-item');
+        itensStatus.forEach((el, idx) => {
+            if (idx === 0) el.classList.toggle('active', status === 'todos');
+            if (idx === 1) el.classList.toggle('active', status === 'esgotados');
+        });
         filtrarItens();
     }
 
     function filtrarItens() {
-        const termo = document.getElementById('busca') ? document.getElementById('busca').value.toLowerCase() : '';
+        const termo = normalizarTextoBusca(document.getElementById('busca') ? document.getElementById('busca').value : '');
+        const termos = termo.split(/\s+/).filter(Boolean);
         const filtrados = todosItens.filter(item => {
-            const qtd = Number(item.QUANTIDADE || item.quantidade || 0);
+            const qtd = Number(item.QUANTIDADE ?? item.quantidade ?? 0);
             if (statusFiltroSidebar === 'esgotados') {
                 if (qtd > 0) return false;
             } else {
                 if (qtd <= 0) return false;
             }
-            const cod = String(item["CÓDIGO EFISCO"] || item.codigo || '').toLowerCase();
-            const prod = String(item.PRODUTO || item.produto || '').toLowerCase();
+            const cod = normalizarTextoBusca(item["CÓDIGO EFISCO"] || item.codigo || '');
+            const prod = normalizarTextoBusca(item.PRODUTO || item.produto || '');
             const macro = String(item.macro_categoria || item.MACRO_CATEGORIA || 'Geral');
-            const bateTexto = cod.includes(termo) || prod.includes(termo);
+            const cat = normalizarTextoBusca(item.categoria || item.CATEGORIA || '');
+            const micro = normalizarTextoBusca(item.micro_categoria || item.MICRO_CATEGORIA || '');
+            const alvoBusca = `${cod} ${prod} ${normalizarTextoBusca(macro)} ${cat} ${micro}`;
+            const bateTexto = termos.length === 0 || termos.every(t => alvoBusca.includes(t));
             const bateMacro = !macroSelecionadaSidebar || macro === macroSelecionadaSidebar;
             return bateTexto && bateMacro;
         });
@@ -3208,7 +3217,7 @@
 
     async function salvarItemCatalogoAdmin(e) {
         e.preventDefault();
-        if (!usuarioLogado) return alert('Acesso restrito ao administrador.');
+        if (!usuarioLogado) return alert('Acesso restrito ao administrador. Alterações bloqueadas para visitantes.');
 
         const btnSalvar = document.getElementById('btnSalvarItemModal');
         const textoOriginal = btnSalvar.innerText;
