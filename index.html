@@ -785,13 +785,18 @@
             box-sizing: border-box;
         }
         .expositor-folha-a4 {
-            width: 194mm;
-            min-height: 277mm;
+            width: 210mm;
+            min-height: 297mm;
             background: #fff;
             border: 1px dashed #94a3b8;
-            padding: 6mm;
+            padding: 8mm 6mm;
             display: grid;
-            gap: 5mm;
+            grid-template-columns: repeat(2, 95mm);
+            grid-auto-rows: 45mm;
+            justify-content: center;
+            align-content: start;
+            column-gap: 6mm;
+            row-gap: 6mm;
             box-sizing: border-box;
             page-break-after: always;
             break-after: page;
@@ -800,20 +805,25 @@
             page-break-after: auto;
             break-after: auto;
         }
-        .expositor-grade-2 { grid-template-columns: 1fr; grid-template-rows: repeat(2, 1fr); }
-        .expositor-grade-4 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
-        .expositor-grade-6 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); }
-        .expositor-grade-8 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); }
+        .expositor-grade-2 { grid-template-columns: repeat(2, 95mm); }
+        .expositor-grade-4 { grid-template-columns: repeat(2, 95mm); }
+        .expositor-grade-6 { grid-template-columns: repeat(2, 95mm); }
+        .expositor-grade-8 { grid-template-columns: repeat(2, 95mm); }
         .expositor-card-a4 {
-            border: 2px solid #0f172a;
+            width: 95mm;
+            min-height: 45mm;
+            height: 45mm;
+            background: #fff;
+            border: 2.5px solid #0f172a;
             border-radius: 6px;
-            padding: 8px 12px;
+            color: #0f172a;
+            padding: 12px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            flex-shrink: 0;
             overflow: hidden;
-            background: #fff;
             box-sizing: border-box;
         }
 
@@ -879,14 +889,25 @@
                 margin: 0 !important;
             }
             #areaImpressaoEtiqueta.print-expositor .expositor-folha-a4 {
-                width: 194mm !important;
-                height: 278mm !important;
-                min-height: 278mm !important;
-                max-height: 278mm !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                min-height: 297mm !important;
+                max-height: 297mm !important;
                 border: none !important;
-                padding: 4mm !important;
+                padding: 8mm 6mm !important;
                 margin: 0 auto !important;
                 overflow: hidden !important;
+            }
+            #areaImpressaoEtiqueta.print-expositor .expositor-card-a4 {
+                width: 95mm !important;
+                min-width: 95mm !important;
+                max-width: 95mm !important;
+                height: 45mm !important;
+                min-height: 45mm !important;
+                max-height: 45mm !important;
+                margin: 0 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
             #areaImpressaoEtiqueta.print-catalogo {
                 display: block !important;
@@ -2339,10 +2360,10 @@
             const cardsHtml = lote.map(item => `
                 <div class="expositor-card-a4">
                     <div style="min-width:0;">
-                        <div style="font-size:0.95rem; font-weight:900; margin-bottom:4px;">COD EFISCO: ${item.efisco}</div>
-                        <div style="font-size:0.82rem; font-weight:700; text-transform:uppercase; line-height:1.25; word-break:break-word;">${item.nome}</div>
+                        <div style="font-size:1.1rem; font-weight:900; margin-bottom:5px;">COD EFISCO: ${item.efisco}</div>
+                        <div style="font-size:0.92rem; font-weight:700; text-transform:uppercase; line-height:1.25; word-break:break-word;">${item.nome}</div>
                     </div>
-                    <div class="qr-box-etiqueta" style="flex-shrink:0;" data-qr="${montarUrlQrItem(item.efisco)}" data-size="${qrSize}"></div>
+                    <div class="qr-box-etiqueta" style="flex-shrink:0;" data-qr="${montarUrlQrItem(item.efisco)}" data-size="84"></div>
                 </div>
             `).join('');
 
