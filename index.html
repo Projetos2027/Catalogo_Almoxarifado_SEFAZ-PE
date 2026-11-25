@@ -784,6 +784,38 @@
             flex-shrink: 0;
             box-sizing: border-box;
         }
+        .expositor-folha-a4 {
+            width: 194mm;
+            min-height: 277mm;
+            background: #fff;
+            border: 1px dashed #94a3b8;
+            padding: 6mm;
+            display: grid;
+            gap: 5mm;
+            box-sizing: border-box;
+            page-break-after: always;
+            break-after: page;
+        }
+        .expositor-folha-a4:last-child {
+            page-break-after: auto;
+            break-after: auto;
+        }
+        .expositor-grade-2 { grid-template-columns: 1fr; grid-template-rows: repeat(2, 1fr); }
+        .expositor-grade-4 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+        .expositor-grade-6 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); }
+        .expositor-grade-8 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); }
+        .expositor-card-a4 {
+            border: 2px solid #0f172a;
+            border-radius: 6px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+            background: #fff;
+            box-sizing: border-box;
+        }
 
         /* Tabelas de Inventário e Revisão */
         .inventory-table-container {
@@ -841,9 +873,20 @@
                 overflow: hidden !important;
             }
             #areaImpressaoEtiqueta.print-expositor {
-                align-items: flex-start !important;
-                justify-content: flex-start !important;
-                padding: 18mm !important;
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            #areaImpressaoEtiqueta.print-expositor .expositor-folha-a4 {
+                width: 194mm !important;
+                height: 278mm !important;
+                min-height: 278mm !important;
+                max-height: 278mm !important;
+                border: none !important;
+                padding: 4mm !important;
+                margin: 0 auto !important;
+                overflow: hidden !important;
             }
             #areaImpressaoEtiqueta.print-catalogo {
                 display: block !important;
@@ -1900,6 +1943,7 @@
         if (!usuarioLogado) return alert('Acesso restrito ao administrador.');
         tipoEtiquetaAtual = tipo;
         itensPalletMisto = [];
+        filaEtiquetasExpositor = [];
         document.getElementById('menuEtiquetasCatalogo').classList.remove('open');
 
         const titulos = {
@@ -1988,17 +2032,37 @@
             `;
         } else if (tipo === 'expositor') {
             box.innerHTML = `
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
-                    <div class="form-group">
+                <div style="display:grid; grid-template-columns: 150px 1fr 95px auto; gap:10px; align-items:end; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
                         <label>COD EFISCO</label>
                         <input type="text" id="etqExpEfisco" oninput="atualizarPreviewEtiquetaCatalogo()">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="margin-bottom:0;">
                         <label>NOME DO ITEM</label>
                         <input type="text" id="etqExpNome" oninput="atualizarPreviewEtiquetaCatalogo()">
                     </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>QTD</label>
+                        <input type="number" id="etqExpQtd" min="1" value="1">
+                    </div>
+                    <button type="button" class="btn" style="background:var(--primary); color:#fff; border:none; height:38px;" onclick="adicionarExpositorNaFila()">+ Na Fila</button>
                 </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <strong style="font-size:0.85rem;">Etiquetas por folha A4:</strong>
+                        <select id="etqExpPorFolha" onchange="alterarPorFolhaExpositor(this.value)" style="padding:6px 10px; border:1px solid var(--border); border-radius:6px; background:#fff;">
+                            <option value="2" ${porFolhaExpositor === 2 ? 'selected' : ''}>2 por folha A4</option>
+                            <option value="4" ${porFolhaExpositor === 4 ? 'selected' : ''}>4 por folha A4 (2×2)</option>
+                            <option value="6" ${porFolhaExpositor === 6 ? 'selected' : ''}>6 por folha A4 (2×3)</option>
+                            <option value="8" ${porFolhaExpositor === 8 ? 'selected' : ''}>8 por folha A4 (2×4)</option>
+                        </select>
+                        <span id="resumoFilaExpositor" style="font-size:0.82rem; color:var(--muted); font-weight:600;">0 etiquetas (0 folhas A4)</span>
+                    </div>
+                    <button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; color:var(--danger); border-color:#fecaca;" onclick="limparFilaExpositor()">🗑️ Limpar Fila</button>
+                </div>
+                <div id="listaFilaExpositor" style="max-height:140px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; padding:8px; margin-bottom:10px; background:#fff;"></div>
             `;
+            renderizarFilaExpositor();
         }
     }
 
@@ -2253,17 +2317,123 @@
             `;
         }
 
+        const listaExpandida = [];
+        if (filaEtiquetasExpositor.length > 0) {
+            filaEtiquetasExpositor.forEach(item => {
+                for (let q = 0; q < item.qtd; q++) {
+                    listaExpandida.push({ efisco: item.efisco, nome: item.nome });
+                }
+            });
+        } else {
+            listaExpandida.push({
+                efisco: document.getElementById('etqExpEfisco')?.value.trim() || '---',
+                nome: document.getElementById('etqExpNome')?.value.trim() || 'ITEM'
+            });
+        }
+
+        const qrSize = porFolhaExpositor >= 8 ? '58' : (porFolhaExpositor >= 6 ? '68' : '82');
+        const folhasHtml = [];
+
+        for (let i = 0; i < listaExpandida.length; i += porFolhaExpositor) {
+            const lote = listaExpandida.slice(i, i + porFolhaExpositor);
+            const cardsHtml = lote.map(item => `
+                <div class="expositor-card-a4">
+                    <div style="min-width:0;">
+                        <div style="font-size:0.95rem; font-weight:900; margin-bottom:4px;">COD EFISCO: ${item.efisco}</div>
+                        <div style="font-size:0.82rem; font-weight:700; text-transform:uppercase; line-height:1.25; word-break:break-word;">${item.nome}</div>
+                    </div>
+                    <div class="qr-box-etiqueta" style="flex-shrink:0;" data-qr="${montarUrlQrItem(item.efisco)}" data-size="${qrSize}"></div>
+                </div>
+            `).join('');
+
+            folhasHtml.push(`
+                <div class="expositor-folha-a4 expositor-grade-${porFolhaExpositor}">
+                    ${cardsHtml}
+                </div>
+            `);
+        }
+
+        return `<div style="display:flex; flex-direction:column; gap:14px;">${folhasHtml.join('')}</div>`;
+    }
+
+    let filaEtiquetasExpositor = [];
+    let porFolhaExpositor = 4;
+
+    function adicionarExpositorNaFila() {
         const efisco = document.getElementById('etqExpEfisco')?.value.trim() || '---';
         const nome = document.getElementById('etqExpNome')?.value.trim() || 'ITEM';
-        return `
-            <div class="etq-expositor">
-                <div>
-                    <div style="font-size:1.1rem; font-weight:900; margin-bottom:5px;">COD EFISCO: ${efisco}</div>
-                    <div style="font-size:0.92rem; font-weight:700; text-transform:uppercase; line-height:1.25;">${nome}</div>
+        const qtd = Math.max(1, parseInt(document.getElementById('etqExpQtd')?.value, 10) || 1);
+
+        const existente = filaEtiquetasExpositor.find(
+            x => x.efisco.toLowerCase() === efisco.toLowerCase() && x.nome.toLowerCase() === nome.toLowerCase()
+        );
+        if (existente) {
+            existente.qtd += qtd;
+        } else {
+            filaEtiquetasExpositor.push({ efisco, nome, qtd });
+        }
+
+        const qtdInput = document.getElementById('etqExpQtd');
+        if (qtdInput) qtdInput.value = '1';
+        renderizarFilaExpositor();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function alterarQtdFilaExpositor(idx, delta) {
+        if (!filaEtiquetasExpositor[idx]) return;
+        filaEtiquetasExpositor[idx].qtd += delta;
+        if (filaEtiquetasExpositor[idx].qtd <= 0) {
+            filaEtiquetasExpositor.splice(idx, 1);
+        }
+        renderizarFilaExpositor();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function removerItemFilaExpositor(idx) {
+        filaEtiquetasExpositor.splice(idx, 1);
+        renderizarFilaExpositor();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function limparFilaExpositor() {
+        filaEtiquetasExpositor = [];
+        renderizarFilaExpositor();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function alterarPorFolhaExpositor(val) {
+        porFolhaExpositor = Math.max(2, parseInt(val, 10) || 4);
+        renderizarFilaExpositor();
+        atualizarPreviewEtiquetaCatalogo();
+    }
+
+    function renderizarFilaExpositor() {
+        const listaEl = document.getElementById('listaFilaExpositor');
+        const resumoEl = document.getElementById('resumoFilaExpositor');
+        const totalEtiquetas = filaEtiquetasExpositor.reduce((acc, item) => acc + item.qtd, 0);
+        const totalFolhas = totalEtiquetas > 0 ? Math.ceil(totalEtiquetas / porFolhaExpositor) : 0;
+
+        if (resumoEl) {
+            resumoEl.innerText = `${totalEtiquetas} ${totalEtiquetas === 1 ? 'etiqueta' : 'etiquetas'} (${totalFolhas} ${totalFolhas === 1 ? 'folha A4' : 'folhas A4'})`;
+        }
+        if (!listaEl) return;
+
+        if (filaEtiquetasExpositor.length === 0) {
+            listaEl.innerHTML = `<div style="font-size:0.82rem; color:var(--muted); padding:6px;">Fila vazia: adicione itens acima ou imprima diretamente a etiqueta atual abaixo.</div>`;
+            return;
+        }
+
+        listaEl.innerHTML = filaEtiquetasExpositor.map((item, idx) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid #f1f5f9; font-size:0.84rem;">
+                <div><b>${item.efisco}</b> — ${item.nome}</div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button type="button" class="btn" style="padding:2px 8px;" onclick="alterarQtdFilaExpositor(${idx}, -1)">-</button>
+                    <b>${item.qtd}x</b>
+                    <button type="button" class="btn" style="padding:2px 8px;" onclick="alterarQtdFilaExpositor(${idx}, 1)">+</button>
+                    <button type="button" class="btn" style="padding:2px 8px; color:var(--danger); border-color:#fecaca;" onclick="removerItemFilaExpositor(${idx})">✕</button>
                 </div>
-                <div class="qr-box-etiqueta" data-qr="${montarUrlQrItem(efisco)}" data-size="84"></div>
             </div>
-        `;
+        `).join('');
     }
 
     function renderizarQrEmContainer(container) {
